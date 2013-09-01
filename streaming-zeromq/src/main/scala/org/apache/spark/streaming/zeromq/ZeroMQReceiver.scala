@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package spark.streaming.receivers
+package org.apache.spark.streaming.receivers
 
 import akka.actor.Actor
 import akka.zeromq._
 
-import spark.Logging
+import org.apache.spark.Logging
 
 /**
  * A receiver to subscribe to ZeroMQ stream.

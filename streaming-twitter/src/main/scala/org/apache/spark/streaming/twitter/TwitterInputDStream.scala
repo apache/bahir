@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package spark.streaming.dstream
+package org.apache.spark.streaming.dstream
 
-import spark._
-import spark.streaming._
+import org.apache.spark._
+import org.apache.spark.streaming._
 import storage.StorageLevel
 import twitter4j._
 import twitter4j.auth.Authorization

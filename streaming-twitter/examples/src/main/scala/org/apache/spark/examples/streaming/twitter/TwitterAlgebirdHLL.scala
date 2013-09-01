@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package spark.streaming.examples
+package org.apache.spark.streaming.examples
 
-import spark.streaming.{Seconds, StreamingContext}
-import spark.storage.StorageLevel
+import org.apache.spark.streaming.{Seconds, StreamingContext}
+import org.apache.spark.storage.StorageLevel
 import com.twitter.algebird.HyperLogLog._
 import com.twitter.algebird.HyperLogLogMonoid
-import spark.streaming.dstream.TwitterInputDStream
+import org.apache.spark.streaming.dstream.TwitterInputDStream
 
 /**
  * Illustrates the use of the HyperLogLog algorithm, from Twitter's Algebird library, to compute

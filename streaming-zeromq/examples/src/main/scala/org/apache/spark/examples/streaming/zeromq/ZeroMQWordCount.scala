@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package spark.streaming.examples
+package org.apache.spark.streaming.examples
 
 import akka.actor.ActorSystem
 import akka.actor.actorRef2Scala
 import akka.zeromq._
-import spark.streaming.{ Seconds, StreamingContext }
-import spark.streaming.StreamingContext._
+import org.apache.spark.streaming.{ Seconds, StreamingContext }
+import org.apache.spark.streaming.StreamingContext._
 import akka.zeromq.Subscribe
 
 /**

@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package spark.streaming.examples
+package org.apache.spark.streaming.examples
 
-import spark.streaming.{Seconds, StreamingContext}
+import org.apache.spark.streaming.{Seconds, StreamingContext}
 import StreamingContext._
-import spark.SparkContext._
+import org.apache.spark.SparkContext._
 
 /**
  * Calculates popular hashtags (topics) over sliding 10 and 60 second windows from a Twitter

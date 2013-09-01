@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package spark.streaming.receivers
+package org.apache.spark.streaming.receivers
 
 import akka.actor.{ Actor, PoisonPill, Props, SupervisorStrategy }
 import akka.actor.{ actorRef2Scala, ActorRef }
 import akka.actor.{ PossiblyHarmful, OneForOneStrategy }
 
-import spark.storage.StorageLevel
-import spark.streaming.dstream.NetworkReceiver
+import org.apache.spark.storage.StorageLevel
+import org.apache.spark.streaming.dstream.NetworkReceiver
 
 import java.util.concurrent.atomic.AtomicInteger
 

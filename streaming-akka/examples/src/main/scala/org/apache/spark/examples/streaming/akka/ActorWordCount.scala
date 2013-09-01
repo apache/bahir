@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package spark.streaming.examples
+package org.apache.spark.streaming.examples
 
 import scala.collection.mutable.LinkedList
 import scala.util.Random
@@ -25,11 +25,11 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.actorRef2Scala
 
-import spark.streaming.Seconds
-import spark.streaming.StreamingContext
-import spark.streaming.StreamingContext.toPairDStreamFunctions
-import spark.streaming.receivers.Receiver
-import spark.util.AkkaUtils
+import org.apache.spark.streaming.Seconds
+import org.apache.spark.streaming.StreamingContext
+import org.apache.spark.streaming.StreamingContext.toPairDStreamFunctions
+import org.apache.spark.streaming.receivers.Receiver
+import org.apache.spark.util.AkkaUtils
 
 case class SubscribeReceiver(receiverActor: ActorRef)
 case class UnsubscribeReceiver(receiverActor: ActorRef)
@@ -80,7 +80,7 @@ class FeederActor extends Actor {
  * goes and subscribe to a typical publisher/feeder actor and receives
  * data.
  *
- * @see [[spark.streaming.examples.FeederActor]]
+ * @see [[org.apache.spark.streaming.examples.FeederActor]]
  */
 class SampleActorReceiver[T: ClassManifest](urlOfPublisher: String)
 extends Actor with Receiver {
