@@ -1,4 +1,21 @@
-package spark.streaming.receivers
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.spark.streaming.receivers
 
 import akka.actor.{ Actor, PoisonPill, Props, SupervisorStrategy }
 import akka.actor.{ actorRef2Scala, ActorRef }
@@ -8,8 +25,8 @@ import akka.actor.SupervisorStrategy._
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
-import spark.storage.StorageLevel
-import spark.streaming.dstream.NetworkReceiver
+import org.apache.spark.storage.StorageLevel
+import org.apache.spark.streaming.dstream.NetworkReceiver
 
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -29,6 +46,8 @@ object ReceiverSupervisorStrategy {
  * A receiver trait to be mixed in with your Actor to gain access to
  * pushBlock API.
  *
+ * Find more details at: http://spark-project.org/docs/latest/streaming-custom-receivers.html
+ * 
  * @example {{{
  *  class MyActor extends Actor with Receiver{
  *      def receive {
