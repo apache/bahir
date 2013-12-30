@@ -17,6 +17,8 @@
 
 package org.apache.spark.streaming
 
-package object twitter {
-  implicit def sscToTwitterFunctions(ssc: StreamingContext) = new TwitterFunctions(ssc)
+package object mqtt {
+  implicit def sscToMQTTFunctions(ssc: StreamingContext) = new MQTTFunctions(ssc)
 }
+
+

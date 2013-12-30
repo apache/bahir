@@ -15,8 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.spark.streaming
+package org.apache.spark.streaming.mqtt
 
-package object twitter {
-  implicit def sscToTwitterFunctions(ssc: StreamingContext) = new TwitterFunctions(ssc)
+import org.apache.spark.streaming.{StreamingContext, TestSuiteBase}
+import org.apache.spark.storage.StorageLevel
+
+class MQTTStreamSuite extends TestSuiteBase {
+
+  test("MQTT input stream") {
+    val ssc = new StreamingContext(master, framework, batchDuration)
+    val brokerUrl = "abc"
+    val topic = "def"
+
+    // tests the API, does not actually test data receiving
+    val test1 = ssc.mqttStream(brokerUrl, topic)
+    val test2 = ssc.mqttStream(brokerUrl, topic, StorageLevel.MEMORY_AND_DISK_SER_2)
+
+    // TODO: Actually test receiving data
+  }
 }

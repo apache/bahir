@@ -17,6 +17,8 @@
 
 package org.apache.spark.streaming
 
-package object twitter {
-  implicit def sscToTwitterFunctions(ssc: StreamingContext) = new TwitterFunctions(ssc)
+package object zeromq {
+  implicit def sscToZeroMQFunctions(ssc: StreamingContext) = new ZeroMQFunctions(ssc)
 }
+
+
