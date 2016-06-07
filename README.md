@@ -1,4 +1,4 @@
-# Bahir Repository with single "src" folder
+# Bahir Repository
 
 Initial Bahir repository containing the source for the Spark streaming connectors for akka, mqtt, twitter, zeromq 
 extracted from [Apache Spark revision 8301fad](https://github.com/apache/spark/tree/8301fadd8d269da11e72870b7a889596e3337839)
