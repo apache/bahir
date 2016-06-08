@@ -22,7 +22,7 @@ import scala.reflect.ClassTag
 import akka.util.ByteString
 import akka.zeromq._
 
-import org.apache.spark.Logging
+import org.apache.spark.internal.Logging
 import org.apache.spark.streaming.akka.ActorReceiver
 
 /**
