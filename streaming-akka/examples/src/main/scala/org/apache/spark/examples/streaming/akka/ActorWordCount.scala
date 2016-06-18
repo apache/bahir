@@ -75,7 +75,7 @@ class FeederActor extends Actor {
  * goes and subscribe to a typical publisher/feeder actor and receives
  * data.
  *
- * @see [[org.apache.spark.examples.streaming.FeederActor]]
+ * @see [[org.apache.spark.examples.streaming.akka.FeederActor]]
  */
 class SampleActorReceiver[T](urlOfPublisher: String) extends ActorReceiver {
 
