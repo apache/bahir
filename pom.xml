@@ -418,6 +418,34 @@
           </executions>
         </plugin>
         <plugin>
+          <groupId>org.apache.rat</groupId>
+          <artifactId>apache-rat-plugin</artifactId>
+          <version>0.12</version>
+          <executions>
+            <execution>
+              <id>enforce-licenses</id>
+              <phase>package</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <excludes>
+              <exclude>.gitignore</exclude>
+              <exclude>.repository/</exclude>
+              <exclude>.idea/</exclude>
+              <exclude>.git</exclude>
+              <exclude>.settings</exclude>
+              <exclude>.classpath</exclude>
+              <exclude>.project</exclude>
+              <exclude>**/dependency-reduced-pom.xml</exclude>
+              <exclude>**/target/**</exclude>
+              <exclude>**/README.md</exclude>
+            </excludes>
+          </configuration>
+        </plugin>
+        <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
           <version>1.10</version>
@@ -742,6 +770,7 @@
       </plugins>
     </pluginManagement>
 
+    <defaultGoal>clean install org.apache.rat:apache-rat-plugin:check</defaultGoal>
     <plugins>
       <!-- This plugin dumps the test classpath into a file -->
       <plugin>
@@ -824,6 +853,11 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.rat</groupId>
+        <artifactId>apache-rat-plugin</artifactId>
+        <version>0.11</version>
       </plugin>
       <plugin>
         <groupId>net.alchim31.maven</groupId>
@@ -1001,16 +1035,6 @@
     </profile>
 
     <profile>
-      <id>test-java-home</id>
-      <activation>
-        <property><name>env.JAVA_HOME</name></property>
-      </activation>
-      <properties>
-        <test.java.home>${env.JAVA_HOME}</test.java.home>
-      </properties>
-    </profile>
-
-    <profile>
       <id>scala-2.11</id>
       <activation>
         <property><name>!scala-2.10</name></property>
@@ -1045,5 +1069,16 @@
         </plugins>
       </build>
     </profile>
+
+    <profile>
+      <id>test-java-home</id>
+      <activation>
+        <property><name>env.JAVA_HOME</name></property>
+      </activation>
+      <properties>
+        <test.java.home>${env.JAVA_HOME}</test.java.home>
+      </properties>
+    </profile>
+
   </profiles>
 </project>
