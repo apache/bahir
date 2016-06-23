@@ -16,7 +16,9 @@
  */
 
 // scalastyle:off println
-package org.apache.spark.examples.streaming
+package org.apache.spark.examples.streaming.twitter
+
+import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.{Seconds, StreamingContext}
@@ -34,7 +36,10 @@ object TwitterHashTagJoinSentiments {
       System.exit(1)
     }
 
-    StreamingExamples.setStreamingLogLevels()
+    // Set logging level if log4j not configured (override by adding log4j.properties to classpath)
+    if (!Logger.getRootLogger.getAllAppenders.hasMoreElements) {
+      Logger.getRootLogger.setLevel(Level.WARN)
+    }
 
     val Array(consumerKey, consumerSecret, accessToken, accessTokenSecret) = args.take(4)
     val filters = args.takeRight(args.length - 4)
@@ -47,6 +52,12 @@ object TwitterHashTagJoinSentiments {
     System.setProperty("twitter4j.oauth.accessTokenSecret", accessTokenSecret)
 
     val sparkConf = new SparkConf().setAppName("TwitterHashTagJoinSentiments")
+
+    // check Spark configuration for master URL, set it to local if not configured
+    if (!sparkConf.contains("spark.master")) {
+      sparkConf.setMaster("local[2]")
+    }
+
     val ssc = new StreamingContext(sparkConf, Seconds(2))
     val stream = TwitterUtils.createStream(ssc, None, filters)
 

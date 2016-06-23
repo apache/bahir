@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.spark.examples.streaming;
+package org.apache.spark.examples.streaming.twitter;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
@@ -50,7 +52,11 @@ public class JavaTwitterHashTagJoinSentiments {
       System.exit(1);
     }
 
-    StreamingExamples.setStreamingLogLevels();
+    //StreamingExamples.setStreamingLogLevels();
+    // Set logging level if log4j not configured (override by adding log4j.properties to classpath)
+    if (!Logger.getRootLogger().getAllAppenders().hasMoreElements()) {
+      Logger.getRootLogger().setLevel(Level.WARN);
+    }
 
     String consumerKey = args[0];
     String consumerSecret = args[1];
@@ -66,6 +72,12 @@ public class JavaTwitterHashTagJoinSentiments {
     System.setProperty("twitter4j.oauth.accessTokenSecret", accessTokenSecret);
 
     SparkConf sparkConf = new SparkConf().setAppName("JavaTwitterHashTagJoinSentiments");
+
+    // check Spark configuration for master URL, set it to local if not configured
+    if (!sparkConf.contains("spark.master")) {
+      sparkConf.setMaster("local[2]");
+    }
+
     JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, new Duration(2000));
     JavaReceiverInputDStream<Status> stream = TwitterUtils.createStream(jssc, filters);
 
@@ -84,7 +96,7 @@ public class JavaTwitterHashTagJoinSentiments {
     });
 
     // Read in the word-sentiment list and create a static RDD from it
-    String wordSentimentFilePath = "data/streaming/AFINN-111.txt";
+    String wordSentimentFilePath = "streaming-twitter/examples/data/AFINN-111.txt";
     final JavaPairRDD<String, Double> wordSentiments = jssc.sparkContext().textFile(wordSentimentFilePath)
       .mapToPair(new PairFunction<String, String, Double>(){
         @Override
@@ -170,6 +182,10 @@ public class JavaTwitterHashTagJoinSentiments {
     });
 
     jssc.start();
-    jssc.awaitTermination();
+    try {
+      jssc.awaitTermination();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
   }
 }

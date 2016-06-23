@@ -16,13 +16,14 @@
  */
 
 // scalastyle:off println
-package org.apache.spark.examples.streaming
+package org.apache.spark.examples.streaming.akka
 
 import scala.collection.mutable.LinkedHashSet
 import scala.util.Random
 
-import akka.actor._
+import akka.actor.{Props, _}
 import com.typesafe.config.ConfigFactory
+import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.{Seconds, StreamingContext}
@@ -129,9 +130,9 @@ object FeederActor {
  *   <hostname> and <port> describe the AkkaSystem that Spark Sample feeder is running on.
  *
  * To run this example locally, you may run Feeder Actor as
- *    `$ bin/run-example org.apache.spark.examples.streaming.FeederActor localhost 9999`
+ *    `$ bin/run-example org.apache.spark.examples.streaming.akka.FeederActor localhost 9999`
  * and then run the example
- *    `$ bin/run-example org.apache.spark.examples.streaming.ActorWordCount localhost 9999`
+ *    `$ bin/run-example org.apache.spark.examples.streaming.akka.ActorWordCount localhost 9999`
  */
 object ActorWordCount {
   def main(args: Array[String]) {
@@ -141,10 +142,19 @@ object ActorWordCount {
       System.exit(1)
     }
 
-    StreamingExamples.setStreamingLogLevels()
+    // Set logging level if log4j not configured (override by adding log4j.properties to classpath)
+    if (!Logger.getRootLogger.getAllAppenders.hasMoreElements) {
+      Logger.getRootLogger.setLevel(Level.WARN)
+    }
 
     val Seq(host, port) = args.toSeq
     val sparkConf = new SparkConf().setAppName("ActorWordCount")
+
+    // check Spark configuration for master URL, set it to local if not configured
+    if (!sparkConf.contains("spark.master")) {
+      sparkConf.setMaster("local[2]")
+    }
+
     // Create the context and set the batch size
     val ssc = new StreamingContext(sparkConf, Seconds(2))
 

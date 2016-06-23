@@ -16,10 +16,11 @@
  */
 
 // scalastyle:off println
-package org.apache.spark.examples.streaming
+package org.apache.spark.examples.streaming.twitter
 
 import com.twitter.algebird._
 import com.twitter.algebird.CMSHasherImplicits._
+import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.storage.StorageLevel
@@ -51,7 +52,11 @@ import org.apache.spark.streaming.twitter._
 // scalastyle:on
 object TwitterAlgebirdCMS {
   def main(args: Array[String]) {
-    StreamingExamples.setStreamingLogLevels()
+
+    // Set logging level if log4j not configured (override by adding log4j.properties to classpath)
+    if (!Logger.getRootLogger.getAllAppenders.hasMoreElements) {
+      Logger.getRootLogger.setLevel(Level.WARN)
+    }
 
     // CMS parameters
     val DELTA = 1E-3
@@ -63,6 +68,12 @@ object TwitterAlgebirdCMS {
 
     val filters = args
     val sparkConf = new SparkConf().setAppName("TwitterAlgebirdCMS")
+
+    // check Spark configuration for master URL, set it to local if not configured
+    if (!sparkConf.contains("spark.master")) {
+      sparkConf.setMaster("local[2]")
+    }
+
     val ssc = new StreamingContext(sparkConf, Seconds(10))
     val stream = TwitterUtils.createStream(ssc, None, filters, StorageLevel.MEMORY_ONLY_SER_2)
 
