@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.spark.streaming
+package org.apache.spark.streaming.twitter
 
 /**
  * Twitter feed receiver for spark streaming.

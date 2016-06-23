@@ -29,6 +29,8 @@ import org.apache.spark.api.java.function.Function0;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
 
+import java.util.concurrent.TimeUnit;
+
 public class JavaAkkaUtilsSuite {
 
   @Test // tests the API, does not actually test data receiving
@@ -63,6 +65,6 @@ class JavaTestActor extends JavaActorReceiver {
   @Override
   public void onReceive(Object message) throws Exception {
     store((String) message);
-    store((String) message, new Timeout(1000));
+    store((String) message, new Timeout(1000, TimeUnit.MILLISECONDS));
   }
 }

@@ -442,6 +442,7 @@
               <exclude>**/dependency-reduced-pom.xml</exclude>
               <exclude>**/target/**</exclude>
               <exclude>**/README.md</exclude>
+              <exclude>**/examples/data/*.txt</exclude>
             </excludes>
           </configuration>
         </plugin>
@@ -474,6 +475,11 @@
               <goals>
                 <goal>testCompile</goal>
               </goals>
+              <configuration>
+                <source>${java.version}</source>
+                <target>${java.version}</target>
+                <encoding>UTF-8</encoding>
+              </configuration>
             </execution>
             <execution>
               <id>attach-scaladocs</id>
@@ -866,6 +872,26 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
+      </plugin>
+      <!-- add examples as additional test sources so they will be compiled but not packaged -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-test-source</id>
+            <phase>generate-test-sources</phase>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>${basedir}/examples/src/main/java</source>
+                <source>${basedir}/examples/src/main/scala</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.scalastyle</groupId>

@@ -16,8 +16,9 @@
  */
 
 // scalastyle:off println
-package org.apache.spark.examples.streaming
+package org.apache.spark.examples.streaming.mqtt
 
+import org.apache.log4j.{Level, Logger}
 import org.eclipse.paho.client.mqttv3._
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 
@@ -38,7 +39,10 @@ object MQTTPublisher {
       System.exit(1)
     }
 
-    StreamingExamples.setStreamingLogLevels()
+    // Set logging level if log4j not configured (override by adding log4j.properties to classpath)
+    if (!Logger.getRootLogger.getAllAppenders.hasMoreElements) {
+      Logger.getRootLogger.setLevel(Level.WARN)
+    }
 
     val Seq(brokerUrl, topic) = args.toSeq
 
@@ -106,6 +110,12 @@ object MQTTWordCount {
 
     val Seq(brokerUrl, topic) = args.toSeq
     val sparkConf = new SparkConf().setAppName("MQTTWordCount")
+
+    // check Spark configuration for master URL, set it to local if not configured
+    if (!sparkConf.contains("spark.master")) {
+      sparkConf.setMaster("local[2]")
+    }
+
     val ssc = new StreamingContext(sparkConf, Seconds(2))
     val lines = MQTTUtils.createStream(ssc, brokerUrl, topic, StorageLevel.MEMORY_ONLY_SER_2)
     val words = lines.flatMap(x => x.split(" "))

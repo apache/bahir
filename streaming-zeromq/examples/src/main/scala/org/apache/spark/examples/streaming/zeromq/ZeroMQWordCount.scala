@@ -16,7 +16,7 @@
  */
 
 // scalastyle:off println
-package org.apache.spark.examples.streaming
+package org.apache.spark.examples.streaming.zeromq
 
 import scala.language.implicitConversions
 
@@ -25,6 +25,7 @@ import akka.actor.actorRef2Scala
 import akka.util.ByteString
 import akka.zeromq._
 import akka.zeromq.Subscribe
+import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.{Seconds, StreamingContext}
@@ -81,9 +82,20 @@ object ZeroMQWordCount {
       System.err.println("Usage: ZeroMQWordCount <zeroMQurl> <topic>")
       System.exit(1)
     }
-    StreamingExamples.setStreamingLogLevels()
+
+    // Set logging level if log4j not configured (override by adding log4j.properties to classpath)
+    if (!Logger.getRootLogger.getAllAppenders.hasMoreElements) {
+      Logger.getRootLogger.setLevel(Level.WARN)
+    }
+
     val Seq(url, topic) = args.toSeq
     val sparkConf = new SparkConf().setAppName("ZeroMQWordCount")
+
+    // check Spark configuration for master URL, set it to local if not configured
+    if (!sparkConf.contains("spark.master")) {
+      sparkConf.setMaster("local[2]")
+    }
+
     // Create the context and set the batch size
     val ssc = new StreamingContext(sparkConf, Seconds(2))
 

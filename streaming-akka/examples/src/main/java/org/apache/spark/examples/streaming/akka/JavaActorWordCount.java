@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.spark.examples.streaming;
+package org.apache.spark.examples.streaming.akka;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -24,6 +24,9 @@ import scala.Tuple2;
 
 import akka.actor.ActorSelection;
 import akka.actor.Props;
+
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.function.FlatMapFunction;
@@ -94,11 +97,21 @@ public class JavaActorWordCount {
       System.exit(1);
     }
 
-    StreamingExamples.setStreamingLogLevels();
+    //StreamingExamples.setStreamingLogLevels();
+    // Set logging level if log4j not configured (override by adding log4j.properties to classpath)
+    if (!Logger.getRootLogger().getAllAppenders().hasMoreElements()) {
+      Logger.getRootLogger().setLevel(Level.WARN);
+    }
 
     final String host = args[0];
     final String port = args[1];
     SparkConf sparkConf = new SparkConf().setAppName("JavaActorWordCount");
+
+    // check Spark configuration for master URL, set it to local if not configured
+    if (!sparkConf.contains("spark.master")) {
+      sparkConf.setMaster("local[2]");
+    }
+
     // Create the context and set the batch size
     JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, new Duration(2000));
 
@@ -139,6 +152,10 @@ public class JavaActorWordCount {
     }).print();
 
     jssc.start();
-    jssc.awaitTermination();
+    try {
+      jssc.awaitTermination();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
   }
 }
