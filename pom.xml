@@ -903,7 +903,7 @@
           <includeTestSourceDirectory>false</includeTestSourceDirectory>
           <failOnWarning>false</failOnWarning>
           <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
-          <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
+          <testSourceDirectories>${basedir}/src/test/scala,${basedir}/examples/src/main/scala</testSourceDirectories>
           <configLocation>scalastyle-config.xml</configLocation>
           <outputFile>${basedir}/target/scalastyle-output.xml</outputFile>
           <inputEncoding>${project.build.sourceEncoding}</inputEncoding>
@@ -927,7 +927,7 @@
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
           <failOnWarning>false</failOnWarning>
           <sourceDirectories>${basedir}/src/main/java,${basedir}/src/main/scala</sourceDirectories>
-          <testSourceDirectory>${basedir}/src/test/java</testSourceDirectory>
+          <testSourceDirectories>${basedir}/src/test/java,${basedir}/examples/src/main/java,${basedir}/examples/src/main/scala</testSourceDirectories>
           <configLocation>dev/checkstyle.xml</configLocation>
           <outputFile>${basedir}/target/checkstyle-output.xml</outputFile>
           <inputEncoding>${project.build.sourceEncoding}</inputEncoding>
