@@ -70,10 +70,10 @@ object SimpleZeroMQPublisher {
  *
  * To run this example locally, you may run publisher as
  *    `$ bin/run-example \
- *      org.apache.spark.examples.streaming.SimpleZeroMQPublisher tcp://127.0.0.1:1234 foo`
+ *      org.apache.spark.examples.streaming.zeromq.SimpleZeroMQPublisher tcp://127.0.0.1:1234 foo`
  * and run the example as
  *    `$ bin/run-example \
- *      org.apache.spark.examples.streaming.ZeroMQWordCount tcp://127.0.0.1:1234 foo`
+ *      org.apache.spark.examples.streaming.zeromq.ZeroMQWordCount tcp://127.0.0.1:1234 foo`
  */
 // scalastyle:on
 object ZeroMQWordCount {

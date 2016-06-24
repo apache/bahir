@@ -43,7 +43,7 @@ import org.apache.spark.streaming.akka.JavaActorReceiver;
  * goes and subscribe to a typical publisher/feeder actor and receives
  * data.
  *
- * @see [[org.apache.spark.examples.streaming.FeederActor]]
+ * @see [[org.apache.spark.examples.streaming.akka.FeederActor]]
  */
 class JavaSampleActorReceiver<T> extends JavaActorReceiver {
 
@@ -82,11 +82,11 @@ class JavaSampleActorReceiver<T> extends JavaActorReceiver {
  *
  * To run this example locally, you may run Feeder Actor as
  * <code><pre>
- *     $ bin/run-example org.apache.spark.examples.streaming.FeederActor localhost 9999
+ *     $ bin/run-example org.apache.spark.examples.streaming.akka.FeederActor localhost 9999
  * </pre></code>
  * and then run the example
  * <code><pre>
- *     $ bin/run-example org.apache.spark.examples.streaming.JavaActorWordCount localhost 9999
+ *     $ bin/run-example org.apache.spark.examples.streaming.akka.JavaActorWordCount localhost 9999
  * </pre></code>
  */
 public class JavaActorWordCount {

@@ -92,10 +92,10 @@ object MQTTPublisher {
  *
  * To run this example locally, you may run publisher as
  *    `$ bin/run-example \
- *      org.apache.spark.examples.streaming.MQTTPublisher tcp://localhost:1883 foo`
+ *      org.apache.spark.examples.streaming.mqtt.MQTTPublisher tcp://localhost:1883 foo`
  * and run the example as
  *    `$ bin/run-example \
- *      org.apache.spark.examples.streaming.MQTTWordCount tcp://localhost:1883 foo`
+ *      org.apache.spark.examples.streaming.mqtt.MQTTWordCount tcp://localhost:1883 foo`
  */
 object MQTTWordCount {
 
