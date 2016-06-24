@@ -108,9 +108,6 @@
     <test.java.home>${java.home}</test.java.home>
     <test.exclude.tags></test.exclude.tags>
 
-    <!-- Package to use when relocating shaded classes. -->
-    <spark.shade.packageName>org.spark_project</spark.shade.packageName>
-
     <!-- Modules that copy jars to the build directory should do so under this location. -->
     <jars.target.dir>${project.build.directory}/scala-${scala.binary.version}/jars</jars.target.dir>
 
@@ -688,11 +685,6 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-shade-plugin</artifactId>
-          <version>2.4.3</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-install-plugin</artifactId>
           <version>2.5.2</version>
         </plugin>
@@ -806,53 +798,6 @@
         </executions>
       </plugin>
 
-      <!--
-        The shade plug-in is used here to create effective pom's (see SPARK-3812), and also
-        remove references from the shaded libraries from artifacts published by Spark.
-      -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <configuration>
-          <shadedArtifactAttached>false</shadedArtifactAttached>
-          <artifactSet>
-            <includes>
-              <include>org.spark-project.spark:unused</include>
-              <include>org.eclipse.jetty:jetty-io</include>
-              <include>org.eclipse.jetty:jetty-http</include>
-              <include>org.eclipse.jetty:jetty-continuation</include>
-              <include>org.eclipse.jetty:jetty-servlet</include>
-              <include>org.eclipse.jetty:jetty-servlets</include>
-              <include>org.eclipse.jetty:jetty-plus</include>
-              <include>org.eclipse.jetty:jetty-security</include>
-              <include>org.eclipse.jetty:jetty-util</include>
-              <include>org.eclipse.jetty:jetty-server</include>
-              <include>com.google.guava:guava</include>
-            </includes>
-          </artifactSet>
-          <relocations>
-            <relocation>
-              <pattern>org.eclipse.jetty</pattern>
-              <shadedPattern>${spark.shade.packageName}.jetty</shadedPattern>
-              <includes>
-                <include>org.eclipse.jetty.**</include>
-              </includes>
-            </relocation>
-            <relocation>
-              <pattern>com.google.common</pattern>
-              <shadedPattern>${spark.shade.packageName}.guava</shadedPattern>
-            </relocation>
-          </relocations>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>

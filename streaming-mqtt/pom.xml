@@ -74,6 +74,11 @@
     <testOutputDirectory>target/scala-${scala.binary.version}/test-classes</testOutputDirectory>
 
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+      </plugin>
+
       <!-- Assemble a jar with test dependencies for Python tests -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
