@@ -16,6 +16,6 @@
  */
 
 /**
- * MQTT receiver for Spark Streaming.
+ * Akka receiver for Spark Streaming.
  */
 package org.apache.spark.streaming.akka;
