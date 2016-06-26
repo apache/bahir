@@ -23,7 +23,7 @@
     </formats>
 
     <includeBaseDirectory>true</includeBaseDirectory>
-    <baseDirectory>bahir-${version}-src</baseDirectory>
+    <baseDirectory>apache-bahir-${version}-src</baseDirectory>
 
     <fileSets>
         <fileSet>

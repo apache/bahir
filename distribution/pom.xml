@@ -74,7 +74,8 @@
                             <descriptors>
                                 <descriptor>src/main/assembly/src.xml</descriptor>
                             </descriptors>
-                            <appendAssemblyId>false</appendAssemblyId>
+                            <appendAssemblyId>true</appendAssemblyId>
+                            <finalName>apache-bahir-${project.version}</finalName>
                         </configuration>
                     </execution>
                 </executions>
