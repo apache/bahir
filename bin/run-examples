@@ -81,7 +81,7 @@ scala_version=$( cd "${module_path}" && mvn org.apache.maven.plugins:maven-help-
 spark_package="org.apache.bahir:spark-${module_name}_${scala_version}:${module_version}"
 
 # tests jar contains the examples (see [BAHIR-18])
-examples_jar="${module_tests_jar_path#"${project_dir}"/}"
+examples_jar="${module_tests_jar_path}"
 
 # ${SPARK_HOME}/bin/spark-submit \
 #  --packages org.apache.bahir:spark-streaming-akka_2.11:2.0.0-SNAPSHOT \
