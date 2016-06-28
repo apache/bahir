@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# make sure Spark home is set and valid
+if [ -z "${SPARK_HOME}" ]; then
+  echo "SPARK_HOME is not set" >&2
+  exit 1
+elif [ ! -d "${SPARK_HOME}" ]; then
+  echo "SPARK_HOME does not point to a valid directory" >&2
+  exit 1
+fi
+
+# pinpoint the project root folder
+bin_dir=$( dirname "$0" )
+project_dir=$( cd "${bin_dir}/.." ; pwd -P )
+
+printUsageAndExit() {
+  cat << EOF
+
+SYNOPSIS
+  run-example example-class [example args]
+
+DESCRIPTION
+  Helper script to run the given example using \${SPARK_HOME}/bin/spark-submit.
+
+  For example this invocation:
+
+     bin/run-example \\
+         org.apache.spark.examples.streaming.akka.ActorWordCount localhost 9999
+
+  will be converted into the following spark-submit command:
+
+     \${SPARK_HOME}/bin/spark-submit \\
+         --packages org.apache.bahir:spark-streaming-akka_2.11:2.0.0-SNAPSHOT \\
+         --class org.apache.spark.examples.streaming.akka.ActorWordCount \\
+             streaming-akka/target/spark-streaming-akka_2.11-2.0.0-SNAPSHOT-tests.jar \\
+         localhost 9999
+
+  Before running this script, make sure the SPARK_HOME environment variable is set and
+  the Bahir project was built and installed into your local Maven repository by running
+
+     mvn clean install
+
+  For information about [optional] arguments consult the JavaDoc of the specific example class.
+
+USAGE EXAMPLES
+EOF
+  grep -R "bin/run-example org.apache" --no-filename --include="*.scala" --include="*.java" "${project_dir}" | tr '`' ' ' | sed 's/^ *\* * /  /g' ; \
+  grep -R -A1 "bin/run-example \\\\"   --no-filename --include="*.scala" --include="*.java" "${project_dir}" | tr '`' ' ' | sed 's/^ *\* * /  /g' | sed '/^--$/d' | sed 'N;s/\\\n *//g'
+  exit 1
+}
+
+if (( $# == 0 )) || [[ $1 =~ "-h" ]]; then
+  printUsageAndExit
+fi
+
+# split off example class from example arguments
+example_class="$1"; shift;
+example_args="$@"
+
+# find the module path and jar files needed to run the given example
+example_src_path=$( find "${project_dir}" -path "*${example_class//.//}*" | grep "/examples/src/" | head -1 )
+module_path=${example_src_path%"/examples/src/"*}
+
+# we may not have found the source file if the given class is nested inside another class
+if [ -z "${module_path}" ]; then
+  example_target_path=$( find "${project_dir}" -path "*${example_class//.//}.class" | grep "/target/" | head -1 )
+  module_path=${example_target_path%"/target/"*}
+fi
+
+# if we found neither source file nor class file for the given example, try matching partial path
+if [ -z "${module_path}" ]; then
+  example_package="${example_class%.*}"
+  example_package_path=$( find "${project_dir}" -path "*${example_package//.//}*" | grep "/examples/src/" | head -1 )
+  module_path=${example_package_path%"/examples/src/"*}
+fi
+
+if [ -z "${module_path}" ]; then
+  echo "Could not find module that contains the example \"${example_class}\"" >&2
+  printUsageAndExit
+fi
+
+# use the module name to find the tests jar file that contains the example to run
+module_name=${module_path#"${project_dir}"/}
+module_tests_jar_path=$( find "${module_path}" -name "*${module_name}*-tests.jar" | head -1 )
+
+if [ -z "${module_tests_jar_path}" ] || [ ! -e "${module_tests_jar_path}" ]; then
+  echo "Could not find module tests jar file in ${module_path}/target/" >&2
+  echo "Run \"mvn clean install\" and retry running this example" >&2
+  exit 1
+fi
+
+# use maven-help-plugin to determine project version and Scala version
+module_version=$( cd "${module_path}" && mvn org.apache.maven.plugins:maven-help-plugin:2.2:evaluate -Dexpression=project.version | grep -v "INFO\|WARNING\|ERROR\|Downloading" | tail -1 )
+scala_version=$( cd "${module_path}" && mvn org.apache.maven.plugins:maven-help-plugin:2.2:evaluate -Dexpression=scala.binary.version | grep -v "INFO\|WARNING\|ERROR\|Downloading" | tail -1 )
+
+# we are getting all necessary dependencies from maven, requires running "mvn" or "mvn install" first
+spark_package="org.apache.bahir:spark-${module_name}_${scala_version}:${module_version}"
+
+# tests jar contains the examples (see [BAHIR-18])
+examples_jar="${module_tests_jar_path}"
+
+# ${SPARK_HOME}/bin/spark-submit \
+#  --packages org.apache.bahir:spark-streaming-akka_2.11:2.0.0-SNAPSHOT \
+#  --class org.apache.spark.examples.streaming.akka.ActorWordCount \
+#      streaming-akka/target/spark-streaming-akka_2.11-2.0.0-SNAPSHOT-tests.jar \
+#    localhost 9999
+
+# capture the full command line and echo it for transparency and debug purposes
+cmd="${SPARK_HOME}/bin/spark-submit \
+  --packages ${spark_package} \
+  --class ${example_class} ${examples_jar} ${example_args}"
+
+echo "---"
+echo "Spark-Submit command: $cmd"
+echo "---"
+
+exec $cmd
