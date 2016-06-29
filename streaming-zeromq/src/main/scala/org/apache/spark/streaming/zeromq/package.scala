@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.spark.streaming.zeromq
+package org.apache.spark.streaming
 
 /**
  * Zeromq receiver for spark streaming.
