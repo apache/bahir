@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.spark.streaming.mqtt
+package org.apache.spark.streaming
 
 /**
  * MQTT receiver for Spark Streaming.
