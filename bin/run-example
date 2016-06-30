@@ -65,7 +65,7 @@ fi
 
 # use the module name to find the tests jar file that contains the example to run
 module_name=${module_path#"${project_dir}"/}
-module_tests_jar_path=$( find "${module_path}" -name "*${module_name}*SNAPSHOT-tests.jar" | head -1 )
+module_tests_jar_path=$( find "${module_path}" -name "*${module_name}*-tests.jar" | head -1 )
 
 if [ -z "${module_tests_jar_path}" ] || [ ! -e "${module_tests_jar_path}" ]; then
   echo "Could not find module tests jar file in ${module_path}/target/" >&2
