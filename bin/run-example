@@ -26,20 +26,53 @@ elif [ ! -d "${SPARK_HOME}" ]; then
   exit 1
 fi
 
-export _SPARK_CMD_USAGE="Usage: ./bin/run-example example-class [example args]"
+# pinpoint the project root folder
+bin_dir=$( dirname "$0" )
+project_dir=$( cd "${bin_dir}/.." ; pwd -P )
+
+printUsageAndExit() {
+  cat << EOF
+
+SYNOPSIS
+  run-example example-class [example args]
+
+DESCRIPTION
+  Helper script to run the given example using \${SPARK_HOME}/bin/spark-submit.
+
+  For example this invocation:
+
+     bin/run-example \\
+         org.apache.spark.examples.streaming.akka.ActorWordCount localhost 9999
+
+  will be converted into the following spark-submit command:
+
+     \${SPARK_HOME}/bin/spark-submit \\
+         --packages org.apache.bahir:spark-streaming-akka_2.11:2.0.0-SNAPSHOT \\
+         --class org.apache.spark.examples.streaming.akka.ActorWordCount \\
+             streaming-akka/target/spark-streaming-akka_2.11-2.0.0-SNAPSHOT-tests.jar \\
+         localhost 9999
+
+  Before running this script, make sure the SPARK_HOME environment variable is set and
+  the Bahir project was built and installed into your local Maven repository by running
+
+     mvn clean install
+
+  For information about [optional] arguments consult the JavaDoc of the specific example class.
+
+USAGE EXAMPLES
+EOF
+  grep -R "bin/run-example org.apache" --no-filename --include="*.scala" --include="*.java" "${project_dir}" | tr '`' ' ' | sed 's/^ *\* * /  /g' ; \
+  grep -R -A1 "bin/run-example \\\\"   --no-filename --include="*.scala" --include="*.java" "${project_dir}" | tr '`' ' ' | sed 's/^ *\* * /  /g' | sed '/^--$/d' | sed 'N;s/\\\n *//g'
+  exit 1
+}
 
 if (( $# == 0 )) || [[ $1 =~ "-h" ]]; then
-  echo "${_SPARK_CMD_USAGE}"
-  exit 1
+  printUsageAndExit
 fi
 
 # split off example class from example arguments
 example_class="$1"; shift;
 example_args="$@"
-
-# pinpoint the project root folder
-bin_dir=$( dirname "$0" )
-project_dir=$( cd "${bin_dir}/.." ; pwd -P )
 
 # find the module path and jar files needed to run the given example
 example_src_path=$( find "${project_dir}" -path "*${example_class//.//}*" | grep "/examples/src/" | head -1 )
@@ -60,7 +93,7 @@ fi
 
 if [ -z "${module_path}" ]; then
   echo "Could not find module that contains the example \"${example_class}\"" >&2
-  exit 1
+  printUsageAndExit
 fi
 
 # use the module name to find the tests jar file that contains the example to run
@@ -92,7 +125,7 @@ examples_jar="${module_tests_jar_path}"
 # capture the full command line and echo it for transparency and debug purposes
 cmd="${SPARK_HOME}/bin/spark-submit \
   --packages ${spark_package} \
-  --class ${example_class} ${examples_jar} $@"
+  --class ${example_class} ${examples_jar} ${example_args}"
 
 echo "---"
 echo "Spark-Submit command: $cmd"
