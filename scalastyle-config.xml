@@ -218,6 +218,7 @@ This file is divided into 3 sections:
       <parameter name="group.3rdParty">(?!org\.apache\.spark\.).*</parameter>
       <parameter name="group.spark">org\.apache\.spark\..*</parameter>
     </parameters>
+    <customMessage>Imports should be grouped and ordered: java,scala,3rdParty,spark</customMessage>
   </check>
 
   <check level="error" class="org.scalastyle.scalariform.DisallowSpaceBeforeTokenChecker" enabled="true">
@@ -270,6 +271,7 @@ This file is divided into 3 sections:
 
   <check level="error" class="org.scalastyle.scalariform.IllegalImportsChecker" enabled="false">
     <parameters><parameter name="illegalImports"><![CDATA[sun._,java.awt._]]></parameter></parameters>
+    <customMessage>Illegal import of sun._ or java.awt._</customMessage>
   </check>
 
   <!-- We want the opposite of this: NewLineAtEofChecker -->
