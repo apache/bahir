@@ -47,8 +47,8 @@ public class JavaTwitterHashTagJoinSentiments {
 
   public static void main(String[] args) {
     if (args.length < 4) {
-      System.err.println("Usage: JavaTwitterHashTagJoinSentiments <consumer key> <consumer secret>" +
-        " <access token> <access token secret> [<filters>]");
+      System.err.println("Usage: JavaTwitterHashTagJoinSentiments <consumer key>" +
+        " <consumer secret> <access token> <access token secret> [<filters>]");
       System.exit(1);
     }
 
@@ -97,7 +97,8 @@ public class JavaTwitterHashTagJoinSentiments {
 
     // Read in the word-sentiment list and create a static RDD from it
     String wordSentimentFilePath = "streaming-twitter/examples/data/AFINN-111.txt";
-    final JavaPairRDD<String, Double> wordSentiments = jssc.sparkContext().textFile(wordSentimentFilePath)
+    final JavaPairRDD<String, Double> wordSentiments = jssc.sparkContext()
+      .textFile(wordSentimentFilePath)
       .mapToPair(new PairFunction<String, String, Double>(){
         @Override
         public Tuple2<String, Double> call(String line) {

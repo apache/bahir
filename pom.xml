@@ -847,7 +847,7 @@
         <configuration>
           <verbose>false</verbose>
           <failOnViolation>true</failOnViolation>
-          <includeTestSourceDirectory>false</includeTestSourceDirectory>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
           <failOnWarning>false</failOnWarning>
           <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
           <testSourceDirectories>${basedir}/src/test/scala,${basedir}/examples/src/main/scala</testSourceDirectories>
@@ -869,16 +869,15 @@
         <artifactId>maven-checkstyle-plugin</artifactId>
         <version>2.17</version>
         <configuration>
-          <verbose>false</verbose>
-          <failOnViolation>false</failOnViolation>
+          <consoleOutput>false</consoleOutput>
+          <failOnViolation>true</failOnViolation>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
-          <failOnWarning>false</failOnWarning>
+          <failsOnError>false</failsOnError>
           <sourceDirectories>${basedir}/src/main/java,${basedir}/src/main/scala</sourceDirectories>
           <testSourceDirectories>${basedir}/src/test/java,${basedir}/examples/src/main/java,${basedir}/examples/src/main/scala</testSourceDirectories>
           <configLocation>dev/checkstyle.xml</configLocation>
           <outputFile>${basedir}/target/checkstyle-output.xml</outputFile>
-          <inputEncoding>${project.build.sourceEncoding}</inputEncoding>
-          <outputEncoding>${project.reporting.outputEncoding}</outputEncoding>
+          <encoding>${project.build.sourceEncoding}</encoding>
         </configuration>
         <executions>
           <execution>
