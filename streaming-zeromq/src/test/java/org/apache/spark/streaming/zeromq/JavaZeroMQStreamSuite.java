@@ -43,8 +43,8 @@ public class JavaZeroMQStreamSuite extends LocalJavaStreamingContext {
     JavaReceiverInputDStream<String> test2 = ZeroMQUtils.<String>createStream(
       ssc, publishUrl, subscribe, bytesToObjects, StorageLevel.MEMORY_AND_DISK_SER_2());
     JavaReceiverInputDStream<String> test3 = ZeroMQUtils.<String>createStream(
-      ssc, publishUrl, subscribe, bytesToObjects, StorageLevel.MEMORY_AND_DISK_SER_2(), actorSystemCreator,
-      SupervisorStrategy.defaultStrategy());
+      ssc, publishUrl, subscribe, bytesToObjects, StorageLevel.MEMORY_AND_DISK_SER_2(),
+      actorSystemCreator, SupervisorStrategy.defaultStrategy());
   }
 }
 
