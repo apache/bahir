@@ -38,19 +38,26 @@ class MQTTUtils(object):
         :param storageLevel:  RDD storage level.
         :return: A DStream object
         """
-        try:
-            helper = ssc._jvm.org.apache.spark.streaming.mqtt.MQTTUtilsPythonHelper()
-        except TypeError as e:
-            if str(e) == "'JavaPackage' object is not callable":
-                MQTTUtils._printErrorMsg(ssc.sparkContext)
-            raise
-
         jlevel = ssc._sc._getJavaStorageLevel(storageLevel)
+        helper = MQTTUtils._get_helper(ssc._sc)
         jstream = helper.createStream(ssc._jssc, brokerUrl, topic, jlevel)
         return DStream(jstream, ssc, UTF8Deserializer())
 
     @staticmethod
+    def _get_helper(sc):
+        try:
+            return sc._jvm.org.apache.spark.streaming.mqtt.MQTTUtilsPythonHelper()
+        except TypeError as e:
+            if str(e) == "'JavaPackage' object is not callable":
+                MQTTUtils._printErrorMsg(sc)
+            raise
+
+    @staticmethod
     def _printErrorMsg(sc):
+        scalaVersionString = sc._jvm.scala.util.Properties.versionString()
+        import re
+        scalaVersion = re.sub(r'version (\d+\.\d+)\.\d+', r'\1', scalaVersionString)
+        sparkVersion = re.sub(r'(\d+\.\d+\.\d+).*', r'\1', sc.version)
         print("""
 ________________________________________________________________________________________________
 
@@ -59,12 +66,12 @@ ________________________________________________________________________________
   1. Include the MQTT library and its dependencies with in the
      spark-submit command as
 
-     $ bin/spark-submit --packages org.apache.spark:spark-streaming-mqtt:%s ...
+     ${SPARK_HOME}/bin/spark-submit --packages org.apache.bahir:spark-streaming-mqtt_%s:%s ...
 
   2. Download the JAR of the artifact from Maven Central http://search.maven.org/,
-     Group Id = org.apache.spark, Artifact Id = spark-streaming-mqtt-assembly, Version = %s.
+     Group Id = org.apache.bahir, Artifact Id = spark-streaming-mqtt, Version = %s.
      Then, include the jar in the spark-submit command as
 
-     $ bin/spark-submit --jars <spark-streaming-mqtt-assembly.jar> ...
+     ${SPARK_HOME}/bin/spark-submit --jars <spark-streaming-mqtt.jar> ...
 ________________________________________________________________________________________________
-""" % (sc.version, sc.version))
+""" % (scalaVersion, sparkVersion, sparkVersion))
