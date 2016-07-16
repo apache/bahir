@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets
 import scala.language.postfixOps
 
 import org.apache.activemq.broker.{BrokerService, TransportConnector}
+import org.apache.activemq.usage.SystemUsage
 import org.apache.commons.lang3.RandomUtils
 import org.eclipse.paho.client.mqttv3._
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence
@@ -41,6 +42,7 @@ private[mqtt] class MQTTTestUtils extends Logging {
   private val brokerPort = findFreePort()
 
   private var broker: BrokerService = _
+  private var systemUsage: SystemUsage = _
   private var connector: TransportConnector = _
 
   def brokerUri: String = {
@@ -50,6 +52,10 @@ private[mqtt] class MQTTTestUtils extends Logging {
   def setup(): Unit = {
     broker = new BrokerService()
     broker.setDataDirectoryFile(Utils.createTempDir())
+    broker.getSystemUsage().setSendFailIfNoSpace(false)
+    systemUsage = broker.getSystemUsage()
+    systemUsage.getStoreUsage().setLimit(1024L * 1024 * 256);  // 256 MB (default: 100 GB)
+    systemUsage.getTempUsage().setLimit(1024L * 1024 * 128);   // 128 MB (default: 50 GB)
     connector = new TransportConnector()
     connector.setName("mqtt")
     connector.setUri(new URI("mqtt://" + brokerUri))

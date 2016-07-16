@@ -16,6 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+set -o pipefail
 
 # make sure Spark home is set and valid
 if [ -z "${SPARK_HOME}" ]; then
@@ -61,8 +62,8 @@ DESCRIPTION
 
 USAGE EXAMPLES
 EOF
-  grep -R "bin/run-example org.apache" --no-filename --include="*.scala" --include="*.java" "${project_dir}" | tr '`' ' ' | sed 's/^ *\* * /  /g' ; \
-  grep -R -A1 "bin/run-example \\\\"   --no-filename --include="*.scala" --include="*.java" "${project_dir}" | tr '`' ' ' | sed 's/^ *\* * /  /g' | sed '/^--$/d' | sed 'N;s/\\\n *//g'
+  grep -R "bin/run-example org.apache" --no-filename --include=*.{scala,java,py} "${project_dir}" | tr '`' ' ' | sed 's/^ *\* * /     /g' ; \
+  grep -R -A1 "bin/run-example \\\\"   --no-filename --include=*.{scala,java,py} "${project_dir}" | tr '`' ' ' | sed 's/^ *\* * /     /g' | sed '/^--$/d' | sed 'N;s/\\\n *//g'
   exit 1
 }
 
@@ -122,10 +123,22 @@ examples_jar="${module_tests_jar_path}"
 #      streaming-akka/target/spark-streaming-akka_2.11-2.0.0-SNAPSHOT-tests.jar \
 #    localhost 9999
 
-# capture the full command line and echo it for transparency and debug purposes
-cmd="${SPARK_HOME}/bin/spark-submit \
-  --packages ${spark_package} \
-  --class ${example_class} ${examples_jar} ${example_args}"
+# for Python examples add all of the Bahir project's Python sources to PYTHONPATH, which in local
+# mode is easier than creating a zip files to be used with the --py-files option
+# Note that --py-files with individual *.py files does not work if those modules are imported at top
+# of the example script but rather imports must be pushed down to after SparkContext initialization
+if [[ "$example_class" == *.py ]]; then
+  export PYTHONPATH="$( find "$project_dir" -path '*/python' -maxdepth 5 -type d | tr '\n' ':' )$PYTHONPATH"
+  cmd="${SPARK_HOME}/bin/spark-submit \
+    --packages ${spark_package} \
+    ${example_class} \
+    ${example_args}"
+else
+  cmd="${SPARK_HOME}/bin/spark-submit \
+    --packages ${spark_package} \
+    --class ${example_class} ${examples_jar} \
+    ${example_args}"
+fi
 
 echo "---"
 echo "Spark-Submit command: $cmd"

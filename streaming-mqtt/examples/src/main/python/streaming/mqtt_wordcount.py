@@ -20,23 +20,35 @@
  Usage: mqtt_wordcount.py <broker url> <topic>
 
  To run this in your local machine, you need to setup a MQTT broker and publisher first,
- Mosquitto is one of the open source MQTT Brokers, see
- http://mosquitto.org/
- Eclipse paho project provides number of clients and utilities for working with MQTT, see
- http://www.eclipse.org/paho/#getting-started
+ like Mosquitto (http://mosquitto.org/) an easy to use and install open source MQTT Broker.
+ On Mac OS Mosquitto can be installed with Homebrew `$ brew install mosquitto`.
+ On Ubuntu mosquitto can be installed with the command `$ sudo apt-get install mosquitto`.
 
- and then run the example
-    `$ bin/spark-submit --jars \
-      external/mqtt-assembly/target/scala-*/spark-streaming-mqtt-assembly-*.jar \
-      examples/src/main/python/streaming/mqtt_wordcount.py \
-      tcp://localhost:1883 foo`
+ Alternatively, the Eclipse paho project provides a number of clients and utilities for
+ working with MQTT, see http://www.eclipse.org/paho/#getting-started
+
+ How to run this example locally:
+
+ (1) Start Mqtt message broker/server, i.e. Mosquitto:
+
+    `$ mosquitto -p 1883`
+
+ (2) Run the publisher:
+
+    `$ bin/run-example \
+      org.apache.spark.examples.streaming.mqtt.MQTTPublisher tcp://localhost:1883 foo`
+
+ (3) Run the example:
+
+    `$ bin/run-example \
+      streaming-mqtt/examples/src/main/python/streaming/mqtt_wordcount.py tcp://localhost:1883 foo`
 """
 
 import sys
 
 from pyspark import SparkContext
 from pyspark.streaming import StreamingContext
-from pyspark.streaming.mqtt import MQTTUtils
+from mqtt import MQTTUtils
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
