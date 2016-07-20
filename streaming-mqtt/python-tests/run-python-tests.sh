@@ -28,8 +28,8 @@ fi
 
 # pinpoint the module folder and project root folder
 bin_dir=$( dirname "$0" )
-module_dir=$( cd "${bin_dir}/.." ; pwd -P )
-project_dir=$( cd "${module_dir}/.." ; pwd -P )
+module_dir=$( cd "${bin_dir}/.." && pwd -P )
+project_dir=$( cd "${module_dir}/.." && pwd -P )
 stdout_log="${module_dir}/target/python-tests-python-output.log"
 stderr_log="${module_dir}/target/python-tests-java-output.log"
 
@@ -62,7 +62,7 @@ export PYTHONPATH="${module_dir}/python:${PYTHONPATH}"
 
 # run the tests via spark-submit and capture the output in two separate log files (stdout=Python,
 # stderr=Java) while only printing stdout to console
-${SPARK_HOME}/bin/spark-submit \
+"${SPARK_HOME}"/bin/spark-submit \
     --master local[*] \
     --driver-memory 512m \
     --packages "${spark_packages}" \
