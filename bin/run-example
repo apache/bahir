@@ -124,7 +124,7 @@ examples_jar="${module_tests_jar_path}"
 #    localhost 9999
 
 # for Python examples add all of the Bahir project's Python sources to PYTHONPATH, which in local
-# mode is easier than creating a zip files to be used with the --py-files option
+# mode is easier than creating a zip files to be used with the --py-files option (TODO: BAHIR-35)
 # Note that --py-files with individual *.py files does not work if those modules are imported at top
 # of the example script but rather imports must be pushed down to after SparkContext initialization
 if [[ "$example_class" == *.py ]]; then

@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -30,10 +30,12 @@ fi
 bin_dir=$( dirname "$0" )
 module_dir=$( cd "${bin_dir}/.." ; pwd -P )
 project_dir=$( cd "${module_dir}/.." ; pwd -P )
+stdout_log="${module_dir}/target/python-tests-python-output.log"
+stderr_log="${module_dir}/target/python-tests-java-output.log"
 
 # use the module name to find the tests jar file that contains the example to run
 module_name=${module_dir#"${project_dir}"/}
-module_tests_jar_path=$( find "${module_dir}" -name "*${module_name}*-tests.jar" | head -1 )
+module_tests_jar_path=$( find "${module_dir}/target" -name "*${module_name}*-tests.jar" -maxdepth 1 | head -1 )
 
 if [ -z "${module_tests_jar_path}" ] || [ ! -e "${module_tests_jar_path}" ]; then
   echo "Could not find module tests jar file in ${module_dir}/target/" >&2
@@ -50,17 +52,28 @@ scala_version=$( cd "${module_dir}" && mvn org.apache.maven.plugins:maven-help-p
 spark_packages="org.apache.bahir:spark-${module_name}_${scala_version}:${module_version}"
 
 # find additional test-scoped dependencies and add them to the --packages list
-test_dependencies=$( mvn dependency:tree -Dscope=test -Dtokens=standard -pl ${module_name} | grep "\[INFO\] +- [a-z].*:test" | grep -ivE "spark|bahir|scala|junit" | sed 's/\[INFO\] +- //; s/:jar//; s/:test//' )
+test_dependencies=$( cd "${project_dir}" && mvn dependency:tree -Dscope=test -Dtokens=standard -pl ${module_name} | grep "\[INFO\] +- [a-z].*:test" | grep -ivE "spark|bahir|scala|junit" | sed 's/\[INFO\] +- //; s/:jar//; s/:test//' )
 for td in ${test_dependencies}; do
   spark_packages="${spark_packages},${td}"
 done
 
-# since we are running locally, we can use PYTHONPATH instead of --py-files
+# since we are running locally, we can use PYTHONPATH instead of --py-files (TODO: BAHIR-35)
 export PYTHONPATH="${module_dir}/python:${PYTHONPATH}"
 
+# run the tests via spark-submit and capture the output in two separate log files (stdout=Python,
+# stderr=Java) while only printing stdout to console
 ${SPARK_HOME}/bin/spark-submit \
     --master local[*] \
     --driver-memory 512m \
     --packages "${spark_packages}" \
     --jars "${module_tests_jar_path}" \
-    "${module_dir}/python-tests/tests.py"
+    "${module_dir}/python-tests/tests.py" \
+    1> >( tee "${stdout_log}" | grep -w '[[:alpha:]=-]\{2,\}' ) \
+    2> "${stderr_log}"
+
+# if the Python code doesn't get executed due to errors in SparkSubmit the stdout log file will be
+# empty and nothing was logged to the console, then lets print the stderr log (Java output)
+if [ ! -s "${stdout_log}" ]; then
+  cat "${stderr_log}"
+  echo "Error during test execution"
+fi
