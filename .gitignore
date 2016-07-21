@@ -15,6 +15,9 @@ target/
 *.class
 *.log
 
+# Python
+*.pyc
+
 # Others
 .checkstyle
 .fbExcludeFilterFile
