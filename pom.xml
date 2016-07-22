@@ -374,6 +374,15 @@
   </dependencyManagement>
 
   <build>
+    <resources>
+      <resource>
+        <directory>${basedir}/python</directory>
+        <includes>
+          <include>**/*.py</include>
+        </includes>
+      </resource>
+    </resources>
+
     <pluginManagement>
       <plugins>
         <plugin>
