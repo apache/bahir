@@ -77,6 +77,7 @@
   <modules>
     <module>streaming-akka</module>
     <module>streaming-mqtt</module>
+    <module>sql-streaming-mqtt</module>
     <module>streaming-twitter</module>
     <module>streaming-zeromq</module>
   </modules>
@@ -444,6 +445,7 @@
               <exclude>.settings</exclude>
               <exclude>.classpath</exclude>
               <exclude>.project</exclude>
+              <exclude>**/META-INF/**</exclude>
               <exclude>**/dependency-reduced-pom.xml</exclude>
               <exclude>**/target/**</exclude>
               <exclude>**/README.md</exclude>
