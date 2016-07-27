@@ -944,6 +944,37 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-clean-plugin</artifactId>
+        <executions>
+          <!--
+            When we `install` the org.apache.bahir jars into the local Maven repository we also need
+            to clean the previous jar files from the Ivy cache (~/iv2/cache/org.apache.bahir/*) so
+            `spark-submit -packages ...` will pick up the new version from the the local Maven repository
+          -->
+          <execution>
+            <id>cleanup-ivy-cache</id>
+            <phase>install</phase>
+            <goals>
+              <goal>clean</goal>
+            </goals>
+            <configuration>
+              <followSymLinks>false</followSymLinks>
+              <excludeDefaultDirectories>true</excludeDefaultDirectories>
+              <filesets>
+                <fileset>
+                  <directory>${user.home}/.ivy2/cache/${project.groupId}/${project.artifactId}</directory>
+                  <includes>
+                    <include>*-${project.version}.*</include>
+                    <include>jars/${project.build.finalName}.jar</include>
+                  </includes>
+                </fileset>
+              </filesets>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
