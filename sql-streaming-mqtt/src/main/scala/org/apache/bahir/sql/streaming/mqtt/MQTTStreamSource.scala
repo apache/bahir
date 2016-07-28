@@ -20,11 +20,11 @@ package org.apache.bahir.sql.streaming.mqtt
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.concurrent.atomic.AtomicLong
-import javax.annotation.concurrent.GuardedBy
 
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable.ArrayBuffer
 
+import org.apache.bahir.utils.Logging
 import org.eclipse.paho.client.mqttv3._
 import org.eclipse.paho.client.mqttv3.persist.{MemoryPersistence, MqttDefaultFilePersistence}
 
@@ -34,7 +34,7 @@ import org.apache.spark.sql.sources.{DataSourceRegister, StreamSourceProvider}
 import org.apache.spark.sql.types.{StringType, StructField, StructType, TimestampType}
 
 
-object MQTTStream {
+object MQTTStreamConstants {
 
   val DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 
@@ -42,14 +42,18 @@ object MQTTStream {
     :: StructField("timestamp", TimestampType) :: Nil)
 }
 
-class MQTTTextStream(brokerUrl: String, persistence: MqttClientPersistence,
+class MQTTTextStreamSource(brokerUrl: String, persistence: MqttClientPersistence,
     topic: String, messageParser: Array[Byte] => (String, Timestamp),
     sqlContext: SQLContext) extends Source with Logging {
 
-  override def schema: StructType = MQTTStream.SCHEMA_DEFAULT
+  override def schema: StructType = MQTTStreamConstants.SCHEMA_DEFAULT
 
-  @GuardedBy("this")
-  private var messages = new ArrayBuffer[(String, Timestamp)]
+  private val store = new LocalMessageStore(persistence, sqlContext.sparkContext.getConf)
+
+  private val messages = new TrieMap[Int, (String, Timestamp)]
+
+  private var offset = 0
+
   initialize()
   private def initialize(): Unit = {
 
@@ -58,8 +62,10 @@ class MQTTTextStream(brokerUrl: String, persistence: MqttClientPersistence,
     mqttConnectOptions.setAutomaticReconnect(true)
     val callback = new MqttCallbackExtended() {
 
-      override def messageArrived(topic_ : String, message: MqttMessage): Unit = {
-        messages += messageParser(message.getPayload)
+      override def messageArrived(topic_ : String, message: MqttMessage): Unit = synchronized {
+        val temp = offset + 1
+        messages.put(temp, messageParser(message.getPayload))
+        offset = temp
         log.trace(s"Message arrived, $topic_ $message")
       }
 
@@ -71,7 +77,7 @@ class MQTTTextStream(brokerUrl: String, persistence: MqttClientPersistence,
       }
 
       override def connectComplete(reconnect: Boolean, serverURI: String): Unit = {
-        log.info(s"connect complete $serverURI. Is it a reconnect?: $reconnect")
+        log.info(s"Connect complete $serverURI. Is it a reconnect?: $reconnect")
       }
     }
     client.setCallback(callback)
@@ -85,10 +91,10 @@ class MQTTTextStream(brokerUrl: String, persistence: MqttClientPersistence,
 
   /** Returns the maximum available offset for this source. */
   override def getOffset: Option[Offset] = {
-    if (messages.isEmpty) {
+    if (offset == 0) {
       None
     } else {
-      Some(LongOffset(messages.size))
+      Some(LongOffset(offset))
     }
   }
 
@@ -100,40 +106,55 @@ class MQTTTextStream(brokerUrl: String, persistence: MqttClientPersistence,
   override def getBatch(start: Option[Offset], end: Offset): DataFrame = synchronized {
     val startIndex = start.getOrElse(LongOffset(0L)).asInstanceOf[LongOffset].offset.toInt
     val endIndex = end.asInstanceOf[LongOffset].offset.toInt
-    val data: ArrayBuffer[(String, Timestamp)] = messages.slice(startIndex, endIndex)
+    val data: ArrayBuffer[(String, Timestamp)] = ArrayBuffer.empty
+    val consumedMap: TrieMap[Int, (String, Timestamp)] = TrieMap.empty
+    // Move consumed messages to persistent store.
+    (startIndex + 1 to endIndex).foreach { id =>
+      val element: (String, Timestamp) = messages.getOrElse(id, store.retrieve(id))
+      data += element
+      store.store(id, element)
+      messages.remove(id, element)
+    }
     log.trace(s"Get Batch invoked, ${data.mkString}")
     import sqlContext.implicits._
     data.toDF("value", "timestamp")
   }
+
 }
 
-class MQTTStreamProvider extends StreamSourceProvider with DataSourceRegister with Logging {
+class MQTTStreamSourceProvider extends StreamSourceProvider with DataSourceRegister with Logging {
 
   override def sourceSchema(sqlContext: SQLContext, schema: Option[StructType],
       providerName: String, parameters: Map[String, String]): (String, StructType) = {
-    log.warn("The mqtt source should not be used for production applications!" +
-      "It does not support recovery and stores state indefinitely.")
-    ("mqttSource", MQTTStream.SCHEMA_DEFAULT)
+    ("mqtt", MQTTStreamConstants.SCHEMA_DEFAULT)
   }
 
   override def createSource(sqlContext: SQLContext, metadataPath: String,
       schema: Option[StructType], providerName: String, parameters: Map[String, String]): Source = {
-    def e(s: String) = new IllegalArgumentException()
+
+    def e(s: String) = new IllegalArgumentException(s)
 
     val brokerUrl: String = parameters.getOrElse("brokerUrl", parameters.getOrElse("path",
-      throw e("Please provide a `brokerUrl` by specifying path or brokerUrl in options.")))
+      throw e("Please provide a `brokerUrl` by specifying path or .options(\"brokerUrl\",...)")))
+
 
     val persistence: MqttClientPersistence = parameters.get("persistence") match {
       case Some("memory") => new MemoryPersistence()
-      case _ => new MqttDefaultFilePersistence()
+      case _ => val localStorage: Option[String] = parameters.get("localStorage")
+        localStorage match {
+          case Some(x) => new MqttDefaultFilePersistence(x)
+          case None => new MqttDefaultFilePersistence()
+        }
     }
 
     val messageParserWithTimeStamp = (x: Array[Byte]) => (new String(x), Timestamp.valueOf(
-      MQTTStream.DATE_FORMAT.format(Calendar.getInstance().getTime)))
+      MQTTStreamConstants.DATE_FORMAT.format(Calendar.getInstance().getTime)))
 
-    val topic: String = parameters.getOrElse("topic", "#") // default is subscribe everything.
+    // if default is subscribe everything, it leads to getting lot unwanted system messages.
+    val topic: String = parameters.getOrElse("topic",
+      throw e("Please specify a topic, by .options(\"topic\",...)"))
 
-    new MQTTTextStream(brokerUrl, persistence, topic,
+    new MQTTTextStreamSource(brokerUrl, persistence, topic,
       messageParserWithTimeStamp, sqlContext)
   }
 

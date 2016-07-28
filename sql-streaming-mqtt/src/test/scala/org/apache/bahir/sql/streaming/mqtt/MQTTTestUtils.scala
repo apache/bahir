@@ -15,27 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.spark.sql.streaming.mqtt
+package org.apache.bahir.sql.streaming.mqtt
 
 import java.io.File
 import java.net.{ServerSocket, URI}
-import java.nio.charset.StandardCharsets
-import java.util.UUID
-
-import scala.language.postfixOps
 
 import org.apache.activemq.broker.{BrokerService, TransportConnector}
-import org.apache.bahir.sql.streaming.mqtt.Logging
-import org.apache.commons.lang3.RandomUtils
+import org.apache.bahir.utils.Logging
 import org.eclipse.paho.client.mqttv3._
-import org.eclipse.paho.client.mqttv3.persist.{MemoryPersistence, MqttDefaultFilePersistence}
+import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence
 
-import org.apache.spark.SparkConf
-import org.apache.spark.util.Utils
+class MQTTTestUtils(tempDir: File) extends Logging {
 
-private[apache] class MQTTTestUtils extends Logging {
-
-  private val persistenceDir = Utils.createTempDir()
+  private val persistenceDir = tempDir.getAbsolutePath
   private val brokerHost = "localhost"
   private val brokerPort = findFreePort()
 
@@ -46,9 +38,16 @@ private[apache] class MQTTTestUtils extends Logging {
     s"$brokerHost:$brokerPort"
   }
 
+  private def findFreePort() = {
+    val s = new ServerSocket(0)
+    val port: Int = s.getLocalPort
+    s.close()
+    port
+  }
+
   def setup(): Unit = {
     broker = new BrokerService()
-    broker.setDataDirectoryFile(Utils.createTempDir())
+    broker.setDataDirectoryFile(tempDir)
     connector = new TransportConnector()
     connector.setName("mqtt")
     connector.setUri(new URI("mqtt://" + brokerUri))
@@ -65,32 +64,22 @@ private[apache] class MQTTTestUtils extends Logging {
       connector.stop()
       connector = null
     }
-    Utils.deleteRecursively(persistenceDir)
-  }
-
-  private def findFreePort(): Int = {
-    val candidatePort = RandomUtils.nextInt(1024, 65536)
-    Utils.startServiceOnPort(candidatePort, (trialPort: Int) => {
-      val socket = new ServerSocket(trialPort)
-      socket.close()
-      (null, trialPort)
-    }, new SparkConf())._2
   }
 
   def publishData(topic: String, data: String, N: Int = 1): Unit = {
     var client: MqttClient = null
     try {
-      val persistence = new MqttDefaultFilePersistence(persistenceDir.getAbsolutePath)
+      val persistence = new MqttDefaultFilePersistence(persistenceDir)
       client = new MqttClient("tcp://" + brokerUri, MqttClient.generateClientId(), persistence)
       client.connect()
       if (client.isConnected) {
         val msgTopic = client.getTopic(topic)
-        val message = new MqttMessage(data.getBytes(StandardCharsets.UTF_8))
-        message.setQos(2)
-        message.setRetained(true)
-
         for (i <- 0 until N) {
           try {
+            Thread.sleep(20)
+            val message = new MqttMessage(data.getBytes())
+            message.setQos(2)
+            message.setRetained(true)
             msgTopic.publish(message)
           } catch {
             case e: MqttException =>

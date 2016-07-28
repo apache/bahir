@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.bahir.sql.streaming.mqtt
+package org.apache.bahir.utils
 
 import org.slf4j.LoggerFactory
 
