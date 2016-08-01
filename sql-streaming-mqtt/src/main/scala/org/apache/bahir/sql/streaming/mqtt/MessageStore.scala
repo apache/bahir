@@ -19,6 +19,7 @@
 package org.apache.bahir.sql.streaming.mqtt
 
 import java.nio.ByteBuffer
+import java.util
 
 import scala.reflect.ClassTag
 
@@ -40,6 +41,9 @@ trait MessageStore {
 
   /** Retrieve message corresponding to a given id. */
   def retrieve[T: ClassTag](id: Int): T
+
+  /** Highest offset we have stored */
+  def maxProcessedOffset: Int
 
 }
 
@@ -73,6 +77,13 @@ private[mqtt] class LocalMessageStore(val persistentStore: MqttClientPersistence
 
   private def get(id: Int) = {
     persistentStore.get(id.toString).getHeaderBytes
+  }
+
+  import scala.collection.JavaConverters._
+
+  def maxProcessedOffset: Int = {
+    val keys: util.Enumeration[_] = persistentStore.keys()
+    keys.asScala.map(x => x.toString.toInt).max
   }
 
   /** Store a single id and corresponding serialized message */

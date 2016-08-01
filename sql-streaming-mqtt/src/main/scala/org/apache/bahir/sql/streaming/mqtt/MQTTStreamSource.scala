@@ -20,9 +20,11 @@ package org.apache.bahir.sql.streaming.mqtt
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.concurrent.CountDownLatch
 
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable.ArrayBuffer
+import scala.util.{Failure, Success, Try}
 
 import org.apache.bahir.utils.Logging
 import org.eclipse.paho.client.mqttv3._
@@ -43,7 +45,7 @@ object MQTTStreamConstants {
 }
 
 class MQTTTextStreamSource(brokerUrl: String, persistence: MqttClientPersistence,
-    topic: String, messageParser: Array[Byte] => (String, Timestamp),
+    topic: String, clientId: String, messageParser: Array[Byte] => (String, Timestamp),
     sqlContext: SQLContext) extends Source with Logging {
 
   override def schema: StructType = MQTTStreamConstants.SCHEMA_DEFAULT
@@ -52,17 +54,34 @@ class MQTTTextStreamSource(brokerUrl: String, persistence: MqttClientPersistence
 
   private val messages = new TrieMap[Int, (String, Timestamp)]
 
+  private val initLock = new CountDownLatch(1)
+
   private var offset = 0
+
+  private var client: MqttClient = _
+
+  private def fetchLastProcessedOffset(): Int = {
+    Try(store.maxProcessedOffset) match {
+      case Success(x) =>
+        log.info(s"Recovering from last stored offset $x")
+        x
+      case Failure(e) => 0
+    }
+  }
 
   initialize()
   private def initialize(): Unit = {
 
-    val client = new MqttClient(brokerUrl, MqttClient.generateClientId(), persistence)
+    val client = new MqttClient(brokerUrl, clientId, persistence)
     val mqttConnectOptions: MqttConnectOptions = new MqttConnectOptions()
     mqttConnectOptions.setAutomaticReconnect(true)
+    // This is required to support recovery. TODO: configurable ?
+    mqttConnectOptions.setCleanSession(false)
+
     val callback = new MqttCallbackExtended() {
 
       override def messageArrived(topic_ : String, message: MqttMessage): Unit = synchronized {
+        initLock.await() // Wait for initialization to complete.
         val temp = offset + 1
         messages.put(temp, messageParser(message.getPayload))
         offset = temp
@@ -83,10 +102,16 @@ class MQTTTextStreamSource(brokerUrl: String, persistence: MqttClientPersistence
     client.setCallback(callback)
     client.connect(mqttConnectOptions)
     client.subscribe(topic)
+    // It is not possible to initialize offset without `client.connect`
+    offset = fetchLastProcessedOffset()
+    initLock.countDown() // Release.
   }
 
   /** Stop this source and free any resources it has allocated. */
   override def stop(): Unit = {
+    client.disconnect()
+    persistence.close()
+    client.close()
   }
 
   /** Returns the maximum available offset for this source. */
@@ -107,7 +132,6 @@ class MQTTTextStreamSource(brokerUrl: String, persistence: MqttClientPersistence
     val startIndex = start.getOrElse(LongOffset(0L)).asInstanceOf[LongOffset].offset.toInt
     val endIndex = end.asInstanceOf[LongOffset].offset.toInt
     val data: ArrayBuffer[(String, Timestamp)] = ArrayBuffer.empty
-    val consumedMap: TrieMap[Int, (String, Timestamp)] = TrieMap.empty
     // Move consumed messages to persistent store.
     (startIndex + 1 to endIndex).foreach { id =>
       val element: (String, Timestamp) = messages.getOrElse(id, store.retrieve(id))
@@ -154,7 +178,12 @@ class MQTTStreamSourceProvider extends StreamSourceProvider with DataSourceRegis
     val topic: String = parameters.getOrElse("topic",
       throw e("Please specify a topic, by .options(\"topic\",...)"))
 
-    new MQTTTextStreamSource(brokerUrl, persistence, topic,
+    val clientId: String = parameters.getOrElse("clientId", {
+      log.warn("If `clientId` is not set, a random value is picked up." +
+        "\nRecovering from failure is not supported in such a case.")
+      MqttClient.generateClientId()})
+
+    new MQTTTextStreamSource(brokerUrl, persistence, topic, clientId,
       messageParserWithTimeStamp, sqlContext)
   }
 

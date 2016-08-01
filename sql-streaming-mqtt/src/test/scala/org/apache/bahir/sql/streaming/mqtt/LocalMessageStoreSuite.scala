@@ -17,9 +17,7 @@
 
 package org.apache.bahir.sql.streaming.mqtt
 
-import java.io.{File, IOException}
-import java.nio.file.{Files, FileVisitResult, Path, SimpleFileVisitor}
-import java.nio.file.attribute.BasicFileAttributes
+import java.io.File
 
 import org.apache.bahir.utils.BahirUtils
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence
@@ -64,4 +62,12 @@ class LocalMessageStoreSuite extends SparkFunSuite with BeforeAndAfter {
     val result: Seq[Int] = store.retrieve(1)
     assert(testData === result)
   }
+
+  test("Max offset stored") {
+    store.store(1, testData)
+    store.store(10, testData)
+    val offset: Int = store.maxProcessedOffset
+    assert(offset == 10)
+  }
+
 }

@@ -30,17 +30,17 @@ import org.scalatest.BeforeAndAfter
 
 import org.apache.spark.{SharedSparkContext, SparkFunSuite}
 import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.execution.streaming.LongOffset
 
 class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with BeforeAndAfter {
 
   protected var mqttTestUtils: MQTTTestUtils = _
-  private val tempDir: File = new File(System.getProperty("java.io.tmpdir") + "/mqtt-test/")
+  protected val tempDir: File = new File(System.getProperty("java.io.tmpdir") + "/mqtt-test/")
 
   before {
     mqttTestUtils = new MQTTTestUtils(tempDir)
     mqttTestUtils.setup()
     tempDir.mkdirs()
-    tempDir.deleteOnExit()
   }
 
   after {
@@ -50,7 +50,7 @@ class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with B
 
   protected val tmpDir: String = tempDir.getAbsolutePath
 
-  protected def createStreamingDataframe: (SQLContext, DataFrame) = {
+  protected def createStreamingDataframe(dir: String = tmpDir): (SQLContext, DataFrame) = {
 
     val sqlContext: SQLContext = new SQLContext(sc)
 
@@ -58,7 +58,7 @@ class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with B
 
     val dataFrame: DataFrame =
       sqlContext.readStream.format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider")
-        .option("topic", "test").option("localStorage", tmpDir)
+        .option("topic", "test").option("localStorage", dir).option("clientId", "clientId")
         .load("tcp://" + mqttTestUtils.brokerUri)
     (sqlContext, dataFrame)
   }
@@ -68,7 +68,7 @@ class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with B
 class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
 
   private def writeStreamResults(sqlContext: SQLContext,
-                                   dataFrame: DataFrame, waitDuration: Long): Boolean = {
+      dataFrame: DataFrame, waitDuration: Long): Boolean = {
     import sqlContext.implicits._
     dataFrame.as[(String, Timestamp)].writeStream.format("parquet").start(s"$tmpDir/t.parquet")
       .awaitTermination(waitDuration)
@@ -89,7 +89,7 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
 
     mqttTestUtils.publishData("test", sendMessage)
 
-    val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataframe
+    val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataframe()
 
     writeStreamResults(sqlContext, dataFrame, 5000)
 
@@ -105,7 +105,7 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
 
     import scala.concurrent.ExecutionContext.Implicits.global
 
-    val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataframe
+    val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataframe()
 
     Future {
       Thread.sleep(2000)
@@ -143,6 +143,30 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
     }
   }
 
+  test("Recovering offset from the last processed offset.") {
+    val sendMessage = "MQTT is a message queue."
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+
+    val (sqlContext: SQLContext, dataFrame: DataFrame) =
+      createStreamingDataframe()
+
+    Future {
+      Thread.sleep(2000)
+      mqttTestUtils.publishData("test", sendMessage, 100)
+    }
+
+    writeStreamResults(sqlContext, dataFrame, 10000)
+    // On restarting the source with same params, it should begin from the offset - the
+    // previously running stream left off.
+    val provider = new MQTTStreamSourceProvider
+    val parameters = Map("brokerUrl" -> ("tcp://" + mqttTestUtils.brokerUri), "topic" -> "test",
+      "localStorage" -> tmpDir, "clientId" -> "clientId")
+    val offset: Long = provider.createSource(sqlContext, "", None, "", parameters)
+      .getOffset.get.asInstanceOf[LongOffset].offset
+    assert(offset == 100L)
+  }
+
 }
 
 class StressTestMQTTSource extends MQTTStreamSourceSuite {
@@ -160,7 +184,7 @@ class StressTestMQTTSource extends MQTTStreamSourceSuite {
     for (i <- 0 until (500 * 1024)) yield messageBuilder.append(((i % 26) + 65).toChar)
     val sendMessage = messageBuilder.toString() // each message is 50 KB
 
-    val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataframe
+    val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataframe()
 
     import scala.concurrent.ExecutionContext.Implicits.global
     Future {

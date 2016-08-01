@@ -25,11 +25,11 @@ import org.apache.bahir.utils.Logging
 import org.eclipse.paho.client.mqttv3._
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence
 
-class MQTTTestUtils(tempDir: File) extends Logging {
+class MQTTTestUtils(tempDir: File, port: Int = 0) extends Logging {
 
   private val persistenceDir = tempDir.getAbsolutePath
   private val brokerHost = "localhost"
-  private val brokerPort = findFreePort()
+  private val brokerPort: Int = if (port == 0) findFreePort() else port
 
   private var broker: BrokerService = _
   private var connector: TransportConnector = _
