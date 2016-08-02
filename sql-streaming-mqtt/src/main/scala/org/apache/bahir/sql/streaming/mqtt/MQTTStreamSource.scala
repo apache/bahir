@@ -72,7 +72,7 @@ class MQTTTextStreamSource(brokerUrl: String, persistence: MqttClientPersistence
   initialize()
   private def initialize(): Unit = {
 
-    val client = new MqttClient(brokerUrl, clientId, persistence)
+    client = new MqttClient(brokerUrl, clientId, persistence)
     val mqttConnectOptions: MqttConnectOptions = new MqttConnectOptions()
     mqttConnectOptions.setAutomaticReconnect(true)
     // This is required to support recovery. TODO: configurable ?

@@ -68,6 +68,7 @@ private[mqtt] class MqttPersistableData(bytes: Array[Byte]) extends MqttPersista
  */
 private[mqtt] class LocalMessageStore(val persistentStore: MqttClientPersistence,
     val serializer: Serializer) extends MessageStore with Logging {
+
   val classLoader = Thread.currentThread.getContextClassLoader
 
   def this(persistentStore: MqttClientPersistence, conf: SparkConf) =
