@@ -445,7 +445,6 @@
               <exclude>.settings</exclude>
               <exclude>.classpath</exclude>
               <exclude>.project</exclude>
-              <exclude>**/META-INF/**</exclude>
               <exclude>**/dependency-reduced-pom.xml</exclude>
               <exclude>**/target/**</exclude>
               <exclude>**/README.md</exclude>
