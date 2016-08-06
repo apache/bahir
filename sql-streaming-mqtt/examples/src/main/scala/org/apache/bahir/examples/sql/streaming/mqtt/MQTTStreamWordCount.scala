@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.bahir.sql.streaming.mqtt.examples
+package org.apache.bahir.examples.sql.streaming.mqtt
 
 import java.sql.Timestamp
 
