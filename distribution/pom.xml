@@ -44,6 +44,11 @@
         </dependency>
         <dependency>
             <groupId>org.apache.bahir</groupId>
+            <artifactId>spark-sql-streaming-mqtt_${scala.binary.version}</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.bahir</groupId>
             <artifactId>spark-streaming-twitter_${scala.binary.version}</artifactId>
             <version>${project.version}</version>
         </dependency>
