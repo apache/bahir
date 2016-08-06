@@ -15,8 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.bahir.sql.streaming.mqtt.examples;
+package org.apache.bahir.examples.sql.streaming.mqtt;
 
+import org.apache.log4j.Logger;
+import org.apache.log4j.Level;
+import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoders;
@@ -45,13 +48,22 @@ public final class JavaMQTTStreamWordCount {
             System.exit(1);
         }
 
+        if (!Logger.getRootLogger().getAllAppenders().hasMoreElements()) {
+            Logger.getRootLogger().setLevel(Level.WARN);
+        }
+
         String brokerUrl = args[0];
         String topic = args[1];
 
-        SparkSession spark = SparkSession
-                .builder()
-                .appName("JavaMQTTStreamWordCount")
-                .master("local[4]")
+        SparkConf sparkConf = new SparkConf().setAppName("JavaMQTTStreamWordCount");
+
+        // check Spark configuration for master URL, set it to local if not configured
+        if (!sparkConf.contains("spark.master")) {
+            sparkConf.setMaster("local[4]");
+        }
+
+        SparkSession spark = SparkSession.builder()
+                .config(sparkConf)
                 .getOrCreate();
 
         // Create DataFrame representing the stream of input lines from connection to mqtt server
