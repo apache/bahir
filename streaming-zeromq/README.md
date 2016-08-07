@@ -46,4 +46,4 @@ val lines = ZeroMQUtils.createStream(ssc, ...)
 JavaDStream<String> lines = ZeroMQUtils.createStream(jssc, ...);
 ```
 
-See end-to-end examples at ([ZeroMQ Examples](https://github.com/apache/bahir/tree/master/streaming-zeromq/examples)
+See end-to-end examples at [ZeroMQ Examples](https://github.com/apache/bahir/tree/master/streaming-zeromq/examples)

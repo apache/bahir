@@ -70,4 +70,4 @@ JavaStreamingContext jssc = ...;
 JavaDStream<String> lines = AkkaUtils.<String>createStream(jssc, Props.create(CustomActor.class), "CustomReceiver");
 ```
 
-See end-to-end examples at ([Akka Examples](https://github.com/apache/bahir/tree/master/streaming-akka/examples)
+See end-to-end examples at [Akka Examples](https://github.com/apache/bahir/tree/master/streaming-akka/examples)

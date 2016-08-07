@@ -51,4 +51,4 @@ this actor can be configured to handle failures, etc.
 JavaDStream<String> lines = MQTTUtils.createStream(jssc, brokerUrl, topic);
 ```
 
-See end-to-end examples at ([MQTT Examples](https://github.com/apache/bahir/tree/master/streaming-mqtt/examples)
+See end-to-end examples at [MQTT Examples](https://github.com/apache/bahir/tree/master/streaming-mqtt/examples)

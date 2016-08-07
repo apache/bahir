@@ -55,4 +55,4 @@ TwitterUtils.createStream(jssc);
 
 
 You can also either get the public stream, or get the filtered stream based on keywords. 
-See end-to-end examples at ([Twitter Examples](https://github.com/apache/bahir/tree/master/streaming-twitter/examples)
+See end-to-end examples at [Twitter Examples](https://github.com/apache/bahir/tree/master/streaming-twitter/examples)
