@@ -5,26 +5,20 @@ A library for reading social data from [twitter](http://twitter.com/) using Spar
 
 Using SBT:
 
-```
-libraryDependencies += "org.apache.bahir" %% "spark-streaming-twitter" % "2.0.0"
-```
+    libraryDependencies += "org.apache.bahir" %% "spark-streaming-twitter" % "2.0.0"
 
 Using Maven:
 
-```xml
-<dependency>
-    <groupId>org.apache.bahir</groupId>
-    <artifactId>spark-streaming-twitter_2.11</artifactId>
-    <version>2.0.0</version>
-</dependency>
-```
+    <dependency>
+        <groupId>org.apache.bahir</groupId>
+        <artifactId>spark-streaming-twitter_2.11</artifactId>
+        <version>2.0.0</version>
+    </dependency>
 
 This library can also be added to Spark jobs launched through `spark-shell` or `spark-submit` by using the `--packages` command line option.
 For example, to include it when starting the spark shell:
 
-```
-$ bin/spark-shell --packages org.apache.bahir:spark-streaming_twitter_2.11:2.0.0
-```
+    $ bin/spark-shell --packages org.apache.bahir:spark-streaming_twitter_2.11:2.0.0
 
 Unlike using `--jars`, using `--packages` ensures that this library and its dependencies will be added to the classpath.
 The `--packages` argument can also be used with `bin/spark-submit`.
@@ -39,19 +33,15 @@ can be provided by any of the [methods](http://twitter4j.org/en/configuration.ht
 
 ### Scala API
 
-```Scala
-import org.apache.spark.streaming.twitter._
+    import org.apache.spark.streaming.twitter._
 
-TwitterUtils.createStream(ssc, None)
-```
+    TwitterUtils.createStream(ssc, None)
 
 ### Java API
 
-```Java
-import org.apache.spark.streaming.twitter.*;
+    import org.apache.spark.streaming.twitter.*;
 
-TwitterUtils.createStream(jssc);
-```
+    TwitterUtils.createStream(jssc);
 
 
 You can also either get the public stream, or get the filtered stream based on keywords. 
