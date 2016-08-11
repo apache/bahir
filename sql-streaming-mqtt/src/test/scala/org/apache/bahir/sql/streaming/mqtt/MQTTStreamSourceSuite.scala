@@ -59,7 +59,7 @@ class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with B
     val dataFrame: DataFrame =
       sqlContext.readStream.format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider")
         .option("topic", "test").option("localStorage", dir).option("clientId", "clientId")
-        .load("tcp://" + mqttTestUtils.brokerUri)
+        .option("QoS", "2").load("tcp://" + mqttTestUtils.brokerUri)
     (sqlContext, dataFrame)
   }
 

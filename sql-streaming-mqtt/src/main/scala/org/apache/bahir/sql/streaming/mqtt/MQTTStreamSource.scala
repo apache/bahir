@@ -17,6 +17,7 @@
 
 package org.apache.bahir.sql.streaming.mqtt
 
+import java.nio.charset.Charset
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -44,9 +45,31 @@ object MQTTStreamConstants {
     :: StructField("timestamp", TimestampType) :: Nil)
 }
 
+/**
+ * A Text based mqtt stream source, it interprets the payload of each incoming message by converting
+ * the bytes to String using Charset.defaultCharset as charset. Each value is associated with a
+ * timestamp of arrival of the message on the source. It can be used to operate a window on the
+ * incoming stream.
+ *
+ * @param brokerUrl url MqttClient connects to.
+ * @param persistence an instance of MqttClientPersistence. By default it is used for storing
+ *                    incoming messages on disk. If memory is provided as option, then recovery on
+ *                    restart is not supported.
+ * @param topic topic MqttClient subscribes to.
+ * @param clientId clientId, this client is assoicated with. Provide the same value to recover
+ *                 a stopped client.
+ * @param messageParser parsing logic for processing incoming messages from Mqtt Server.
+ * @param sqlContext Spark provided, SqlContext.
+ * @param mqttConnectOptions an instance of MqttConnectOptions for this Source.
+ * @param qos the maximum quality of service to subscribe each topic at.Messages published at
+ *            a lower quality of service will be received at the published QoS. Messages
+ *            published at a higher quality of service will be received using the QoS specified
+ *            on the subscribe.
+ */
 class MQTTTextStreamSource(brokerUrl: String, persistence: MqttClientPersistence,
     topic: String, clientId: String, messageParser: Array[Byte] => (String, Timestamp),
-    sqlContext: SQLContext) extends Source with Logging {
+    sqlContext: SQLContext, mqttConnectOptions: MqttConnectOptions, qos: Int)
+  extends Source with Logging {
 
   override def schema: StructType = MQTTStreamConstants.SCHEMA_DEFAULT
 
@@ -73,10 +96,6 @@ class MQTTTextStreamSource(brokerUrl: String, persistence: MqttClientPersistence
   private def initialize(): Unit = {
 
     client = new MqttClient(brokerUrl, clientId, persistence)
-    val mqttConnectOptions: MqttConnectOptions = new MqttConnectOptions()
-    mqttConnectOptions.setAutomaticReconnect(true)
-    // This is required to support recovery. TODO: configurable ?
-    mqttConnectOptions.setCleanSession(false)
 
     val callback = new MqttCallbackExtended() {
 
@@ -101,7 +120,7 @@ class MQTTTextStreamSource(brokerUrl: String, persistence: MqttClientPersistence
     }
     client.setCallback(callback)
     client.connect(mqttConnectOptions)
-    client.subscribe(topic)
+    client.subscribe(topic, qos)
     // It is not possible to initialize offset without `client.connect`
     offset = fetchLastProcessedOffset()
     initLock.countDown() // Release.
@@ -171,7 +190,8 @@ class MQTTStreamSourceProvider extends StreamSourceProvider with DataSourceRegis
         }
     }
 
-    val messageParserWithTimeStamp = (x: Array[Byte]) => (new String(x), Timestamp.valueOf(
+    val messageParserWithTimeStamp = (x: Array[Byte]) =>
+      (new String(x, Charset.defaultCharset()), Timestamp.valueOf(
       MQTTStreamConstants.DATE_FORMAT.format(Calendar.getInstance().getTime)))
 
     // if default is subscribe everything, it leads to getting lot unwanted system messages.
@@ -183,8 +203,32 @@ class MQTTStreamSourceProvider extends StreamSourceProvider with DataSourceRegis
         "\nRecovering from failure is not supported in such a case.")
       MqttClient.generateClientId()})
 
+    val username: Option[String] = parameters.get("username")
+    val password: Option[String] = parameters.get("password")
+    val connectionTimeout: Int = parameters.getOrElse("connectionTimeout",
+      MqttConnectOptions.CONNECTION_TIMEOUT_DEFAULT.toString).toInt
+    val keepAlive: Int = parameters.getOrElse("keepAlive", MqttConnectOptions
+      .KEEP_ALIVE_INTERVAL_DEFAULT.toString).toInt
+    val mqttVersion: Int = parameters.getOrElse("mqttVersion", MqttConnectOptions
+      .MQTT_VERSION_DEFAULT.toString).toInt
+    val cleanSession: Boolean = parameters.getOrElse("cleanSession", "false").toBoolean
+    val qos: Int = parameters.getOrElse("QoS", "1").toInt
+
+    val mqttConnectOptions: MqttConnectOptions = new MqttConnectOptions()
+    mqttConnectOptions.setAutomaticReconnect(true)
+    mqttConnectOptions.setCleanSession(cleanSession)
+    mqttConnectOptions.setConnectionTimeout(connectionTimeout)
+    mqttConnectOptions.setKeepAliveInterval(keepAlive)
+    mqttConnectOptions.setMqttVersion(mqttVersion)
+    (username, password) match {
+      case (Some(u: String), Some(p: String)) =>
+        mqttConnectOptions.setUserName(u)
+        mqttConnectOptions.setPassword(p.toCharArray)
+      case _ =>
+    }
+
     new MQTTTextStreamSource(brokerUrl, persistence, topic, clientId,
-      messageParserWithTimeStamp, sqlContext)
+      messageParserWithTimeStamp, sqlContext, mqttConnectOptions, qos)
   }
 
   override def shortName(): String = "mqtt"
