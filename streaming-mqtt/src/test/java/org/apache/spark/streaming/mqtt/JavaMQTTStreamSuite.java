@@ -33,5 +33,11 @@ public class JavaMQTTStreamSuite extends LocalJavaStreamingContext {
     JavaReceiverInputDStream<String> test1 = MQTTUtils.createStream(ssc, brokerUrl, topic);
     JavaReceiverInputDStream<String> test2 = MQTTUtils.createStream(ssc, brokerUrl, topic,
       StorageLevel.MEMORY_AND_DISK_SER_2());
+    JavaReceiverInputDStream<String> test3 = MQTTUtils.createStream(ssc, brokerUrl, topic,
+      StorageLevel.MEMORY_AND_DISK_SER_2(), "testid", "user", "password", true, 1, 10, 30, 3);
+    JavaReceiverInputDStream<String> test4 = MQTTUtils.createStream(ssc, brokerUrl, topic,
+      "testid", "user", "password", true, 1, 10, 30, 3);
+    JavaReceiverInputDStream<String> test5 = MQTTUtils.createStream(ssc, brokerUrl, topic,
+      "testid", "user", "password", true);
   }
 }

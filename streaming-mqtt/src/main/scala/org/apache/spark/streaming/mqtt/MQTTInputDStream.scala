@@ -19,10 +19,7 @@ package org.apache.spark.streaming.mqtt
 
 import java.nio.charset.StandardCharsets
 
-import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
-import org.eclipse.paho.client.mqttv3.MqttCallback
-import org.eclipse.paho.client.mqttv3.MqttClient
-import org.eclipse.paho.client.mqttv3.MqttMessage
+import org.eclipse.paho.client.mqttv3._
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 
 import org.apache.spark.storage.StorageLevel
@@ -33,23 +30,39 @@ import org.apache.spark.streaming.receiver.Receiver
 /**
  * Input stream that subscribe messages from a Mqtt Broker.
  * Uses eclipse paho as MqttClient http://www.eclipse.org/paho/
- * @param brokerUrl Url of remote mqtt publisher
- * @param topic topic name to subscribe to
- * @param storageLevel RDD storage level.
+ * @param brokerUrl          Url of remote mqtt publisher
+ * @param topic              topic name to subscribe to
+ * @param storageLevel       RDD storage level.
+ * @param clientId           ClientId to use for the mqtt connection
+ * @param username           Username for authentication to the mqtt publisher
+ * @param password           Password for authentication to the mqtt publisher
+ * @param cleanSession       Sets the mqtt cleanSession parameter
+ * @param qos                Quality of service to use for the topic subscription
+ * @param connectionTimeout  Connection timeout for the mqtt connection
+ * @param keepAliveInterval  Keepalive interal for the mqtt connection
+ * @param mqttVersion        Version to use for the mqtt connection
  */
-
 private[streaming]
 class MQTTInputDStream(
     _ssc: StreamingContext,
     brokerUrl: String,
     topic: String,
-    storageLevel: StorageLevel
+    storageLevel: StorageLevel,
+    clientId: Option[String] = None,
+    username: Option[String] = None,
+    password: Option[String] = None,
+    cleanSession: Option[Boolean] = None,
+    qos: Option[Int] = None,
+    connectionTimeout: Option[Int] = None,
+    keepAliveInterval: Option[Int] = None,
+    mqttVersion: Option[Int] = None
   ) extends ReceiverInputDStream[String](_ssc) {
 
   private[streaming] override def name: String = s"MQTT stream [$id]"
 
   def getReceiver(): Receiver[String] = {
-    new MQTTReceiver(brokerUrl, topic, storageLevel)
+    new MQTTReceiver(brokerUrl, topic, storageLevel, clientId, username, password, cleanSession,
+      qos, connectionTimeout, keepAliveInterval, mqttVersion)
   }
 }
 
@@ -57,7 +70,15 @@ private[streaming]
 class MQTTReceiver(
     brokerUrl: String,
     topic: String,
-    storageLevel: StorageLevel
+    storageLevel: StorageLevel,
+    clientId: Option[String],
+    username: Option[String],
+    password: Option[String],
+    cleanSession: Option[Boolean],
+    qos: Option[Int],
+    connectionTimeout: Option[Int],
+    keepAliveInterval: Option[Int],
+    mqttVersion: Option[Int]
   ) extends Receiver[String](storageLevel) {
 
   def onStop() {
@@ -70,7 +91,25 @@ class MQTTReceiver(
     val persistence = new MemoryPersistence()
 
     // Initializing Mqtt Client specifying brokerUrl, clientID and MqttClientPersistance
-    val client = new MqttClient(brokerUrl, MqttClient.generateClientId(), persistence)
+    val client = new MqttClient(brokerUrl, clientId.getOrElse(MqttClient.generateClientId()),
+                                persistence)
+
+    // Initialize mqtt parameters
+    val mqttConnectionOptions = new MqttConnectOptions()
+    if (username.isDefined && password.isDefined) {
+      mqttConnectionOptions.setUserName(username.get)
+      mqttConnectionOptions.setPassword(password.get.toCharArray)
+    }
+    mqttConnectionOptions.setCleanSession(cleanSession.getOrElse(true))
+    if (connectionTimeout.isDefined) {
+      mqttConnectionOptions.setConnectionTimeout(connectionTimeout.get)
+    }
+    if (keepAliveInterval.isDefined) {
+      mqttConnectionOptions.setKeepAliveInterval(keepAliveInterval.get)
+    }
+    if (mqttVersion.isDefined) {
+      mqttConnectionOptions.setMqttVersion(mqttVersion.get)
+    }
 
     // Callback automatically triggers as and when new message arrives on specified topic
     val callback = new MqttCallback() {
@@ -93,10 +132,10 @@ class MQTTReceiver(
     client.setCallback(callback)
 
     // Connect to MqttBroker
-    client.connect()
+    client.connect(mqttConnectionOptions)
 
     // Subscribe to Mqtt topic
-    client.subscribe(topic)
+    client.subscribe(topic, qos.getOrElse(1))
 
   }
 }
