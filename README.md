@@ -1,6 +1,6 @@
 # Apache Bahir
 
-Apache Bahir provides extensions to distributed analytics platforms such as Apache Spark.
+Apache Bahir provides extensions to distributed analytics platforms such as Apache Spark & Apache Flink.
 
 <http://bahir.apache.org/>
 
