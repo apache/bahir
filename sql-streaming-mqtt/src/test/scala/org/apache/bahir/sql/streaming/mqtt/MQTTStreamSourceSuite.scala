@@ -161,7 +161,7 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
     // previously running stream left off.
     val provider = new MQTTStreamSourceProvider
     val parameters = Map("brokerUrl" -> ("tcp://" + mqttTestUtils.brokerUri), "topic" -> "test",
-      "localStorage" -> tmpDir, "clientId" -> "clientId")
+      "localStorage" -> tmpDir, "clientId" -> "clientId", "QoS" -> "2")
     val offset: Long = provider.createSource(sqlContext, "", None, "", parameters)
       .getOffset.get.asInstanceOf[LongOffset].offset
     assert(offset == 100L)
