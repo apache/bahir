@@ -3,3 +3,16 @@ Copyright (c) 2016 The Apache Software Foundation.
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
+
+
+===================================================================
+The AkkaStreamSuite.scala class was originally contributed to the
+project spark-packages/dstream-akka by Shixiong Zhu
+
+  https://github.com/spark-packages/dstream-akka
+
+  Commit: 19c9a9e136f75a5ceb53bee0172b5719c6e7e626
+  Author: Shixiong Zhu <zsxwing@gmail.com>
+  Date:   Fri Mar 18 13:17:06 2016 -0700
+
+===================================================================
