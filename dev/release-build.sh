@@ -64,6 +64,7 @@ release-build.sh --release-prepare --releaseVersion="2.0.0" --developmentVersion
 release-build.sh --release-prepare --releaseVersion="2.0.0" --developmentVersion="2.1.0-SNAPSHOT" --releaseRc="rc1" --tag="v2.0.0"  --gitCommitHash="a874b73" --dryRun
 
 release-build.sh --release-publish --gitCommitHash="a874b73"
+release-build.sh --release-publish --gitTag="v2.0.0rc1"
 
 release-build.sh --release-snapshot
 release-build.sh --release-snapshot --gitCommitHash="a874b73"
@@ -100,6 +101,10 @@ while [ "${1+defined}" ]; do
       ;;
     --gitCommitHash)
       GIT_REF="${PARTS[1]}"
+      shift
+      ;;
+    --gitTag)
+      GIT_TAG="${PARTS[1]}"
       shift
       ;;
     --releaseVersion)
@@ -155,9 +160,15 @@ if [[ "$RELEASE_PREPARE" == "true" && -z "$DEVELOPMENT_VERSION" ]]; then
     exit_with_usage
 fi
 
-if [[ "$RELEASE_PUBLISH" == "true" && -z "$GIT_REF" ]]; then
-    echo "ERROR: --gitCommitHash must be passed as an argument to run this script"
-    exit_with_usage
+if [[ "$RELEASE_PUBLISH" == "true"  ]]; then
+    if [[ "$GIT_REF" && "$GIT_TAG" ]]; then
+        echo "ERROR: Only one argumented permitted when publishing : --gitCommitHash or --gitTag"
+        exit_with_usage
+    fi
+    if [[ -z "$GIT_REF" && -z "$GIT_TAG" ]]; then
+        echo "ERROR: --gitCommitHash OR --gitTag must be passed as an argument to run this script"
+        exit_with_usage
+    fi
 fi
 
 if [[ "$RELEASE_PUBLISH" == "true" && "$DRY_RUN" ]]; then
@@ -172,6 +183,9 @@ fi
 
 # Commit ref to checkout when building
 GIT_REF=${GIT_REF:-master}
+if [[ "$RELEASE_PUBLISH" == "true" && "$GIT_TAG" ]]; then
+    GIT_REF="tags/$GIT_TAG"
+fi
 
 BASE_DIR=$(pwd)
 
