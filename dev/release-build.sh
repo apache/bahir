@@ -281,11 +281,13 @@ if [[ "$RELEASE_PUBLISH" == "true" ]]; then
     cd target/bahir
 
     #Deploy default scala 2.11
-    mvn -DaltDeploymentRepository=apache.releases.https::default::https://repository.apache.org/service/local/staging/deploy/maven2 clean verify gpg:sign install:install deploy:deploy -DskiptTests -Dgpg.passphrase=$GPG_PASSPHRASE $PUBLISH_PROFILES
+    mvn $PUBLISH_PROFILES -DaltDeploymentRepository=apache.releases.https::default::https://repository.apache.org/service/local/staging/deploy/maven2 clean package gpg:sign install:install deploy:deploy -DskiptTests -Darguments="-DskipTests" -Dgpg.passphrase=$GPG_PASSPHRASE
+
+    mvn clean
 
     #Deploy scala 2.10
     ./dev/change-scala-version.sh 2.10
-    mvn -DaltDeploymentRepository=apache.releases.https::default::https://repository.apache.org/service/local/staging/deploy/maven2 clean verify gpg:sign install:install deploy:deploy -DskiptTests -Dscala-2.10 -Dgpg.passphrase=$GPG_PASSPHRASE $PUBLISH_PROFILES
+    mvn $PUBLISH_PROFILES -DaltDeploymentRepository=apache.releases.https::default::https://repository.apache.org/service/local/staging/deploy/maven2 clean package gpg:sign install:install deploy:deploy -DskiptTests -Darguments="-DskipTests" -Dscala-2.10 -Dgpg.passphrase=$GPG_PASSPHRASE
 
     cd "$BASE_DIR" #exit target
 
@@ -311,11 +313,11 @@ if [[ "$RELEASE_SNAPSHOT" == "true" ]]; then
     fi
 
     #Deploy default scala 2.11
-    $MVN -DaltDeploymentRepository=apache.snapshots.https::default::https://repository.apache.org/content/repositories/snapshots clean verify gpg:sign install:install deploy:deploy -DskiptTests -Dgpg.passphrase=$GPG_PASSPHRASE $PUBLISH_PROFILES
+    $MVN $PUBLISH_PROFILES -DaltDeploymentRepository=apache.snapshots.https::default::https://repository.apache.org/content/repositories/snapshots clean package gpg:sign install:install deploy:deploy -DskiptTests -Darguments="-DskipTests" -Dgpg.passphrase=$GPG_PASSPHRASE
 
     #Deploy scala 2.10
     ./dev/change-scala-version.sh 2.10
-    $MVN -DaltDeploymentRepository=apache.snapshots.https::default::https://repository.apache.org/content/repositories/snapshots clean verify gpg:sign install:install deploy:deploy -DskiptTests -Dscala-2.10 -Dgpg.passphrase=$GPG_PASSPHRASE $PUBLISH_PROFILES
+    $MVN $PUBLISH_PROFILES -DaltDeploymentRepository=apache.snapshots.https::default::https://repository.apache.org/content/repositories/snapshots clean package gpg:sign install:install deploy:deploy -DskiptTests -Darguments="-DskipTests" -Dscala-2.10 -Dgpg.passphrase=$GPG_PASSPHRASE
 
     cd "$BASE_DIR" #exit target
     exit 0
