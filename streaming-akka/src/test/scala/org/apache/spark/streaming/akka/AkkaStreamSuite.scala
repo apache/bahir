@@ -52,6 +52,9 @@ class AkkaStreamSuite extends SparkFunSuite with Eventually with BeforeAndAfter 
     val sparkConf = new SparkConf().setMaster("local[4]").setAppName(this.getClass.getSimpleName)
     ssc = new StreamingContext(sparkConf, Milliseconds(500))
 
+    // we set the TCP port to "0" to have the port chosen automatically for the Feeder actor and
+    // the Receiver actor will "pick it up" from the Feeder URI when it subscribes to the Feeder
+    // actor (http://doc.akka.io/docs/akka/2.3.11/scala/remoting.html)
     val akkaConf = ConfigFactory.parseMap(
       Map(
         "akka.actor.provider" -> "akka.remote.RemoteActorRefProvider",
