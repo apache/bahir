@@ -80,6 +80,7 @@
     <module>sql-streaming-mqtt</module>
     <module>streaming-twitter</module>
     <module>streaming-zeromq</module>
+    <module>datasource-webhdfs</module>
   </modules>
 
   <properties>
