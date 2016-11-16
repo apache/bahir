@@ -4,7 +4,9 @@ A custom data source to read and write data from and to remote HDFS clusters usi
 
 Using SBT:
 
-    libraryDependencies += "org.apache.bahir" %% "spark-datasource-webhdfs" % "2.1.0-SNAPSHOT"
+```scala
+libraryDependencies += "org.apache.bahir" %% "spark-datasource-webhdfs" % "2.1.0-SNAPSHOT"
+```
 
 Using Maven:
 
