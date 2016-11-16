@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
+package org.apache.bahir.datasource
 
-package org.apache.bahir.datasource.webhdfs
-
-
+/*
+ * WebHDFS data source for Apache Spark
+ */
 package object webhdfs {
 
 }
