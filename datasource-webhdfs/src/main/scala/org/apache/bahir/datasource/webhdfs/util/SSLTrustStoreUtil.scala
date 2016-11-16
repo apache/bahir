@@ -17,60 +17,54 @@
 
 package org.apache.bahir.datasource.webhdfs.util
 
-import java.security._
-import javax.net.ssl.TrustManagerFactory
 import java.io._
-import javax.net.ssl.SSLSocketFactory
-import javax.net.ssl.SSLContext
+
 import scala.collection.mutable.HashMap
-import sys.process._
+import scala.sys.process._
 
 /**
-	* This Singleton is used to generate SSLTrustStore certification once. The assumption behind use of this trust store is that this code would be executed on a machine which would be accessible from all Spark executors which need to access the trust store
-**/
+ * This Singleton is used to generate SSLTrustStore certification once. The assumption behind use of
+ * this trust store is that this code would be executed on a machine which would be accessible from
+ * all Spark executors which need to access the trust store
+ */
+object SSLTrustStore {
 
-object SSLTrustStore{
+  var trustStoreFileMap: HashMap[String, File] = HashMap()
 
-    	var trustStoreFileMap : HashMap[String, File] = HashMap()
+  /**
+   * This function checks the availability of truststore for a particular site. If not it creates
+   * a new one.
+   */
+  def getCertDetails(path: String): Tuple2[File, String] = {
 
-	/**
-		* This function checks the availability of truststore for a particular site. If not it creates a new one.
-	**/
+    val pathComp = path.split("/")
 
+    val srvr = pathComp(2)
 
-	def  getCertDetails(path: String): Tuple2[File, String] = {
+    val trustStorePword = "ts-password"
 
-		val pathComp = path.split("/")
+    val currDir = ("pwd" !!).trim
+    val trustStore = currDir + "/" + srvr + "_trustStore.jks"
 
-		val srvr = pathComp(2)
+    val os = new java.io.ByteArrayOutputStream
 
-		val trustStorePword = "ts-password"
+    val tsExist = (s"ls $trustStore" #> os).!
 
-		val currDir = ("pwd" !!).trim
-		val trustStore = currDir + "/" + srvr + "_trustStore.jks"
-			
-		val os   = new java.io.ByteArrayOutputStream
+    val f = if (tsExist == 0) {
+      print("Using Existing Trust Store for SSL" + "\n")
+      new java.io.File(trustStore)
+    }
+    else {
+      val cert = srvr + "_cert"
+      val cfl = new File(cert)
 
-		val tsExist = (s"ls $trustStore" #> os ).!
-		
-		val f = if (tsExist == 0)
-		{
-				
-			print("Using Existing Trust Store for SSL" +  "\n")	
-			new java.io.File(trustStore)
-		}
-		else {
-			val cert = srvr + "_cert"
-			val cfl = new File(cert)
+      (s"openssl s_client -showcerts -connect $srvr" #| "openssl x509 -outform PEM" #> cfl).!
+      (s"keytool -import -trustcacerts -alias hadoop -file $cert -keystore $trustStore" +
+        s" -storepass $trustStorePword -noprompt").!
+      (s"rm -f $cert").!
+      new java.io.File(trustStore)
+    }
 
-			(s"openssl s_client -showcerts -connect $srvr" #| "openssl x509 -outform PEM" #> cfl).! 
-			(s"keytool -import -trustcacerts -alias hadoop -file $cert -keystore $trustStore -storepass $trustStorePword -noprompt").!
-			(s"rm -f $cert").!
-			new java.io.File(trustStore)
-		}
-
-		new Tuple2(f, trustStorePword)
-
-	}
-
+    new Tuple2(f, trustStorePword)
+  }
 }

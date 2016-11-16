@@ -19,14 +19,13 @@ package org.apache.bahir.datasource.webhdfs.csv
 
 
 /**
-	* This object contains all utility functions  needed for determining CSV parser lib
-	* This is copied from com.databricks.spark.csv.util as the required object could not be reused as it is declared as private
-*/
-
+ * This object contains all utility functions  needed for determining CSV parser lib
+ * This is copied from com.databricks.spark.csv.util as the required object could not be reused as
+ * it is declared as private
+ */
 private[webhdfs] object WebHdfsCsvParserLibs {
   val OLD = "COMMONS"
   val NEW = "UNIVOCITY"
-
   val DEFAULT = OLD
 
   def isValidLib(lib: String): Boolean = {

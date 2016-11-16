@@ -20,18 +20,17 @@ package org.apache.bahir.datasource.webhdfs.util
 
 import java.math.BigDecimal
 import java.sql.{Date, Timestamp}
-import java.text.{SimpleDateFormat, NumberFormat}
+import java.text.{NumberFormat, SimpleDateFormat}
 import java.util.Locale
 
-import org.apache.spark.sql.types._
-
 import scala.util.Try
+
+import org.apache.spark.sql.types._
 
 /**
  * Utility functions for type casting
  * Copied from com.databricks.spark.csv.util package as there was now way to reuse this object
-*/
-
+ */
 object WebHdfsTypeCast {
 
   /**
@@ -41,23 +40,23 @@ object WebHdfsTypeCast {
    * For string types, this is simply the datum. For other types.
    * For other nullable types, this is null if the string datum is empty.
    *
-   * @param datum string value
+   * @param datum    string value
    * @param castType SparkSQL type
    */
-  private[webhdfs] def castTo(
-      datum: String,
-      castType: DataType,
-      nullable: Boolean = true,
-      treatEmptyValuesAsNulls: Boolean = false,
-      nullValue: String = "",
-      dateFormatter: SimpleDateFormat = null): Any = {
+  private[webhdfs] def castTo(datum: String,
+                              castType: DataType,
+                              nullable: Boolean = true,
+                              treatEmptyValuesAsNulls: Boolean = false,
+                              nullValue: String = "",
+                              dateFormatter: SimpleDateFormat = null): Any = {
+
     // if nullValue is not an empty string, don't require treatEmptyValuesAsNulls
     // to be set to true
     val nullValueIsNotEmpty = nullValue != ""
     if (datum == nullValue &&
       nullable &&
       (!castType.isInstanceOf[StringType] || treatEmptyValuesAsNulls || nullValueIsNotEmpty)
-      ){
+    ) {
       null
     } else {
       castType match {

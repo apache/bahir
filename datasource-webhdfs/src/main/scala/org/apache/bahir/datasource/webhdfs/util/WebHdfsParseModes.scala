@@ -15,34 +15,33 @@
  * limitations under the License.
  */
 
-
 package org.apache.bahir.datasource.webhdfs.util
 
 /**
  * Utility functions for mode of Parsing
  * Copied from com.databricks.spark.csv.util package as there was now way to reuse this object
-*/
-
+ */
 private[webhdfs] object WebHdfsParseModes {
 
   val PERMISSIVE_MODE = "PERMISSIVE"
   val DROP_MALFORMED_MODE = "DROPMALFORMED"
   val FAIL_FAST_MODE = "FAILFAST"
-
   val DEFAULT = PERMISSIVE_MODE
+
+  def isDropMalformedMode(mode: String): Boolean = mode.toUpperCase == DROP_MALFORMED_MODE
+
+  def isFailFastMode(mode: String): Boolean = mode.toUpperCase == FAIL_FAST_MODE
+
+  def isPermissiveMode(mode: String): Boolean = if (isValidMode(mode)) {
+    mode.toUpperCase == PERMISSIVE_MODE
+  } else {
+    true // We default to permissive is the mode string is not valid
+  }
 
   def isValidMode(mode: String): Boolean = {
     mode.toUpperCase match {
       case PERMISSIVE_MODE | DROP_MALFORMED_MODE | FAIL_FAST_MODE => true
       case _ => false
     }
-  }
-
-  def isDropMalformedMode(mode: String): Boolean = mode.toUpperCase == DROP_MALFORMED_MODE
-  def isFailFastMode(mode: String): Boolean = mode.toUpperCase == FAIL_FAST_MODE
-  def isPermissiveMode(mode: String): Boolean = if (isValidMode(mode))  {
-    mode.toUpperCase == PERMISSIVE_MODE
-  } else {
-    true // We default to permissive is the mode string is not valid
   }
 }

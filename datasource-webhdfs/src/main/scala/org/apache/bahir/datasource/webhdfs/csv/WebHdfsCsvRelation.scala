@@ -15,34 +15,31 @@
  * limitations under the License.
  */
 
-
-
 package org.apache.bahir.datasource.webhdfs.csv
 
-import java.io.IOException
+
 import java.text.SimpleDateFormat
 
+// TODO: use scala.collection.JavaConverters instead of implicit JavaConversions
+// scalastyle:off javaconversions
 import scala.collection.JavaConversions._
+// scalastyle:on
 import scala.util.control.NonFatal
 
-import org.apache.commons.csv.{CSVFormat, QuoteMode}
-import org.apache.commons.csv._
+import org.apache.bahir.datasource.webhdfs.util._
+import org.apache.commons.csv.{CSVFormat, CSVParser}
 import org.slf4j.LoggerFactory
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql._
-import org.apache.spark.sql.sources.{PrunedScan, BaseRelation, InsertableRelation, TableScan}
-import org.apache.spark.sql.types._
+import org.apache.spark.sql.{Row, SQLContext}
+import org.apache.spark.sql.sources.{BaseRelation, PrunedScan, TableScan}
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 
-
-import org.apache.bahir.datasource.webhdfs.util._
-
-/* 
-	* This class contains functions for  converting RDD to csv data source
-	* This is copied from com.databricks.spark.csv as the required object could not be reused as it is declared as private
-*/
-
-
+/**
+ * This class contains functions for  converting RDD to csv data source
+ * This is copied from com.databricks.spark.csv as the required object could not be reused as it is
+ * declared as private
+ */
 case class WebHdfsCsvRelation protected[webhdfs] (
     baseRDD: () => RDD[String],
     location: Option[String],
@@ -74,7 +71,8 @@ case class WebHdfsCsvRelation protected[webhdfs] (
     logger.warn(s"$parseMode is not a valid parse mode. Using ${WebHdfsParseModes.DEFAULT}.")
   }
 
-  if ((ignoreLeadingWhiteSpace || ignoreLeadingWhiteSpace) && WebHdfsCsvParserLibs.isCommonsLib(parserLib)) {
+  if ((ignoreLeadingWhiteSpace || ignoreLeadingWhiteSpace)
+      && WebHdfsCsvParserLibs.isCommonsLib(parserLib)) {
     logger.warn(s"Ignore white space options may not work with Commons parserLib option")
   }
 
