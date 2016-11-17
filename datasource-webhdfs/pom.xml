@@ -25,7 +25,8 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>datasource-webhdfs_2.11</artifactId>
+  <groupId>org.apache.bahir</groupId>
+  <artifactId>spark-datasource-webhdfs_2.11</artifactId>
   <properties>
     <sbt.project.name>datasource-webhdfs</sbt.project.name>
   </properties>

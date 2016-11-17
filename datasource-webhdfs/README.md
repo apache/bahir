@@ -8,7 +8,7 @@ Using SBT:
 libraryDependencies += "org.apache.bahir" %% "spark-datasource-webhdfs" % "2.1.0-SNAPSHOT"
 ```
 
-Using Maven:
+Using Maven (Scala version 2.11):
 
 ```xml
 <dependency>
@@ -21,12 +21,14 @@ Using Maven:
 This library can also be added to Spark jobs launched through `spark-shell` or `spark-submit` by using the `--packages` command line option.
 For example, to include it when starting the spark shell:
 
-    $ bin/spark-shell --packages org.apache.bahir:spark-datasource-webhdfs_2.11:2.1.0-SNAPSHOT
+```Shell
+$ bin/bin/spark-shell --packages org.apache.bahir:spark-datasource-webhdfs_2.11:2.1.0-SNAPSHOT
+```
 
 Unlike using `--jars`, using `--packages` ensures that this library and its dependencies will be added to the classpath.
 The `--packages` argument can also be used with `bin/spark-submit`.
 
-This library is compiled for Scala 2.11 only, and intends to support Spark 2.0 onwards.
+This library is compiled for Scala 2.10 and 2.11, and intended to support Spark 2.0 onwards.
 
 ## Examples
 
