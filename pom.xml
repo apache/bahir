@@ -449,6 +449,7 @@
               <exclude>**/target/**</exclude>
               <exclude>**/README.md</exclude>
               <exclude>**/examples/data/*.txt</exclude>
+              <exclude>**/*.iml</exclude>
             </excludes>
           </configuration>
         </plugin>
