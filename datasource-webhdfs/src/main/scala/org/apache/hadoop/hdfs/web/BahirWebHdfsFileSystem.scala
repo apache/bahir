@@ -15,15 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.hdfs.web.bahir
+package org.apache.hadoop.hdfs.web
 
 import java.net.URL
 
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.hdfs.web.WebHdfsFileSystem
 import org.apache.hadoop.hdfs.web.resources.HttpOpParam.Op
 import org.apache.hadoop.hdfs.web.resources.Param
-import org.apache.hadoop.io.Text
 
 /**
  * A FileSystem for HDFS over the web, extending [[org.apache.hadoop.hdfs.web.WebHdfsFileSystem]]
