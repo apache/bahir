@@ -22,15 +22,14 @@ import java.security._
 import javax.net.ssl.{SSLContext, SSLSocketFactory, TrustManagerFactory}
 
 import scala.annotation.switch
-import scalaj.http._
 
+import scalaj.http.{Http, HttpOptions}
 
 /**
  * This object contains all utility functions for reading/writing data from/to remote webhdfs
  * server. The abstraction maintained in this layer is at the level of RDD
  */
 object  WebHdfsConnector {
-
 
   /*
    * This function returns a Tuple for credential store which contains flag for validating
@@ -56,7 +55,8 @@ object  WebHdfsConnector {
 
 
   /**
-   * This function returns a SSLSocketFactory which needs to be used in HTTP connection library in case Certificate to be validated
+   * This function returns a SSLSocketFactory which needs to be used in HTTP connection library in
+   * case Certificate to be validated
    */
   def biocSslSocketFactory(fl: File, pswrd: String): SSLSocketFactory = {
     val tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
@@ -75,7 +75,8 @@ object  WebHdfsConnector {
   //  /**
   //    * This function returns the list of files in a folder with file details as RDD
   //   */
-  //  def listFromWebHdfs(sc: SparkContext, path: String,  trustStoreCred: String, userCred: String, connProp: String): RDD[String]  = {
+  //  def listFromWebHdfs(sc: SparkContext, path: String,  trustStoreCred: String, userCred: String,
+  // connProp: String): RDD[String]  = {
   //
   //
   //
@@ -89,7 +90,8 @@ object  WebHdfsConnector {
   //
   //    val fileDetails = getFilesDetails(path, trustCred, usrCred, conn)
   //
-  //    def g(v:Tuple4[String, Long, Long, Int]) = v._1.split("/").last + "," + v._2.toString + "," +  v._3.toString + "," +  v._4.toString + "\n"
+  //    def g(v:Tuple4[String, Long, Long, Int]) = v._1.split("/").last + "," +
+  // v._2.toString + "," +  v._3.toString + "," +  v._4.toString + "\n"
   //
   //    val fds = fileDetails.map(x => g(x))
   //
@@ -100,9 +102,11 @@ object  WebHdfsConnector {
   //  }
   //
   //  /**
-  //   * This function writes data back to hdfs using WebHDFS using multiple parallel connections. Right now file overwrite is not supported
+  //   * This function writes data back to hdfs using WebHDFS using multiple parallel connections.
+  // Right now file overwrite is not supported
   //   */
-  //  def writeToWebHdfs(dataToWrite: RDD[String] ,path: String, trustStoreCredStr: String, connStr : String, userCredStr : String, partitionStr : String): Unit = {
+  //  def writeToWebHdfs(dataToWrite: RDD[String] ,path: String, trustStoreCredStr: String,
+  // connStr : String, userCredStr : String, partitionStr : String): Unit = {
   //
   //    val trustCred = createTrustStoreCredForExecutors(trustStoreCredStr, path)
   //
@@ -113,7 +117,8 @@ object  WebHdfsConnector {
   //    val usr = userCredStr.split(":")
   //
   //           val webHdfsChkDirOpr = "op=GETFILESTATUS"
-  //    val returnChkDir = callWebHdfsAPI(path, "", "GET", "CODE", trustCred, usr, conn, webHdfsChkDirOpr)
+  //    val returnChkDir = callWebHdfsAPI(path, "", "GET", "CODE", trustCred, usr, conn,
+  // webHdfsChkDirOpr)
   //
   //    if (returnChkDir == "200")
   //            throw new Exception("The File Already Exists : " + path + "\n")
@@ -123,16 +128,20 @@ object  WebHdfsConnector {
   //    val textRdd = dataToWrite.repartition(dPartitions)
   //
   //           val webHdfsMakeDirOpr = "op=MKDIRS"
-  //    val returnCreateDir = callWebHdfsAPI(path, "", "PUT", "CODE", trustCred, usr, conn, webHdfsMakeDirOpr)
+  //    val returnCreateDir = callWebHdfsAPI(path, "", "PUT", "CODE", trustCred, usr, conn,
+  // webHdfsMakeDirOpr)
   //
-  //    textRdd.mapPartitionsWithIndex((idx, iter) => WebHdfsConnector.saveAllFiles(idx, iter, usr, path, trustCred, conn)).collect()
+  //    textRdd.mapPartitionsWithIndex((idx, iter) => WebHdfsConnector.saveAllFiles(idx, iter, usr,
+  // path, trustCred, conn)).collect()
   //
   //  }
   //
   //  /**
-  //    * This function is passed to mapPartitionsWithIndex so that each executor task can save part of the data using separate connection
+  //    * This function is passed to mapPartitionsWithIndex so that each executor task can save part
+  // of the data using separate connection
   //    */
-  //  def saveAllFiles (idx: Int, data : Iterator[String], usrCred: Array[String], path: String, trustCred: Tuple3[String, File , String], connProp: Array[Int]): Iterator[String]  = {
+  //  def saveAllFiles (idx: Int, data : Iterator[String], usrCred: Array[String], path: String,
+  // trustCred: Tuple3[String, File , String], connProp: Array[Int]): Iterator[String]  = {
   //
   //
   //    var dataP = data.next()
@@ -147,8 +156,10 @@ object  WebHdfsConnector {
   //
   //           val createOpr = "op=CREATE"
   //
-  //    val createUrl = callWebHdfsAPI(filePath, "", "PUT", "LOCATION", trustCred, usrCred, connProp, createOpr)
-  //    val created = callWebHdfsAPI(createUrl, dataP, "PUT", "CODE", trustCred, usrCred, connProp, createOpr)
+  //    val createUrl = callWebHdfsAPI(filePath, "", "PUT", "LOCATION", trustCred, usrCred,
+  // connProp, createOpr)
+  //    val created = callWebHdfsAPI(createUrl, dataP, "PUT", "CODE", trustCred, usrCred, connProp,
+  // createOpr)
   //
   //    val ret = Array(created.toString)
   //    ret.iterator

@@ -53,8 +53,8 @@ class BahirWebHdfsFileSystem extends FileSystem {
 
 
   /**
-    * This method does necessary initialization of the configuration parameters
-    */
+   * This method does necessary initialization of the configuration parameters
+   */
   override def initialize(uriOrg: URI,
                           confOrg: Configuration): Unit = {
 
