@@ -18,10 +18,13 @@
 package org.apache.hadoop.hdfs.web
 
 import java.net.URL
+import java.net.URI
 
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hdfs.web.resources.HttpOpParam.Op
 import org.apache.hadoop.hdfs.web.resources.Param
+
+import org.apache.hadoop.conf.Configuration
 
 /**
  * A FileSystem for HDFS over the web, extending [[org.apache.hadoop.hdfs.web.WebHdfsFileSystem]]
@@ -36,13 +39,31 @@ class BahirWebHdfsFileSystem extends WebHdfsFileSystem {
   // TODO: gateway path should be configurable
   val gatewayPath = "/gateway/default"
 
+ 	var uri:URI = null
+ 	var rHdfsUri:URI = null
+ 	var conf:Configuration = null
 
-  override def toUrl(op: Op, fspath: Path, parameters: Param[_, _]*): URL = {
-    val url = super.toUrl(op, fspath, parameters: _*)
+	override def initialize(
+      		uriOrg: URI,
+      		confOrg: Configuration): Unit = {
+	
+		super.initialize(uriOrg, confOrg)
 
-    new URL(url.getProtocol, url.getHost, url.getPort,
-      url.getFile.replaceFirst(WebHdfsFileSystem.PATH_PREFIX,
-        gatewayPath + WebHdfsFileSystem.PATH_PREFIX))
-  }
+		uri = URI.create(uriOrg.getScheme() + "://" + uriOrg.getAuthority()+"/gateway/default")	
+		print("uri in initialize : " +  uri + "\n")
+
+  	}
+
+  	//override def toUrl(op: HttpOpParam.Op, fspath: Path, parameters: Param[_, _]*): URL = {
+  	override def toUrl(op: Op, fspath: Path, parameters: Param[_, _]*): URL = {
+    		var url = super.toUrl(op, fspath, parameters: _*)
+    		url = new URL("http://www.google.com")
+
+		print("url in overriden toUrl: " + url + "\n")
+
+    		new URL("https", url.getHost, url.getPort,
+      			url.getFile.replaceFirst(WebHdfsFileSystem.PATH_PREFIX,
+        		gatewayPath + WebHdfsFileSystem.PATH_PREFIX))
+  	}
 
 }
