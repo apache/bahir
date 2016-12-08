@@ -86,8 +86,7 @@ class BahirWebHdfsFileSystem extends FileSystem {
     uri = URI.create(uriOrg.getScheme() + "://" + uriOrg.getAuthority())
 
     // scalastyle:off println
-    println("BahirWebHdfsFileSystem: uri=", uri +  ", connections=" + connections +
-      ", usercred=" + usrCred)
+    println(s"BahirWebHdfsFileSystem: uri=${uri}, connections=${connections}, usercred=${usrCred}")
     // scalastyle:on println
 
   }
