@@ -36,6 +36,10 @@ import org.apache.hadoop.util.Progressable
  */
 class BahirWebHdfsFileSystem extends FileSystem {
 
+  // scalastyle:off println
+  println(s" - - - BahirWebHdfsFileSystem class loaded - - - ")
+  // scalastyle:on println
+
   var uri: URI = null
   var rHdfsUri: URI = null
   var conf: Configuration = null
@@ -80,7 +84,11 @@ class BahirWebHdfsFileSystem extends FileSystem {
     certValidation = if (certFlg == null) "Y" else certFlg.toString
 
     uri = URI.create(uriOrg.getScheme() + "://" + uriOrg.getAuthority())
-    // println("uri: ", uri +  " , connections: " + connections + " , user cred: " + usrCred)
+
+    // scalastyle:off println
+    println("BahirWebHdfsFileSystem: uri=", uri +  ", connections=" + connections +
+      ", usercred=" + usrCred)
+    // scalastyle:on println
 
   }
 
