@@ -34,11 +34,11 @@ import org.apache.hadoop.util.Progressable
  * This class contains functions for reading/writing data from/to remote webhdfs server in Spark
  * DataSource
  */
+// TODO: reenable scalastyle checks
+// scalastyle:off println
 class BahirWebHdfsFileSystem extends FileSystem {
 
-  // scalastyle:off println
   println(s" - - - BahirWebHdfsFileSystem class loaded - - - ")
-  // scalastyle:on println
 
   var uri: URI = null
   var rHdfsUri: URI = null
@@ -85,10 +85,7 @@ class BahirWebHdfsFileSystem extends FileSystem {
 
     uri = URI.create(uriOrg.getScheme() + "://" + uriOrg.getAuthority())
 
-    // scalastyle:off println
     println(s"BahirWebHdfsFileSystem: uri=${uri}, connections=${connections}, usercred=${usrCred}")
-    // scalastyle:on println
-
   }
 
   override def getWorkingDirectory(): Path = {
@@ -128,7 +125,7 @@ class BahirWebHdfsFileSystem extends FileSystem {
     println("In bahir after checking filestatus map  - : " + fStatus)
 
     val fileStatus = if (fStatus == null) {
-    	println("In bahir before calling webhdfsconnector  : ")
+      println("In bahir before calling webhdfsconnector  : ")
       val fStatusMap = WebHdfsConnector.getFileStatus(file, certValidation, "1000:5000", usrCred)
       fStatus = createFileStatus(f, fStatusMap)
       fileStatusMap.put(f.toString, fStatus)
@@ -246,8 +243,8 @@ class BahirWebHdfsFileSystem extends FileSystem {
                       blockSize: Long,
                       progress: Progressable): FSDataOutputStream = {
 
-    new FSDataOutputStream(new BahirWebHdfsOutputStream(srcPath, bufferSize, blockSize, permission.toString, replication,
-      overwriteFlg, usrCred, certValidation), null)
+    new FSDataOutputStream(new BahirWebHdfsOutputStream(srcPath, bufferSize, blockSize,
+      permission.toString, replication, overwriteFlg, usrCred, certValidation), null)
   }
 
   private def getQryMapFromFilePath(f: Path): HashMap[String, String] = {
@@ -313,7 +310,7 @@ class BahirWebHdfsInputStream(fPath: Path,
   }
 
   override def read(b: Array[Byte], offset: Int, length: Int): Int = {
-    //if (in == null) createWebHdfsInputStream(pos)
+//    if (in == null) createWebHdfsInputStream(pos)
     callCount += 1
     var bCount = in.read(b, offset, length)
 
@@ -377,13 +374,13 @@ class BahirWebHdfsInputStream(fPath: Path,
 
 
 class BahirWebHdfsOutputStream(fPath: Path,
-                              bufferSz: Int,
-                              blockSz: Long,
-                              permissionStr: String,
-                              replicationCnt: Short,
-			      overwriteFlg: Boolean,
-                              usrCrd: String,
-                              certValidation: String)
+                               bufferSz: Int,
+                               blockSz: Long,
+                               permissionStr: String,
+                               replicationCnt: Short,
+                               overwriteFlg: Boolean,
+                               usrCrd: String,
+                               certValidation: String)
   extends OutputStream {
 
   val filePath: Path = fPath
@@ -399,31 +396,27 @@ class BahirWebHdfsOutputStream(fPath: Path,
   override def write(b: Int): Unit = {
 
     println("in write single byte: " + b)
-    val singleByte : Array[Byte] = new Array(b)(1)	
+    val singleByte : Array[Byte] = new Array(b)(1)
     writeBytes(singleByte)
   }
 
   override def write(b: Array[Byte]): Unit = {
-
     println("in write bytes ")
     writeBytes(b)
-
   }
 
   override def write(b: Array[Byte], offset: Int, length: Int): Unit = {
-
     println("in write bytes with offset and length : " + offset + " , " + length)
     writeBytes(b)
-
   }
 
   private def writeBytes(b: Array[Byte]): Unit = {
-
     println("in provate write bytes ")
-    WebHdfsConnector.writeFile(b, filePath.toString(), permissionStr, overwriteFlg, bufferSize, replication, blockSize, certValidation, "1000:5000", usrCred)
-
+    WebHdfsConnector.writeFile(b, filePath.toString(), permissionStr, overwriteFlg, bufferSize,
+      replication, blockSize, certValidation, "1000:5000", usrCred)
   }
 
 }
-
+// TODO: reenable scalastyle checks
+// scalastyle:on println
 
