@@ -98,18 +98,26 @@ class BahirWebHdfsFileSystem extends FileSystem {
   override def setWorkingDirectory(dir: Path): Unit = {}
 
   override def rename(srcPath: Path, destPath: Path): Boolean = {
-    throw new Exception("File Rename Not Supported")
+
+    //val destPathModStr = destPath.toString.replace("default/gateway/webhdfs/v1/", "")(1)
+    val destPathModStr = Path.getPathWithoutSchemeAndAuthority(destPath).toString.replace("/gateway/default/webhdfs/v1","")
+    println("In rename  - Path : " + srcPath + " , dest path : " + destPath + " , mod dest path : "+ destPathModStr)
+    //println("In rename after mod  - Path : " + srcPathModStr + " , dest path : " + destPathModStr)
+    WebHdfsConnector.renameFile(srcPath.toString, destPathModStr, certValidation, "1000:5000", usrCred)
   }
 
   override def delete(srcPath: Path, recursive: Boolean): Boolean = {
     println("In delete  - Path : " + srcPath + " , recursive flg : " + recursive)
-    WebHdfsConnector.deleteFile(srcPath.toString(), recursive, certValidation, "1000:5000", usrCred)
-    throw new Exception("File Delete Not Supported")
+    val srcPathModStr = modifyFilePath(srcPath).toString	
+    println("In delete after mod - Path : " + srcPathModStr + " , recursive flg : " + recursive)
+    WebHdfsConnector.deleteFile(srcPathModStr, recursive, certValidation, "1000:5000", usrCred)
   }
 
   override def mkdirs(srcPath: Path, permission: FsPermission): Boolean = {
     println("In MkDirs  - Path : " + srcPath)
-    WebHdfsConnector.makeDirectory(srcPath.toString(), certValidation, "1000:5000", usrCred)
+    val srcPathModStr = modifyFilePath(srcPath).toString	
+    println("In MkDirs  after mod - Path : " + srcPathModStr)
+    WebHdfsConnector.makeDirectory(srcPathModStr, permission.toShort, certValidation, "1000:5000", usrCred)
   }
 
   override def append(srcPath: Path,
@@ -119,30 +127,33 @@ class BahirWebHdfsFileSystem extends FileSystem {
   }
 
   override def getFileStatus(f: Path): FileStatus = {
-    val file = stripQryFromFilePath(f).toString
-    println("In bahir get filestatus  - Path : " + f)
-    var fStatus: FileStatus = fileStatusMap.getOrElse(file, null)
+    val file = modifyFilePath(f).toString
+    println("In bahir get filestatus  - Path , and mod Path: " + f + file + "\n")
+    var fStatus: FileStatus = fileStatusMap.getOrElse(f.toString, null)
     println("In bahir after checking filestatus map  - : " + fStatus)
 
     val fileStatus = if (fStatus == null) {
       println("In bahir before calling webhdfsconnector  : ")
       val fStatusMap = WebHdfsConnector.getFileStatus(file, certValidation, "1000:5000", usrCred)
-      fStatus = createFileStatus(f, fStatusMap)
-      fileStatusMap.put(f.toString, fStatus)
-      fStatus
+      if (fStatusMap != null) {
+      	fStatus = createFileStatus(f, fStatusMap)
+      	fileStatusMap.put(f.toString, fStatus)
+      }
+      fStatus      
     }
     else {
       fStatus
     }
 
+    println("In bahir before returning from getFileStatis fileStatus  : " + fileStatus)
     fileStatus
   }
 
   override def listStatus(f: Path): Array[FileStatus] = {
 
-    val file = stripQryFromFilePath(f).toString
+    val file = modifyFilePath(f).toString
 
-    var lStatus: Array[FileStatus] = listStatusMap.getOrElse(file, null)
+    var lStatus: Array[FileStatus] = listStatusMap.getOrElse(f.toString, null)
 
     // println("file in listStatus: " + file)
 
@@ -193,10 +204,11 @@ class BahirWebHdfsFileSystem extends FileSystem {
     fStatus
   }
 
-  private def stripQryFromFilePath(f: Path): Path = {
+  private def modifyFilePath(f: Path): Path = {
     // println("file uri : " + f.toUri)
-    val pathStrWithoutQry = f.toString.replace(getQryStrFromFilePath(f), "")
-    new Path(pathStrWithoutQry)
+    val wQryStr = f.toString.replace(getQryStrFromFilePath(f), "")
+    //val fStr = wQryStr.replace("_temporary", "bahir_tmp")	
+    new Path(wQryStr)
   }
 
   private def getQryStrFromFilePath(f: Path): String = {
@@ -214,13 +226,15 @@ class BahirWebHdfsFileSystem extends FileSystem {
 
   override def open(f: Path, bs: Int): FSDataInputStream = {
 
+    println("In bahir open file path - : " + f)
+
     val fileStatus = getFileStatus(f)
     val blockSize = fileStatus.getBlockSize
     val fileLength = fileStatus.getLen
 
-    val file = stripQryFromFilePath(f)
+    val file = modifyFilePath(f)
 
-    print("file uri in open : " + file + "\n")
+    print("file uri in open after modification : " + file + "\n")
 
     val qMap = getQryMapFromFilePath(f)
 
@@ -243,8 +257,12 @@ class BahirWebHdfsFileSystem extends FileSystem {
                       blockSize: Long,
                       progress: Progressable): FSDataOutputStream = {
 
-    new FSDataOutputStream(new BahirWebHdfsOutputStream(srcPath, bufferSize, blockSize,
-      permission.toString, replication, overwriteFlg, usrCred, certValidation), null)
+    val file = modifyFilePath(srcPath)
+
+    print("file uri in create after modification : " + file + "\n")
+
+    new FSDataOutputStream(new BahirWebHdfsOutputStream(file, bufferSize, blockSize,
+      permission.toShort, replication, overwriteFlg, usrCred, certValidation), null)
   }
 
   private def getQryMapFromFilePath(f: Path): HashMap[String, String] = {
@@ -376,7 +394,7 @@ class BahirWebHdfsInputStream(fPath: Path,
 class BahirWebHdfsOutputStream(fPath: Path,
                                bufferSz: Int,
                                blockSz: Long,
-                               permissionStr: String,
+                               perms: Short,
                                replicationCnt: Short,
                                overwriteFlg: Boolean,
                                usrCrd: String,
@@ -386,7 +404,7 @@ class BahirWebHdfsOutputStream(fPath: Path,
   val filePath: Path = fPath
   val bufferSize: Int = bufferSz
   val blockSize: Long = blockSz
-  val permission: String = permissionStr
+  val permission: Short = perms
   val replication: Short = replicationCnt
   val overwrite: Boolean = overwriteFlg
   val usrCred: String = usrCrd
@@ -412,7 +430,7 @@ class BahirWebHdfsOutputStream(fPath: Path,
 
   private def writeBytes(b: Array[Byte]): Unit = {
     println("in provate write bytes ")
-    WebHdfsConnector.writeFile(b, filePath.toString(), permissionStr, overwriteFlg, bufferSize,
+    WebHdfsConnector.writeFile(b, filePath.toString, permission, overwriteFlg, bufferSize,
       replication, blockSize, certValidation, "1000:5000", usrCred)
   }
 

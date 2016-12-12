@@ -107,6 +107,7 @@ object WebHdfsConnector {
    * This function creates a directory in remote HDFS
    */
   def makeDirectory(path: String,
+                    permission: Short,
                     trustStoreCredStr: String,
                     connStr: String,
                     userCredStr: String): Boolean = {
@@ -114,10 +115,10 @@ object WebHdfsConnector {
     println("In make directory  - path : " + path)
     val webHdfsChkDirOpr = "op=GETFILESTATUS"
     val returnChkDir = callWebHdfsAPI(path, null, "GET", "CODE", trustStoreCredStr, userCredStr,
-      connStr, webHdfsChkDirOpr, "STRING")
+      connStr, webHdfsChkDirOpr, "String").asInstanceOf[Integer]
 
-    if (returnChkDir == "200") {
-      throw new Exception("The File Already Exists : " + path + "\n")
+    if (returnChkDir == 200) {
+      throw new Exception("The Directory Already Exists : " + path + "\n")
     }
     else {
 
@@ -125,11 +126,15 @@ object WebHdfsConnector {
       //
       //    val textRdd = dataToWrite.repartition(dPartitions)
 
-      val webHdfsMakeDirOpr = "op=MKDIRS"
-      val returnMakeDir = callWebHdfsAPI(path, null, "PUT", "CODE", trustStoreCredStr, userCredStr,
-        connStr, webHdfsMakeDirOpr, "STRING")
-      println("In makeDirectory  - return code : " + returnMakeDir)
-      true
+      val webHdfsMakeDirOpr = s"op=MKDIRS&permission=$permission"
+      val returnMakeDir = callWebHdfsAPI(path, "".getBytes(), "PUT", "CODE", trustStoreCredStr, userCredStr,
+        connStr, webHdfsMakeDirOpr, "String").asInstanceOf[Integer]
+      println("In makeDirectory  - return code : " + returnMakeDir) 
+      if(returnMakeDir != 200) 
+        throw new Exception("The Directory could not be created , Src path, and code: " + path + " , " + returnMakeDir + "\n")
+	//false
+      else
+	true
     }
   }
 
@@ -146,22 +151,22 @@ object WebHdfsConnector {
     println("In deleteFile  - path : " + path + " , recusrsive flg : " + recursiveFlg)
     val webHdfsChkDirOpr = "op=GETFILESTATUS"
     val returnChkDir = callWebHdfsAPI(path, null, "GET", "CODE", trustStoreCredStr, userCredStr,
-      connStr, webHdfsChkDirOpr, "STRING")
+      connStr, webHdfsChkDirOpr, "String").asInstanceOf[Integer]
 
-    if (returnChkDir != "200") {
+    if (returnChkDir != 200) {
       throw new Exception("The File/Directory Does Not Exist : " + path + "\n")
     }
     else {
 
-      //    val dPartitions = partitionStr.toInt
-      //
-      //    val textRdd = dataToWrite.repartition(dPartitions)
-
-      val webHdfsDeleteDirOpr = "op=DELETE&recursive=recursiveFlg"
-      val returnMakeDir = callWebHdfsAPI(path, null, "PUT", "CODE", trustStoreCredStr, userCredStr,
-        connStr, webHdfsDeleteDirOpr, "STRING")
-      println("In deleteFile  - return code : " + returnMakeDir)
-      true
+      val webHdfsDeleteDirOpr = s"op=DELETE&recursive=$recursiveFlg"
+      val returnDelDir = callWebHdfsAPI(path, null, "DELETE", "CODE", trustStoreCredStr, userCredStr,
+        connStr, webHdfsDeleteDirOpr, "String").asInstanceOf[Integer]
+      println("In deleteFile  - return code : " + returnDelDir)
+      if(returnDelDir != 200) 
+        throw new Exception("The File/Directory could not be renamed , Src path, Dest path and code: " + path + " , " + returnDelDir + "\n")
+	//false
+      else
+	true
     }
   }
 
@@ -170,8 +175,8 @@ object WebHdfsConnector {
    */
   def writeFile(data: Array[Byte],
                 path: String,
-                permission: String,
-                overwriteflag: Boolean,
+                permission: Short,
+                overwriteFlg: Boolean,
                 bufferSize: Int,
                 replication: Short,
                 blockSize: Long,
@@ -179,16 +184,48 @@ object WebHdfsConnector {
                 connStr: String,
                 userCredStr: String): Boolean = {
 
-    val webHdfsCreateOpr = "op=CREATE&overwrite=overWriteFlg&blockSize=blockSize" +
-      "&replication=replication&permission=permission&bufferSize=bufferSize"
-    val createUrl = callWebHdfsAPI(path, null, "PUT", "LOCATION", trustStoreCredStr, userCredStr,
-      connStr, webHdfsCreateOpr, "STRING").asInstanceOf[String]
+    val webHdfsCreateOpr = s"op=CREATE&overwrite=$overwriteFlg&blockSize=$blockSize" +
+      s"&replication=$replication&bufferSize=$bufferSize&permission=$permission"
+    val createUrl = callWebHdfsAPI(path, "".getBytes(), "PUT", "LOCATION", trustStoreCredStr, userCredStr,
+      connStr, webHdfsCreateOpr, "String").asInstanceOf[String]
     val createdCode = callWebHdfsAPI(createUrl, data, "PUT", "CODE", trustStoreCredStr, userCredStr,
-      connStr, webHdfsCreateOpr, "STRING")
+      connStr, webHdfsCreateOpr, "String").asInstanceOf[Integer]
     println("In save file  - return code : " + createdCode)
     true
 
   }
+
+  /**
+   * This function renames 1 file in remote HDFS
+   */
+  def renameFile(path: String,
+                 destPath: String,
+                 trustStoreCredStr: String,
+                 connStr: String,
+                 userCredStr: String): Boolean = {
+
+    println("In rename file  - path : " + path + " , dest path : " + destPath + "\n")
+    val webHdfsChkFileOpr = "op=GETFILESTATUS"
+    val returnChkFile = callWebHdfsAPI(path, null, "GET", "CODE", trustStoreCredStr, userCredStr,
+      connStr, webHdfsChkFileOpr, "String").asInstanceOf[Integer]
+
+    if (returnChkFile != 200) {
+      throw new Exception("The File/Directory Does Not Exist , path and code: " + path + " , " + returnChkFile + "\n")
+    }
+    else {
+      val webHdfsRenameOpr = s"op=RENAME&destination=$destPath"
+      val returnRename = callWebHdfsAPI(path, "".getBytes(), "PUT", "CODE", trustStoreCredStr, userCredStr,
+        connStr, webHdfsRenameOpr, "String").asInstanceOf[Integer]
+      println("In Rename  - return code : " + returnRename)
+      if(returnRename != 200) 
+        throw new Exception("The File/Directory could not be renamed , Src path, Dest path and code: " + path + " , " + destPath + " , " + returnRename + "\n")
+	//false
+      else
+	true
+    }
+
+  }
+
 
 
   def callWebHdfsAPI(path: String,
@@ -201,7 +238,7 @@ object WebHdfsConnector {
                      opr: String,
                      outputType: String): Any = {
 
-    // print("path in callWebHdfs : " + path + "\n")
+    print("path in callWebHdfs : " + path + " , opr : " + opr + "\n")
 
     val pathComp = path.split(":")
 
@@ -222,6 +259,7 @@ object WebHdfsConnector {
     httpc = (method: @switch) match {
       case "GET" => httpc
       case "PUT" => httpc.put(data).header("content-type", "application/bahir-webhdfs")
+      case "DELETE" => httpc.method("DELETE")
       case "POST" => httpc.postData(data).header("content-type", "application/bahir-webhdfs")
     }
 
@@ -231,6 +269,8 @@ object WebHdfsConnector {
       case "Y" => httpc.option(HttpOptions.sslSocketFactory(biocSslSocketFactory(trustCred._2,
         trustCred._3)))
     }
+
+	/*
 
     val out = (outputType: @switch) match {
       case "" => httpc.asString
@@ -244,15 +284,14 @@ object WebHdfsConnector {
       case "HEADERS" => out.headers
       case "LOCATION" => out.location.mkString(" ")
     }
+	*/
 
-    /*
     val resp = (respType : @switch) match {
       case "BODY" => httpc.asBytes.body
       case "CODE" => httpc.asString.code
       case "HEADERS" => httpc.asString.headers
       case "LOCATION" => httpc.asString.location.mkString(" ")
     }
-    */
 
     resp
   }
@@ -289,24 +328,27 @@ object WebHdfsConnector {
     print("path in getFileStatus : " + filePath + "\n")
     val fileStatusOpr = s"op=GETFILESTATUS"
     val returnChk = callWebHdfsAPI(filePath, null, "GET", "CODE", trustStoreCredStr, usrCredStr,
-      connStr, fileStatusOpr, "STRING")
+      connStr, fileStatusOpr, "String").asInstanceOf[Integer]
     print("after file status check in getFileStatus : " + returnChk + "\n")
 
-    if (returnChk == "200") {
+    if (returnChk == 200) {
 
       print("within return code 200 in getFileStatus : " + returnChk + "\n")
-      val fileStatus = callWebHdfsAPI(filePath, null, "GET", "BODY", trustStoreCredStr, usrCredStr,
-        connStr, fileStatusOpr, "String").asInstanceOf[String]
+      val fileStatusBytes = callWebHdfsAPI(filePath, null, "GET", "BODY", trustStoreCredStr, usrCredStr,
+        connStr, fileStatusOpr, "String").asInstanceOf[Array[Byte]]
+
+      val fileStatus = new String(fileStatusBytes, "UTF-8")
 
       if (fileStatus.contains("RemoteException")) {
         print("within remote exception in getFileStatus : " + returnChk + "\n")
-//        throw new Exception(fileStatus)
+	null
       }
+      else {
+      	val responseMap = scala.util.parsing.json.JSON.parseFull(fileStatus).toList(0)
+        	.asInstanceOf[Map[String, Map[String, Any]]]
 
-      val responseMap = scala.util.parsing.json.JSON.parseFull(fileStatus).toList(0)
-        .asInstanceOf[Map[String, Map[String, Any]]]
-
-      responseMap.getOrElse("FileStatus", null)
+      	responseMap.getOrElse("FileStatus", null)
+      }
     }
     else {
 
@@ -322,8 +364,10 @@ object WebHdfsConnector {
     // print("path in getListStatus : " + filePath + "\n")
     val listStatusOpr = s"op=LISTSTATUS"
 
-    val listStatus = callWebHdfsAPI(filePath, null, "GET", "BODY", trustStoreCredStr, usrCredStr,
-      connStr, listStatusOpr, "String").asInstanceOf[String]
+    val listStatusBytes = callWebHdfsAPI(filePath, null, "GET", "BODY", trustStoreCredStr, usrCredStr,
+      connStr, listStatusOpr, "String").asInstanceOf[Array[Byte]]
+
+    val listStatus = new String(listStatusBytes, "UTF-8")
 
     if (listStatus.contains("RemoteException")) {
       throw new Exception(listStatus)
