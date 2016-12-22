@@ -65,6 +65,7 @@ object ActorReceiver {
     val akkaConf = ConfigFactory.parseString(
       s"""akka.actor.provider = "akka.remote.RemoteActorRefProvider"
          |akka.remote.enabled-transports = ["akka.remote.netty.tcp"]
+         |akka.remote.netty.tcp.port = "0"
          |""".stripMargin)
     ActorSystem(uniqueSystemName, akkaConf)
   }
