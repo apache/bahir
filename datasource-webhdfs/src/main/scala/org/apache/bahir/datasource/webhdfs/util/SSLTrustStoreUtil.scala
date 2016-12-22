@@ -37,7 +37,7 @@ object SSLTrustStore {
    */
   def getCertDetails(path: String): Tuple2[File, String] = {
 
-	print("path in ssltrust store getCertDetails : " + path + "\n")
+  print("path in ssltrust store getCertDetails : " + path + "\n")
 
     val pathComp = path.split("/")
 

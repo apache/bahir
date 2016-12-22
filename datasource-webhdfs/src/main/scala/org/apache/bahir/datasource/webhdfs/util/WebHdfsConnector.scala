@@ -18,9 +18,9 @@
 package org.apache.bahir.datasource.webhdfs.util
 
 import java.io._
-import java.net.{URL, HttpURLConnection}
-import javax.net.ssl.{SSLContext, SSLSocketFactory, TrustManagerFactory}
+import java.net.{HttpURLConnection, URL}
 import java.security._
+import javax.net.ssl.{SSLContext, SSLSocketFactory, TrustManagerFactory}
 
 import scala.annotation.switch
 
@@ -30,8 +30,6 @@ import scalaj.http.{Http, HttpOptions}
  * This object contains all utility functions for reading/writing data from/to remote webhdfs
  * server. The abstraction maintained in this layer is at the level of RDD
  */
-// TODO: reenable scalastyle checks
-// scalastyle:off println
 object WebHdfsConnector {
 
   /*
@@ -97,7 +95,7 @@ object WebHdfsConnector {
     val returnMakeDir = callWebHdfsAPI(path, "".getBytes(), "PUT", "CODE",
         trustStoreCredStr, userCredStr,
         connStr, webHdfsMakeDirOpr, "String").asInstanceOf[Integer]
-    if (returnMakeDir != 200){
+    if (returnMakeDir != 200) {
         throw new Exception("The Directory could not be created , Src path,Code: "
           + path + " , " + returnMakeDir + "\n")
     } else true
@@ -122,7 +120,7 @@ object WebHdfsConnector {
     val webHdfsDeleteDirOpr = s"op=DELETE&recursive=$recursiveFlg"
     val returnDelDir = callWebHdfsAPI(path, null, "DELETE", "CODE", trustStoreCredStr, userCredStr,
         connStr, webHdfsDeleteDirOpr, "String").asInstanceOf[Integer]
-    if (returnDelDir != 200){
+    if (returnDelDir != 200) {
         throw new Exception("The File/Directory could not be renamed , Src path,Dest path,Code: "
             + path + " , " + returnDelDir + "\n")
     } else true
@@ -149,7 +147,7 @@ object WebHdfsConnector {
 
     val retCode = if (returnChkFile == 200) {
            // print("in writeFile, file exists : createdCode : " + returnChkFile + "\n")
-           true 
+           true
     } else {
     */
 
@@ -159,8 +157,8 @@ object WebHdfsConnector {
            val createUrl = callWebHdfsAPI(path, "".getBytes(), "PUT", "LOCATION",
               trustStoreCredStr, userCredStr,
               connStr, webHdfsCreateOpr, "String").asInstanceOf[String]
-           val createdCode = callWebHdfsAPI(createUrl, data, "PUT", "CODE", trustStoreCredStr, userCredStr,
-              connStr, webHdfsCreateOpr, "String").asInstanceOf[Integer]
+           val createdCode = callWebHdfsAPI(createUrl, data, "PUT", "CODE", trustStoreCredStr,
+             userCredStr, connStr, webHdfsCreateOpr, "String").asInstanceOf[Integer]
 
            // print("in writeFile, creaedCode : " + createdCode + "\n")
 
@@ -191,10 +189,13 @@ object WebHdfsConnector {
     val returnRename = callWebHdfsAPI(path, "".getBytes(), "PUT", "CODE",
         trustStoreCredStr, userCredStr,
         connStr, webHdfsRenameOpr, "String").asInstanceOf[Integer]
-    if (returnRename != 200){
+    if (returnRename != 200) {
         throw new Exception("The File/Directory could not be renamed , Src path,Dest path,Code: "
            + path + " , " + destPath + " , " + returnRename + "\n")
-    } else true
+    }
+    else {
+      true
+    }
   }
 
 
@@ -357,6 +358,3 @@ object WebHdfsConnector {
   }
 
 }
-
-// TODO: reenable scalastyle checks
-// scalastyle:on println

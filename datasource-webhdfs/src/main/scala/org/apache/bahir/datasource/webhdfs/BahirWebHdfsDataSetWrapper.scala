@@ -21,7 +21,6 @@ import java.io._
 import java.net.URI
 
 import scala.collection.mutable.HashMap
-import scala.math._
 
 import org.apache.bahir.datasource.webhdfs.util.WebHdfsConnector
 import org.apache.hadoop.conf.Configuration
@@ -34,11 +33,12 @@ import org.apache.hadoop.util.Progressable
  * This class contains functions for reading/writing data from/to remote webhdfs server in Spark
  * DataSource
  */
-// TODO: reenable scalastyle checks
-// scalastyle:off println
 class BahirWebHdfsFileSystem extends FileSystem {
 
-  println(s" - - - BahirWebHdfsFileSystem class loaded - - - ")
+  // TODO: use a logger here
+  // scalastyle:off println
+  println(s" - - - ${this.getClass.getSimpleName} loaded - - - ")
+  // scalastyle:on println
 
   var uri: URI = null
   var rHdfsUri: URI = null
@@ -81,7 +81,8 @@ class BahirWebHdfsFileSystem extends FileSystem {
 
     uri = URI.create(uriOrg.getScheme() + "://" + uriOrg.getAuthority())
 
-    // println(s"BahirWebHdfsFileSystem: uri=${uri}, connections=${connections}, usercred=${usrCred}")
+//    println(s"BahirWebHdfsFileSystem: uri=${uri}, connections=${connections}, " +
+//      s"usercred=${usrCred}")
   }
 
   override def getWorkingDirectory(): Path = {
@@ -269,7 +270,7 @@ class BahirWebHdfsFileSystem extends FileSystem {
 
     val file = modifyFilePath(srcPath)
 
-    //  print("file uri in create after modification : " + file + "\n")
+    // println("file uri in create after modification : " + file)
 
     new FSDataOutputStream(new BahirWebHdfsOutputStream(file, bufferSize, blockSize,
       permission.toShort, replication, overwriteFlg, usrCred, certValidation), null)
@@ -334,7 +335,7 @@ class BahirWebHdfsInputStream(fPath: Path,
   var callCount = 0
 
   /*
-   * This is a dummy implementation as Spark does not use it. We need it here just to satisy
+   * This is a dummy implementation as Spark does not use it. We need it here just to satisfy
    * interface contract
    */
   override def read(): Int = {
@@ -447,6 +448,3 @@ class BahirWebHdfsOutputStream(fPath: Path,
   }
 
 }
-// TODO: reenable scalastyle checks
-// scalastyle:on println
-
