@@ -241,10 +241,10 @@ class BahirWebHdfsFileSystem extends FileSystem {
     val readBufferSize = if (rdBufferSize <= 0) blockSize else rdBufferSize.toLong
 
     val fReadFull = if (qMap == null) {
-      true
+      false
     }
     else {
-      qMap.getOrElse("readFullFile", true.toString).asInstanceOf[String].toBoolean
+      qMap.getOrElse("readFullFile", false.toString).asInstanceOf[String].toBoolean
     }
 
     val streamFlg = if (qMap == null) {
@@ -371,11 +371,11 @@ class BahirWebHdfsInputStream(fPath: Path,
       if (blockSize > fileSize || readFullFlg == true) {
         0
       } else {
-        pos + blockSize
+        pos + blockSize + 100000
       }
     }
     else {
-      pos + fileSize/connections + 1000000
+      pos + fileSize/(connections - 1) + 100000
     }
 
     if (streamFlg == true) {
