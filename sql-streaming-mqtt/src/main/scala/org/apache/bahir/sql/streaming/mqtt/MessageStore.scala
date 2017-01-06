@@ -34,16 +34,16 @@ import org.apache.spark.serializer.{JavaSerializer, Serializer, SerializerInstan
 trait MessageStore {
 
   /** Store a single id and corresponding serialized message */
-  def store[T: ClassTag](id: Int, message: T): Boolean
+  def store[T: ClassTag](id: Long, message: T): Boolean
 
   /** Retrieve messages corresponding to certain offset range */
-  def retrieve[T: ClassTag](start: Int, end: Int): Seq[T]
+  def retrieve[T: ClassTag](start: Long, end: Long): Seq[T]
 
   /** Retrieve message corresponding to a given id. */
-  def retrieve[T: ClassTag](id: Int): T
+  def retrieve[T: ClassTag](id: Long): T
 
   /** Highest offset we have stored */
-  def maxProcessedOffset: Int
+  def maxProcessedOffset: Long
 
 }
 
@@ -76,19 +76,19 @@ private[mqtt] class LocalMessageStore(val persistentStore: MqttClientPersistence
 
   val serializerInstance: SerializerInstance = serializer.newInstance()
 
-  private def get(id: Int) = {
+  private def get(id: Long) = {
     persistentStore.get(id.toString).getHeaderBytes
   }
 
   import scala.collection.JavaConverters._
 
-  def maxProcessedOffset: Int = {
+  def maxProcessedOffset: Long = {
     val keys: util.Enumeration[_] = persistentStore.keys()
-    keys.asScala.map(x => x.toString.toInt).max
+    keys.asScala.map(x => x.toString.toLong).max
   }
 
   /** Store a single id and corresponding serialized message */
-  override def store[T: ClassTag](id: Int, message: T): Boolean = {
+  override def store[T: ClassTag](id: Long, message: T): Boolean = {
     val bytes: Array[Byte] = serializerInstance.serialize(message).array()
     try {
       persistentStore.put(id.toString, new MqttPersistableData(bytes))
@@ -100,12 +100,12 @@ private[mqtt] class LocalMessageStore(val persistentStore: MqttClientPersistence
   }
 
   /** Retrieve messages corresponding to certain offset range */
-  override def retrieve[T: ClassTag](start: Int, end: Int): Seq[T] = {
+  override def retrieve[T: ClassTag](start: Long, end: Long): Seq[T] = {
     (start until end).map(x => retrieve(x))
   }
 
   /** Retrieve message corresponding to a given id. */
-  override def retrieve[T: ClassTag](id: Int): T = {
+  override def retrieve[T: ClassTag](id: Long): T = {
     serializerInstance.deserialize(ByteBuffer.wrap(get(id)), classLoader)
   }
 

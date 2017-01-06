@@ -75,15 +75,17 @@ class MQTTTextStreamSource(brokerUrl: String, persistence: MqttClientPersistence
 
   private val store = new LocalMessageStore(persistence, sqlContext.sparkContext.getConf)
 
-  private val messages = new TrieMap[Int, (String, Timestamp)]
-
+  private val messages = new TrieMap[Long, (Int, String, Timestamp)]
+  // Stores a mapping between message id -> offset. Message ids may be out of order. Avoids
+  // duplicate processing of a message in case of a redelivery.
+  private val unprocessedMessages = new TrieMap[Int, Long]()
   private val initLock = new CountDownLatch(1)
 
-  private var offset = 0
+  private var offset: Long = _
 
   private var client: MqttClient = _
 
-  private def fetchLastProcessedOffset(): Int = {
+  private def fetchCheckpointedOffset(): Long = {
     Try(store.maxProcessedOffset) match {
       case Success(x) =>
         log.info(s"Recovering from last stored offset $x")
@@ -101,10 +103,17 @@ class MQTTTextStreamSource(brokerUrl: String, persistence: MqttClientPersistence
 
       override def messageArrived(topic_ : String, message: MqttMessage): Unit = synchronized {
         initLock.await() // Wait for initialization to complete.
-        val temp = offset + 1
-        messages.put(temp, messageParser(message.getPayload))
-        offset = temp
-        log.trace(s"Message arrived, $topic_ $message")
+        if (!unprocessedMessages.contains(message.getId)) {
+          val temp = offset + 1
+          val (messageParsed: String, timestamp: Timestamp) = messageParser(message.getPayload)
+          messages.put(temp, (message.getId, messageParsed, timestamp))
+          store.store(temp, (message.getId, messageParsed, timestamp))
+          offset = temp
+          unprocessedMessages += (message.getId -> temp)
+          log.trace(s"Message arrived, $topic_ ${message.getId}")
+        } else {
+          log.debug(s"Duplicate message received ${message.getId}.")
+        }
       }
 
       override def deliveryComplete(token: IMqttDeliveryToken): Unit = {
@@ -122,7 +131,7 @@ class MQTTTextStreamSource(brokerUrl: String, persistence: MqttClientPersistence
     client.connect(mqttConnectOptions)
     client.subscribe(topic, qos)
     // It is not possible to initialize offset without `client.connect`
-    offset = fetchLastProcessedOffset()
+    offset = fetchCheckpointedOffset()
     initLock.countDown() // Release.
   }
 
@@ -151,12 +160,14 @@ class MQTTTextStreamSource(brokerUrl: String, persistence: MqttClientPersistence
     val startIndex = start.getOrElse(LongOffset(0L)).asInstanceOf[LongOffset].offset.toInt
     val endIndex = end.asInstanceOf[LongOffset].offset.toInt
     val data: ArrayBuffer[(String, Timestamp)] = ArrayBuffer.empty
-    // Move consumed messages to persistent store.
+    // Remove consumed messages from the trie map.
     (startIndex + 1 to endIndex).foreach { id =>
-      val element: (String, Timestamp) = messages.getOrElse(id, store.retrieve(id))
-      data += element
-      store.store(id, element)
+      val element@(messageId: Int, message: String, timestamp: Timestamp) =
+        messages.getOrElse(id, store.retrieve(id))
+      data += ((message, timestamp))
       messages.remove(id, element)
+      // TODO: move this to committed offsets post availability of SPARK-16963
+      unprocessedMessages.remove(messageId)
     }
     log.trace(s"Get Batch invoked, ${data.mkString}")
     import sqlContext.implicits._

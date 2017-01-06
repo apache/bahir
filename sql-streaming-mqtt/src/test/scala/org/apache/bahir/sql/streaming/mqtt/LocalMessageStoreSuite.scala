@@ -66,7 +66,7 @@ class LocalMessageStoreSuite extends SparkFunSuite with BeforeAndAfter {
   test("Max offset stored") {
     store.store(1, testData)
     store.store(10, testData)
-    val offset: Int = store.maxProcessedOffset
+    val offset: Long = store.maxProcessedOffset
     assert(offset == 10)
   }
 
