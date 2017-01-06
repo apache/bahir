@@ -21,9 +21,10 @@ import java.io.File
 import java.net.{ServerSocket, URI}
 
 import org.apache.activemq.broker.{BrokerService, TransportConnector}
-import org.apache.bahir.utils.Logging
 import org.eclipse.paho.client.mqttv3._
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence
+
+import org.apache.bahir.utils.Logging
 
 class MQTTTestUtils(tempDir: File, port: Int = 0) extends Logging {
 

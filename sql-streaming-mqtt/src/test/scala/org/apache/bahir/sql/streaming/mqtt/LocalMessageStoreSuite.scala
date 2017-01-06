@@ -19,12 +19,13 @@ package org.apache.bahir.sql.streaming.mqtt
 
 import java.io.File
 
-import org.apache.bahir.utils.BahirUtils
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence
 import org.scalatest.BeforeAndAfter
 
 import org.apache.spark.{SparkConf, SparkFunSuite}
 import org.apache.spark.serializer.JavaSerializer
+
+import org.apache.bahir.utils.BahirUtils
 
 class LocalMessageStoreSuite extends SparkFunSuite with BeforeAndAfter {
 
