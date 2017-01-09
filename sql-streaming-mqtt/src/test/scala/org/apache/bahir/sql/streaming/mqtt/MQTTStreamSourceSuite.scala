@@ -31,7 +31,7 @@ import org.apache.spark.{SharedSparkContext, SparkFunSuite}
 import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.sql.execution.streaming.LongOffset
 
-import org.apache.bahir.utils.BahirUtils
+import org.apache.bahir.utils.Bahir
 
 class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with BeforeAndAfter {
 
