@@ -143,7 +143,8 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
     }
   }
 
-  test("Recovering offset from the last processed offset.") {
+  // TODO: reinstate this test after fixing BAHIR-83
+  ignore("Recovering offset from the last processed offset.") {
     val sendMessage = "MQTT is a message queue."
 
     import scala.concurrent.ExecutionContext.Implicits.global
