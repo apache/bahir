@@ -247,7 +247,7 @@ if [[ "$RELEASE_PREPARE" == "true" ]]; then
     cd target/bahir
 
     # Build and prepare the release
-    $MVN $PUBLISH_PROFILES release:clean release:prepare $DRY_RUN -Darguments=-Dgpg.passphrase="$GPG_PASSPHRASE" -DskipTests -DreleaseVersion="$RELEASE_VERSION" -DdevelopmentVersion="$DEVELOPMENT_VERSION" -Dtag="$RELEASE_TAG"
+    $MVN $PUBLISH_PROFILES release:clean release:prepare $DRY_RUN -Darguments="-Dgpg.passphrase=\"$GPG_PASSPHRASE\" -DskipTests" -DreleaseVersion="$RELEASE_VERSION" -DdevelopmentVersion="$DEVELOPMENT_VERSION" -Dtag="$RELEASE_TAG"
 
     cd .. #exit bahir
 
