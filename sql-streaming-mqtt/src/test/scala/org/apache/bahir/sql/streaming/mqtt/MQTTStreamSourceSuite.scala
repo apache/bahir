@@ -99,7 +99,8 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
     assert(resultBuffer.head == sendMessage)
   }
 
-  test("Send and receive 100 messages.") {
+  // TODO: reinstate this test after fixing BAHIR-83
+  ignore("Send and receive 100 messages.") {
 
     val sendMessage = "MQTT is a message queue."
 
