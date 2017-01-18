@@ -23,12 +23,12 @@ import java.util
 
 import scala.reflect.ClassTag
 
-import org.apache.bahir.utils.Logging
 import org.eclipse.paho.client.mqttv3.{MqttClientPersistence, MqttPersistable, MqttPersistenceException}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.{JavaSerializer, Serializer, SerializerInstance}
 
+import org.apache.bahir.utils.Logging
 
 /** A message store for MQTT stream source for SQL Streaming. */
 trait MessageStore {
