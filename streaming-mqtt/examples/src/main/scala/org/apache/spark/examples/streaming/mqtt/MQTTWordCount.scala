@@ -79,24 +79,35 @@ object MQTTPublisher {
 }
 
 /**
- * A sample wordcount with MqttStream stream
+ * A sample wordcount with MQTTInputDStream
  *
- * To work with Mqtt, Mqtt Message broker/server required.
- * Mosquitto (http://mosquitto.org/) is an open source Mqtt Broker
- * In ubuntu mosquitto can be installed using the command  `$ sudo apt-get install mosquitto`
- * Eclipse paho project provides Java library for Mqtt Client http://www.eclipse.org/paho/
- * Example Java code for Mqtt Publisher and Subscriber can be found here
- * https://bitbucket.org/mkjinesh/mqttclient
  * Usage: MQTTWordCount <MqttbrokerUrl> <topic>
- *   <MqttbrokerUrl> and <topic> describe where Mqtt publisher is running.
  *
- * To run this example locally, you may run publisher as
+ * To run this example on your local machine, you first need to setup a MQTT broker and publisher,
+ * like Mosquitto (http://mosquitto.org/) an easy to use and install open source MQTT Broker.
+ * On Mac OS, Mosquitto can be installed with Homebrew `$ brew install mosquitto`.
+ * On Ubuntu, Mosquitto can be installed with the command `$ sudo apt-get install mosquitto`.
+ *
+ * Alternatively, checkout the Eclipse paho project which provides a number of clients and utilities
+ * for working with MQTT (http://www.eclipse.org/paho/#getting-started).
+ *
+ * How to run this example locally:
+ *
+ * (1) Start a MQTT message broker/server, i.e. Mosquitto:
+ *
+ *    `$ mosquitto -p 1883`
+ *
+ * (2) Run the publisher:
+ *
  *    `$ bin/run-example \
  *      org.apache.spark.examples.streaming.mqtt.MQTTPublisher tcp://localhost:1883 foo`
- * and run the example as
+ *
+ * (3) Run the example:
+ *
  *    `$ bin/run-example \
  *      org.apache.spark.examples.streaming.mqtt.MQTTWordCount tcp://localhost:1883 foo`
  */
+
 object MQTTWordCount {
 
   def main(args: Array[String]) {
