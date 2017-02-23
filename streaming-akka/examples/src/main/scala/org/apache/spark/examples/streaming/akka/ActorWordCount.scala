@@ -18,7 +18,7 @@
 // scalastyle:off println
 package org.apache.spark.examples.streaming.akka
 
-import scala.collection.mutable.LinkedHashSet
+import scala.collection.mutable
 import scala.util.Random
 
 import akka.actor.{Props, _}
@@ -39,7 +39,7 @@ case class UnsubscribeReceiver(receiverActor: ActorRef)
 class FeederActor extends Actor {
 
   val rand = new Random()
-  val receivers = new LinkedHashSet[ActorRef]()
+  val receivers = new mutable.LinkedHashSet[ActorRef]()
 
   val strings: Array[String] = Array("words ", "may ", "count ")
 
