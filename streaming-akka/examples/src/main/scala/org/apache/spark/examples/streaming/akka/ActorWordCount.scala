@@ -62,11 +62,11 @@ class FeederActor extends Actor {
 
   def receive: Receive = {
     case SubscribeReceiver(receiverActor: ActorRef) =>
-      println("received subscribe from %s".format(receiverActor.toString))
+      println(s"received subscribe from ${receiverActor.toString}")
       receivers += receiverActor
 
     case UnsubscribeReceiver(receiverActor: ActorRef) =>
-      println("received unsubscribe from %s".format(receiverActor.toString))
+      println(s"received unsubscribe from ${receiverActor.toString}")
       receivers -= receiverActor
   }
 }
@@ -172,7 +172,7 @@ object ActorWordCount {
     val lines = AkkaUtils.createStream[String](
       ssc,
       Props(classOf[SampleActorReceiver[String]],
-        "akka.tcp://test@%s:%s/user/FeederActor".format(host, port.toInt)),
+        s"akka.tcp://test@$host:${port.toInt}/user/FeederActor"),
       "SampleReceiver")
 
     // compute wordcount
