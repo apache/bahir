@@ -32,6 +32,7 @@ This source uses the [Eclipse Paho Java Client](https://eclipse.org/paho/clients
  * `brokerUrl` A url MqttClient connects to. Set this as the url of the Mqtt Server. e.g. tcp://localhost:1883.
  * `storageLevel` By default it is used for storing incoming messages on disk.
  * `topic` Topic MqttClient subscribes to.
+ * `topics` List of topics MqttClient subscribes to.
  * `clientId` clientId, this client is assoicated with. Provide the same value to recover a stopped client.
  * `QoS` The maximum quality of service to subscribe each topic at. Messages published at a lower quality of service will be received at the published QoS. Messages published at a higher quality of service will be received using the QoS specified on the subscribe.
  * `username` Sets the user name to use for the connection to Mqtt Server. Do not set it, if server does not need this. Setting it empty will lead to errors.
@@ -50,11 +51,13 @@ You need to extend `ActorReceiver` so as to store received data into Spark using
 this actor can be configured to handle failures, etc.
 
     val lines = MQTTUtils.createStream(ssc, brokerUrl, topic)
+    val lines = MQTTUtils.createPairedStream(ssc, brokerUrl, topic)
 
 Additional mqtt connection options can be provided:
 
 ```Scala
 val lines = MQTTUtils.createStream(ssc, brokerUrl, topic, storageLevel, clientId, username, password, cleanSession, qos, connectionTimeout, keepAliveInterval, mqttVersion)
+val lines = MQTTUtils.createPairedStream(ssc, brokerUrl, topics, storageLevel, clientId, username, password, cleanSession, qos, connectionTimeout, keepAliveInterval, mqttVersion)
 ```
 
 ### Java API
@@ -63,5 +66,6 @@ You need to extend `JavaActorReceiver` so as to store received data into Spark u
 this actor can be configured to handle failures, etc.
 
     JavaDStream<String> lines = MQTTUtils.createStream(jssc, brokerUrl, topic);
+    JavaReceiverInputDStream<Tuple2<String, String>> lines = MQTTUtils.createStream(jssc, brokerUrl, topics);
 
 See end-to-end examples at [MQTT Examples](https://github.com/apache/bahir/tree/master/streaming-mqtt/examples)
