@@ -18,16 +18,18 @@
 package org.apache.spark.streaming.mqtt;
 
 import org.apache.spark.storage.StorageLevel;
+import org.apache.spark.streaming.LocalJavaStreamingContext;
 import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
 import org.junit.Test;
 
-import org.apache.spark.streaming.LocalJavaStreamingContext;
+import scala.Tuple2;
 
 public class JavaMQTTStreamSuite extends LocalJavaStreamingContext {
   @Test
   public void testMQTTStream() {
     String brokerUrl = "abc";
     String topic = "def";
+    String[] topics = {"def1","def2"};
 
     // tests the API, does not actually test data receiving
     JavaReceiverInputDStream<String> test1 = MQTTUtils.createStream(ssc, brokerUrl, topic);
@@ -39,5 +41,16 @@ public class JavaMQTTStreamSuite extends LocalJavaStreamingContext {
       "testid", "user", "password", true, 1, 10, 30, 3);
     JavaReceiverInputDStream<String> test5 = MQTTUtils.createStream(ssc, brokerUrl, topic,
       "testid", "user", "password", true);
+    JavaReceiverInputDStream<Tuple2<String, String>> test6 = MQTTUtils.createPairedStream(ssc,
+      brokerUrl, topics);
+    JavaReceiverInputDStream<Tuple2<String, String>> test7 = MQTTUtils.createPairedStream(ssc,
+      brokerUrl, topics, StorageLevel.MEMORY_AND_DISK_SER_2());
+    JavaReceiverInputDStream<Tuple2<String, String>> test8 = MQTTUtils.createPairedStream(ssc,
+      brokerUrl, topics, StorageLevel.MEMORY_AND_DISK_SER_2(), "testid", "user",
+      "password", true, 1, 10, 30, 3);
+    JavaReceiverInputDStream<Tuple2<String, String>> test9 = MQTTUtils.createPairedStream(ssc,
+      brokerUrl, topics, "testid", "user", "password", true, 1, 10, 30, 3);
+    JavaReceiverInputDStream<Tuple2<String, String>> test10 = MQTTUtils.createPairedStream(ssc,
+      brokerUrl, topics, "testid", "user", "password", true);
   }
 }
