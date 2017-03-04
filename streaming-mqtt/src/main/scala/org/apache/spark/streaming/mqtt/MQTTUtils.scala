@@ -254,7 +254,7 @@ object MQTTUtils {
    * Storage level of the data will be the default StorageLevel.MEMORY_AND_DISK_SER_2.
    * @param jssc      JavaStreamingContext object
    * @param brokerUrl Url of remote MQTT publisher
-   * @param topic     Array of topic names to subscribe to
+   * @param topics    Array of topic names to subscribe to
    */
   def createPairedStream(
       jssc: JavaStreamingContext,
@@ -286,7 +286,7 @@ object MQTTUtils {
    * Create an input stream that receives messages pushed by a MQTT publisher.
    * @param jssc               JavaStreamingContext object
    * @param brokerUrl          Url of remote MQTT publisher
-   * @param topic              Array of topic names to subscribe to
+   * @param topics             Array of topic names to subscribe to
    * @param storageLevel       RDD storage level.
    * @param clientId           ClientId to use for the mqtt connection
    * @param username           Username for authentication to the mqtt publisher

@@ -132,8 +132,8 @@ private[streaming] class MQTTPairReceiver(
 
     // Subscribe to Mqtt topic
     var i = 0;
-    val qosArray = Array[Int](topics.length);
-    for (i <- 0 to qosArray.length - 1) {
+    val qosArray = Array.ofDim[Int](topics.length);
+    for (i <- 0 to qosArray.length -1) {
       qosArray(i) = qos.getOrElse(1);
     }
     client.subscribe(topics, qosArray)

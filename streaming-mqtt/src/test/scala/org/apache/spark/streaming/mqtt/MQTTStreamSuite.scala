@@ -33,6 +33,7 @@ class MQTTStreamSuite extends SparkFunSuite with Eventually with BeforeAndAfter 
   private val master = "local[2]"
   private val framework = this.getClass.getSimpleName
   private val topic = "def"
+  private val topics = Array("def1", "def2")
 
   private var ssc: StreamingContext = _
   private var mqttTestUtils: MQTTTestUtils = _
@@ -73,6 +74,30 @@ class MQTTStreamSuite extends SparkFunSuite with Eventually with BeforeAndAfter 
     eventually(timeout(10000 milliseconds), interval(100 milliseconds)) {
       mqttTestUtils.publishData(topic, sendMessage)
       assert(sendMessage.equals(receiveMessage(0)))
+    }
+    ssc.stop()
+  }
+  test("mqtt input stream2") {
+    val sendMessage1 = "MQTT demo for spark streaming1"
+    val sendMessage2 = "MQTT demo for spark streaming2"
+    val receiveStream2 = MQTTUtils.createPairedStream(ssc, "tcp://" + mqttTestUtils.brokerUri,
+        topics, StorageLevel.MEMORY_ONLY)
+
+    @volatile var receiveMessage: List[String] = List()
+    receiveStream2.foreachRDD { rdd =>
+      if (rdd.collect.length > 0) {
+        receiveMessage = receiveMessage ::: List(rdd.first()._2)
+        receiveMessage
+      }
+    }
+
+    ssc.start()
+
+    // Retry it because we don't know when the receiver will start.
+    eventually(timeout(10000 milliseconds), interval(100 milliseconds)) {
+      mqttTestUtils.publishData(topics(0), sendMessage1)
+      mqttTestUtils.publishData(topics(1), sendMessage2)
+      assert(receiveMessage.contains(sendMessage1)||receiveMessage.contains(sendMessage2))
     }
     ssc.stop()
   }
