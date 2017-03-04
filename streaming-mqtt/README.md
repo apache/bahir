@@ -66,6 +66,6 @@ You need to extend `JavaActorReceiver` so as to store received data into Spark u
 this actor can be configured to handle failures, etc.
 
     JavaDStream<String> lines = MQTTUtils.createStream(jssc, brokerUrl, topic);
-    JavaReceiverInputDStream<Tuple2<String, String>> lines = MQTTUtils.createStream(jssc, brokerUrl, topics);
+    JavaReceiverInputDStream<Tuple2<String, String>> lines = MQTTUtils.createPairedStream(jssc, brokerUrl, topics);
 
 See end-to-end examples at [MQTT Examples](https://github.com/apache/bahir/tree/master/streaming-mqtt/examples)
