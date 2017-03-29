@@ -75,6 +75,7 @@
   </mailingLists>
 
   <modules>
+    <module>sql-cloudant</module>
     <module>streaming-akka</module>
     <module>streaming-mqtt</module>
     <module>sql-streaming-mqtt</module>
@@ -162,7 +163,7 @@
       </snapshots>
     </pluginRepository>
   </pluginRepositories>
-  
+
   <dependencies>
     <!--
       This is a dummy dependency that is used to trigger the maven-shade plugin so that Spark's
@@ -290,6 +291,12 @@
       </dependency>
 
       <dependency>
+        <groupId>com.typesafe.play</groupId>
+        <artifactId>play-json_${scala.binary.version}</artifactId>
+        <version>2.5.9</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.json4s</groupId>
         <artifactId>json4s-jackson_${scala.binary.version}</artifactId>
         <version>3.2.11</version>
@@ -299,6 +306,12 @@
         <groupId>com.google.code.findbugs</groupId>
         <artifactId>jsr305</artifactId>
         <version>${jsr305.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.scalaj</groupId>
+        <artifactId>scalaj-http_${scala.binary.version}</artifactId>
+        <version>2.3.0</version>
       </dependency>
 
       <!-- Scala Related Dependencies -->
@@ -450,6 +463,8 @@
               <exclude>**/README.md</exclude>
               <exclude>**/examples/data/*.txt</exclude>
               <exclude>**/*.iml</exclude>
+              <exclude>**/src/main/resources/application.conf</exclude>
+              <exclude>**/src/main/resources/reference.conf</exclude>
             </excludes>
           </configuration>
         </plugin>
