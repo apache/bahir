@@ -257,13 +257,14 @@ The configuration is obtained in the following sequence:
 
 1. default in the Config, which is set in the application.conf
 2. key in the SparkConf, which is set in SparkConf
-3. key in the parameters, which is set in a dataframe or temporaty table options
+3. key in the parameters, which is set in a dataframe or temporaty table options, or StreamReceiver
 4. "spark."+key in the SparkConf (as they are treated as the one passed in through spark-submit using --conf option)
 
 Here each subsequent configuration overrides the previous one. Thus, configuration set using DataFrame option overrides what has beens set in SparkConf. And configuration passed in spark-submit using --conf takes precedence over any setting in the code.
 
 
 ### Configuration in application.conf
+
 Default values are defined in [here](src/main/resources/application.conf)
 
 ### Configuration on SparkConf
@@ -285,7 +286,7 @@ createDBOnSave|"false"| whether to create a new database during save operation. 
 
 ###  Configuration on Spark SQL Temporary Table or DataFrame
 
-Besides all the configurations passed to a temporary table or dataframe through SparkConf, it is also possible to set the following configurations in temporary table or dataframe using OPTIONS: 
+You can set the following configurations at temporary table or dataframe level, besides overriding any SparkConf configuration.
 
 Name | Default | Meaning
 --- |:---:| ---
@@ -303,11 +304,11 @@ spark.sql(" CREATE TEMPORARY TABLE flightTable1 USING org.apache.bahir.cloudant 
 
 ###  Configuration on Cloudant Receiver for Spark Streaming
 
+You can set the following configurations at stream Receiver level, besides overriding any SparkConf configuration.
+: 
+
 Name | Default | Meaning
 --- |:---:| ---
-cloudant.host||cloudant host url
-cloudant.username||cloudant userid
-cloudant.password||cloudant passwor
 database||cloudant database name
 selector| all documents| a selector written in Cloudant Query syntax, specifying conditions for selecting documents. Only documents satisfying the selector's conditions will be retrieved from Cloudant and loaded into Spark.
 
