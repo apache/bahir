@@ -36,7 +36,7 @@ object CloudantStreamingSelector {
     val curSalesCount = new AtomicLong(0)
     var batchAmount = 0L
 
-    val changes = ssc.receiverStream(new CloudantReceiver(Map(
+    val changes = ssc.receiverStream(new CloudantReceiver(sparkConf, Map(
       "cloudant.host" -> "ACCOUNT.cloudant.com",
       "cloudant.username" -> "USERNAME",
       "cloudant.password" -> "PASSWORD",

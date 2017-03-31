@@ -177,8 +177,7 @@ import org.apache.bahir.cloudant.CloudantConfig
       }
   }
 
-  def getConfig(parameters: Map[String, String]): CloudantConfig = {
-    val sparkConf = null
+  def getConfig(sparkConf: SparkConf, parameters: Map[String, String]): CloudantConfig = {
 
     implicit val total = getInt(sparkConf, parameters, PARTITION_CONFIG)
     implicit val max = getInt(sparkConf, parameters, MAX_IN_PARTITION_CONFIG)

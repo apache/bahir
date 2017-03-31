@@ -52,6 +52,7 @@ Currently, each submodule has its own README.md, with information on example usa
 * [Streaming Mqtt](https://github.com/apache/bahir/blob/master/streaming-mqtt/README.md)
 * [Streaming Zeromq](https://github.com/apache/bahir/blob/master/streaming-zeromq/README.md)
 * [Streaming Twitter](https://github.com/apache/bahir/blob/master/streaming-twitter/README.md)
+* [SQL Cloudant](sql-cloudant/README.md)
 
 Furthermore, to generate scaladocs for each module:
 

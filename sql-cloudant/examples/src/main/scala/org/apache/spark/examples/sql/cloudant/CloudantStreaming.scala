@@ -31,7 +31,7 @@ object CloudantStreaming {
     // Create the context with a 10 seconds batch size
     val ssc = new StreamingContext(sparkConf, Seconds(10))
 
-    val changes = ssc.receiverStream(new CloudantReceiver(Map(
+    val changes = ssc.receiverStream(new CloudantReceiver(sparkConf, Map(
       "cloudant.host" -> "ACCOUNT.cloudant.com",
       "cloudant.username" -> "USERNAME",
       "cloudant.password" -> "PASSWORD",
@@ -70,7 +70,7 @@ object CloudantStreaming {
                 s"""
                 |select airportName, count(*) as total
                 |from airportcodemapping
-                |group by airportName")
+                |group by airportName
                 """.stripMargin)
           airportCountsDataFrame.show()
         }

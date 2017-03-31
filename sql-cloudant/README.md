@@ -286,16 +286,19 @@ createDBOnSave|"false"| whether to create a new database during save operation. 
 
 ###  Configuration on Spark SQL Temporary Table or DataFrame
 
-You can set the following configurations at temporary table or dataframe level, besides overriding any SparkConf configuration.
+Besides overriding any SparkConf configuration, you can also set the following configurations at temporary table or dataframe level.
 
 Name | Default | Meaning
 --- |:---:| ---
 database||cloudant database name
-view||cloudant view w/o the database name. only used for load.
+view||cloudant view w/o the database name. only used for load.  
 index||cloudant search index w/o the database name. only used for load data with less than or equal to 200 results.
 path||cloudant: as database name if database is not present
 
-For fast loading, views are loaded without include_docs. Thus, a derived schema will always be: `{id, key, value}`, where `value `can be a compound field. An example of loading data from a view: 
+
+#### View Specific
+
+For fast loading, views are loaded without include_docs. Thus, a derived schema will always be: `{id, key, value}`, where `value `can be a compound field. An example of loading data from a view:
 
 ```python
 spark.sql(" CREATE TEMPORARY TABLE flightTable1 USING org.apache.bahir.cloudant OPTIONS ( database 'n_flight', view '_design/view/_view/AA0')")
@@ -304,7 +307,7 @@ spark.sql(" CREATE TEMPORARY TABLE flightTable1 USING org.apache.bahir.cloudant 
 
 ###  Configuration on Cloudant Receiver for Spark Streaming
 
-You can set the following configurations at stream Receiver level, besides overriding any SparkConf configuration.
+Besides overriding any SparkConf configuration, you can also set the following configurations at stream Receiver level
 
 Name | Default | Meaning
 --- |:---:| ---

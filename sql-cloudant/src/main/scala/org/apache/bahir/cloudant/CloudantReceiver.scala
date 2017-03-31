@@ -23,14 +23,15 @@ import play.api.libs.json.Json
 
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.receiver.Receiver
+import org.apache.spark.SparkConf
 
 import org.apache.bahir.cloudant.common._
 // scalastyle:on
 
-class CloudantReceiver(cloudantParams: Map[String, String])
+class CloudantReceiver(sparkConf: SparkConf, cloudantParams: Map[String, String])
     extends Receiver[String](StorageLevel.MEMORY_AND_DISK) {
   lazy val config: CloudantConfig = {
-    JsonStoreConfigManager.getConfig(cloudantParams: Map[String, String])
+    JsonStoreConfigManager.getConfig(sparkConf, cloudantParams)
       .asInstanceOf[CloudantConfig]
   }
 
