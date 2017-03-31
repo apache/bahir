@@ -305,7 +305,6 @@ spark.sql(" CREATE TEMPORARY TABLE flightTable1 USING org.apache.bahir.cloudant 
 ###  Configuration on Cloudant Receiver for Spark Streaming
 
 You can set the following configurations at stream Receiver level, besides overriding any SparkConf configuration.
-: 
 
 Name | Default | Meaning
 --- |:---:| ---
