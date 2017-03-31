@@ -260,7 +260,7 @@ The configuration is obtained in the following sequence:
 3. key in the parameters, which is set in a dataframe or temporaty table options, or StreamReceiver
 4. "spark."+key in the SparkConf (as they are treated as the one passed in through spark-submit using --conf option)
 
-Here each subsequent configuration overrides the previous one. Thus, configuration set using DataFrame option overrides what has beens set in SparkConf. And configuration passed in spark-submit using --conf takes precedence over any setting in the code.
+Here each subsequent configuration overrides the previous one. Thus, configuration set using DataFrame option overrides what has beens set in SparkConf. And configuration passed in spark-submit using --conf takes precedence over any setting in the code. When passing configuration in spark-submit, make sure adding "spark." as prefix to the keys.
 
 
 ### Configuration in application.conf
@@ -311,11 +311,6 @@ Name | Default | Meaning
 --- |:---:| ---
 database||cloudant database name
 selector| all documents| a selector written in Cloudant Query syntax, specifying conditions for selecting documents. Only documents satisfying the selector's conditions will be retrieved from Cloudant and loaded into Spark.
-
-
-###  Configuration in spark-submit using --conf option
-
-The above stated configuration keys can also be set using `spark-submit --conf` option. When passing configuration in spark-submit, make sure adding "spark." as prefix to the keys.
 
 
 <div id='Known-limitations'/>
