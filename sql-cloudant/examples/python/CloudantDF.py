@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pprint
 from pyspark.sql import SparkSession
 
 # define cloudant related configuration
@@ -54,7 +53,7 @@ df2.write.save("n_flight2",  "org.apache.bahir.cloudant",
         bulkSize = "100", createDBOnSave="true") 
 total = df.filter(df.flightSegmentId >'AA9').select("flightSegmentId", 
         "scheduledDepartureTime").orderBy(df.flightSegmentId).count()
-print "Total", total, "flights from table"
+print ("Total", total, "flights from table")
 
 
 # ***3. Loading dataframe from a Cloudant search index
@@ -63,7 +62,7 @@ df = spark.read.load(format="org.apache.bahir.cloudant", database="n_flight",
 df.printSchema()
 total = df.filter(df.flightSegmentId >'AA9').select("flightSegmentId", 
         "scheduledDepartureTime").orderBy(df.flightSegmentId).count()
-print "Total", total, "flights from index"
+print ("Total", total, "flights from index")
 
 
 # ***4. Loading dataframe from a Cloudant view
