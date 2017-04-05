@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pprint
 from pyspark.sql import SparkSession
 
 spark = SparkSession\
@@ -55,7 +54,7 @@ df.printSchema()
 total = df.filter(df.flightSegmentId >'AA9') \
     .select("flightSegmentId", "scheduledDepartureTime") \
     .orderBy(df.flightSegmentId).count()
-print "Total", total, "flights from table"
+print ("Total", total, "flights from table")
 
 
 # ***3. Loading dataframe from Cloudant search index
@@ -69,4 +68,4 @@ df.printSchema()
 total = df.filter(df.flightSegmentId >'AA9') \
     .select("flightSegmentId", "scheduledDepartureTime") \
     .orderBy(df.flightSegmentId).count()
-print "Total", total, "flights from index"
+print ("Total", total, "flights from index")
