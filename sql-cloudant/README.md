@@ -1,10 +1,12 @@
-A library for reading data from Cloudant databases using Spark SQL and Spark Streaming. 
+A library for reading data from Cloudant or CouchDB databases using Spark SQL and Spark Streaming. 
 
 [IBM® Cloudant®](https://cloudant.com) is a document-oriented DataBase as a Service (DBaaS). It stores data as documents 
 in JSON format. It's built with scalability, high availability, and durability in mind. It comes with a 
 wide variety of indexing options including map-reduce, Cloudant Query, full-text indexing, and 
 geospatial indexing. The replication capabilities make it easy to keep data in sync between database 
 clusters, desktop PCs, and mobile devices.
+
+[Apache CouchDB™](http://couchdb.apache.org) is open source database software that focuses on ease of use and having an architecture that "completely embraces the Web". It has a document-oriented NoSQL database architecture and is implemented in the concurrency-oriented language Erlang; it uses JSON to store data, JavaScript as its query language using MapReduce, and HTTP for an API.
 
 ## Linking
 
