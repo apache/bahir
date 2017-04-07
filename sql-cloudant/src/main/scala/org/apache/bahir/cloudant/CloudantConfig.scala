@@ -34,19 +34,15 @@ class CloudantConfig(val protocol: String, val host: String,
     (implicit val username: String, val password: String,
     val partitions: Int, val maxInPartition: Int, val minInPartition: Int,
     val requestTimeout: Long, val bulkSize: Int, val schemaSampleSize: Int,
-    val createDBOnSave: Boolean, val selector: String)
+    val createDBOnSave: Boolean, val selector: String, val useQuery: Boolean = false,
+    val queryLimit: Int)
     extends Serializable{
 
-  private val SCHEMA_FOR_ALL_DOCS_NUM = -1
   private lazy val dbUrl = {protocol + "://" + host + "/" + dbName}
 
   val pkField = "_id"
   val defaultIndex = "_all_docs" // "_changes" does not work for partition
   val default_filter: String = "*:*"
-
-  def getChangesUrl(): String = {
-    dbUrl + "/_changes?include_docs=true&feed=normal"
-  }
 
   def getContinuousChangesUrl(): String = {
     var url = dbUrl + "/_changes?include_docs=true&feed=continuous&heartbeat=3000"
@@ -64,11 +60,6 @@ class CloudantConfig(val protocol: String, val host: String,
     dbUrl
   }
 
-  def getLastUrl(skip: Int): String = {
-    if (skip ==0 ) null
-    else s"$dbUrl/$defaultIndex?limit=$skip"
-  }
-
   def getSchemaSampleSize(): Int = {
     schemaSampleSize
   }
@@ -76,8 +67,6 @@ class CloudantConfig(val protocol: String, val host: String,
   def getCreateDBonSave(): Boolean = {
     createDBOnSave
   }
-
-  def getLastNum(result: JsValue): JsValue = (result \ "last_seq").get
 
   def getTotalUrl(url: String): String = {
     if (url.contains('?')) {
@@ -91,37 +80,24 @@ class CloudantConfig(val protocol: String, val host: String,
     dbName
   }
 
-  def allowPartition(): Boolean = {indexName==null}
+  def queryEnabled(): Boolean = {useQuery && indexName==null && viewName==null}
 
-  def getOneUrl(): String = {
-    dbUrl + "/_all_docs?limit=1&include_docs=true"
-  }
+  def allowPartition(queryUsed: Boolean): Boolean = {indexName==null && !queryUsed}
 
-  def getOneUrlExcludeDDoc1(): String = {
-    dbUrl + "/_all_docs?endkey=%22_design/%22&limit=1&include_docs=true"
-  }
+  def getAllDocsUrl(limit: Int, excludeDDoc: Boolean = false): String = {
 
-  def getOneUrlExcludeDDoc2(): String = {
-    dbUrl + "/_all_docs?startkey=%22_design0/%22&limit=1&include_docs=true"
-  }
-
-  def getAllDocsUrlExcludeDDoc(limit: Int): String = {
     if (viewName == null) {
-      dbUrl + "/_all_docs?startkey=%22_design0/%22&limit=" + limit + "&include_docs=true"
-    } else {
-      dbUrl + "/" + viewName + "?limit=1"
-    }
-  }
-
-  def getAllDocsUrl(limit: Int): String = {
-    if (viewName == null) {
-      if (limit == SCHEMA_FOR_ALL_DOCS_NUM) {
-        dbUrl + "/_all_docs?include_docs=true"
+      val baseUrl = (
+          if ( excludeDDoc) dbUrl + "/_all_docs?startkey=%22_design0/%22&include_docs=true"
+          else dbUrl + "/_all_docs?include_docs=true"
+          )
+      if (limit == JsonStoreConfigManager.ALL_DOCS_LIMIT) {
+        baseUrl
       } else {
-        dbUrl + "/_all_docs?limit=" + limit + "&include_docs=true"
+        baseUrl + "&limit=" + limit
       }
     } else {
-      if (limit == JsonStoreConfigManager.SCHEMA_FOR_ALL_DOCS_NUM) {
+      if (limit == JsonStoreConfigManager.ALL_DOCS_LIMIT) {
         dbUrl + "/" + viewName
       } else {
         dbUrl + "/" + viewName + "?limit=" + limit
@@ -132,22 +108,23 @@ class CloudantConfig(val protocol: String, val host: String,
   def getRangeUrl(field: String = null, start: Any = null,
       startInclusive: Boolean = false, end: Any = null,
       endInclusive: Boolean = false,
-      includeDoc: Boolean = true): (String, Boolean) = {
-    val (url: String, pusheddown: Boolean) =
-      calculate(field, start, startInclusive, end, endInclusive)
-    if (includeDoc) {
+      includeDoc: Boolean = true,
+      allowQuery: Boolean = false): (String, Boolean, Boolean) = {
+    val (url: String, pusheddown: Boolean, queryUsed: Boolean) =
+      calculate(field, start, startInclusive, end, endInclusive, allowQuery)
+    if (includeDoc && !queryUsed ) {
       if (url.indexOf('?') > 0) {
-        (url + "&include_docs=true", pusheddown)
+        (url + "&include_docs=true", pusheddown, queryUsed)
       } else {
-        (url + "?include_docs=true", pusheddown)
+        (url + "?include_docs=true", pusheddown, queryUsed)
       }
     } else {
-      (url, pusheddown)
+      (url, pusheddown, queryUsed)
     }
   }
 
   private def calculate(field: String, start: Any, startInclusive: Boolean,
-      end: Any, endInclusive: Boolean): (String, Boolean) = {
+      end: Any, endInclusive: Boolean, allowQuery: Boolean): (String, Boolean, Boolean) = {
     if (field != null && field.equals(pkField)) {
       var condition = ""
       if (start != null && end != null && start.equals(end)) {
@@ -166,16 +143,18 @@ class CloudantConfig(val protocol: String, val host: String,
           condition += "endkey=%22" + URLEncoder.encode(end.toString(), "UTF-8") + "%22"
         }
       }
-      (dbUrl + "/_all_docs" + condition, true)
+      (dbUrl + "/_all_docs" + condition, true, false)
     } else if (indexName!=null) {
       //  push down to indexName
       val condition = calculateCondition(field, start, startInclusive,
         end, endInclusive)
-      (dbUrl + "/" + indexName + "?q=" + condition, true)
+      (dbUrl + "/" + indexName + "?q=" + condition, true, false)
     } else if (viewName != null) {
-      (dbUrl + "/" + viewName, true)
+      (dbUrl + "/" + viewName, false, false)
+    } else if (allowQuery && useQuery) {
+      (s"$dbUrl/_find", false, true)
     } else {
-      (s"$dbUrl/$defaultIndex", false)
+      (s"$dbUrl/$defaultIndex", false, false)
     }
 
   }
@@ -215,20 +194,21 @@ class CloudantConfig(val protocol: String, val host: String,
     }
   }
 
-  def getSubSetUrl (url: String, skip: Int, limit: Int)
-      (implicit convertSkip: (Int) => String): String = {
+  def getSubSetUrl (url: String, skip: Int, limit: Int, queryUsed: Boolean): String = {
     val suffix = {
       if (url.indexOf("_all_docs")>0) "include_docs=true&limit=" +
         limit + "&skip=" + skip
-      else if (url.indexOf("_changes")>0) "include_docs=true&limit=" +
-          limit + "&since=" + convertSkip(skip)
       else if (viewName != null) {
         "limit=" + limit + "&skip=" + skip
+      } else if (queryUsed) {
+        ""
       } else {
         "include_docs=true&limit=" + limit
       } // TODO Index query does not support subset query. Should disable Partitioned loading?
     }
-    if (url.indexOf('?') > 0) {
+    if (suffix.length==0) {
+      url
+    } else if (url.indexOf('?') > 0) {
       url + "&" + suffix
     }
     else {
@@ -246,8 +226,10 @@ class CloudantConfig(val protocol: String, val host: String,
     }
   }
 
-  def getRows(result: JsValue): Seq[JsValue] = {
-    if (viewName == null) {
+  def getRows(result: JsValue, queryUsed: Boolean): Seq[JsValue] = {
+    if ( queryUsed ) {
+      ((result \ "docs").as[JsArray]).value.map(row => row)
+    } else if ( viewName == null) {
       ((result \ "rows").as[JsArray]).value.map(row => (row \ "doc").get)
     } else {
       ((result \ "rows").as[JsArray]).value.map(row => row)
