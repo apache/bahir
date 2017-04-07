@@ -23,7 +23,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
 
-import org.apache.bahir.cloudant.common.{FilterInterpreter, JsonStoreDataAccess, JsonStoreRDD, _}
+import org.apache.bahir.cloudant.common.{JsonStoreDataAccess, JsonStoreRDD, _}
 
 case class CloudantReadWriteRelation (config: CloudantConfig,
                                       schema: StructType,
@@ -49,23 +49,11 @@ case class CloudantReadWriteRelation (config: CloudantConfig,
           allDocsDF.select(requiredColumns(0), colsExceptCol0: _*).rdd
         }
       } else {
-        val filterInterpreter = new FilterInterpreter(filters)
-        var searchField: String = {
-          if (filterInterpreter.containsFiltersFor(config.pkField)) {
-            config.pkField
-          } else {
-            filterInterpreter.firstField
-          }
-        }
+        implicit val columns : Array[String] = requiredColumns
+        implicit val origFilters : Array[Filter] = filters
 
-        val (min, minInclusive, max, maxInclusive) = filterInterpreter.getInfo(searchField)
-        implicit val columns = requiredColumns
-        val (url: String, pusheddown: Boolean) = config.getRangeUrl(searchField,
-            min, minInclusive, max, maxInclusive, false)
-        if (!pusheddown) searchField = null
-        implicit val attrToFilters = filterInterpreter.getFiltersForPostProcess(searchField)
-
-        val cloudantRDD = new JsonStoreRDD(sqlContext.sparkContext, config, url)
+        logger.info("buildScan:" + columns + "," + origFilters)
+        val cloudantRDD = new JsonStoreRDD(sqlContext.sparkContext, config)
         val df = sqlContext.read.json(cloudantRDD)
         if (colsLength > 1) {
           val colsExceptCol0 = for (i <- 1 until colsLength) yield requiredColumns(i)
@@ -117,16 +105,10 @@ class DefaultSource extends RelationProvider
           inSchema
         } else {
           val df = if (config.getSchemaSampleSize() ==
-            JsonStoreConfigManager.SCHEMA_FOR_ALL_DOCS_NUM &&
+            JsonStoreConfigManager.ALL_DOCS_LIMIT &&
             config.viewName == null
             && config.indexName == null) {
-            val filterInterpreter = new FilterInterpreter(null)
-            var searchField = null
-            val (min, minInclusive, max, maxInclusive) =
-                filterInterpreter.getInfo(searchField)
-            val (url: String, pusheddown: Boolean) = config.getRangeUrl(searchField,
-                min, minInclusive, max, maxInclusive, false)
-            val cloudantRDD = new JsonStoreRDD(sqlContext.sparkContext, config, url)
+            val cloudantRDD = new JsonStoreRDD(sqlContext.sparkContext, config)
             allDocsDF = sqlContext.read.json(cloudantRDD)
             allDocsDF
           } else {
