@@ -62,8 +62,8 @@ cloudant.protocol|https|protocol to use to transfer data: http or https
 cloudant.host||cloudant host url
 cloudant.username||cloudant userid
 cloudant.password||cloudant password
-cloudant.useQuery|false|When enabled, for query not using index or view, _find will be used instead of _all_docs, some query predicates will be driven into datastore. However, RDD partition is ONE during _find, so parallel loading is not achieved
-cloudant.queryLimit|25|the limit set onto _find query
+cloudant.useQuery|false|By default, _all_docs endpoint is used if configuration 'view' and 'index' (see below) are not set. When useQuery is enabled, _find endpoint will be used in place of _all_docs when query condition is not on primary key field (_id), so that query predicates may be driven into datastore. 
+cloudant.queryLimit|25|The maximum number of results returned when querying the _find endpoint.
 jsonstore.rdd.partitions|10|the number of partitions intent used to drive JsonStoreRDD loading query result in parallel. The actual number is calculated based on total rows returned and satisfying maxInPartition and minInPartition
 jsonstore.rdd.maxInPartition|-1|the max rows in a partition. -1 means unlimited
 jsonstore.rdd.minInPartition|10|the min rows in a partition.
