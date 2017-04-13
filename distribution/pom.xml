@@ -26,9 +26,9 @@
     </parent>
 
     <groupId>org.apache.bahir</groupId>
-    <artifactId>assembly_2.11</artifactId>
+    <artifactId>bahir-spark-distribution_2.11</artifactId>
     <packaging>pom</packaging>
-    <name>Apache Bahir - Release Distributions</name>
+    <name>Apache Bahir - Spark Extensions Distribution</name>
     <url>http://bahir.apache.org/</url>
 
     <dependencies>
