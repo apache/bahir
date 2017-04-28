@@ -17,14 +17,10 @@
 
 package org.apache.spark.streaming.pubsub
 
-import com.google.api.services.pubsub.PubsubScopes
-import com.google.cloud.hadoop.util.{EntriesCredentialConfiguration, HadoopCredentialConfiguration}
-import java.util
-import org.apache.hadoop.conf.Configuration
-
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.ReceiverInputDStream
+import org.apache.spark.streaming.pubsub.ServiceAccountType.ServiceAccountType
 
 object PubsubUtils {
 
@@ -36,16 +32,12 @@ object PubsubUtils {
       subscription: String,
       storageLevel: StorageLevel): ReceiverInputDStream[SparkPubsubMessage] = {
     ssc.withNamedScope("pubsub stream") {
+
       new PubsubInputDStream(
         ssc,
         project,
         subscription,
-        HadoopCredentialConfiguration
-            .newBuilder()
-            .withConfiguration(new Configuration(false))
-            .withOverridePrefix(PUBSUB_PREFIX)
-            .build()
-            .getCredential(new util.ArrayList(PubsubScopes.all())),
+        ApplicationDefaultCredentials,
         storageLevel)
     }
   }
@@ -54,63 +46,33 @@ object PubsubUtils {
       ssc: StreamingContext,
       project: String,
       subscription: String,
-      serviceAccountJsonFilePath: String,
+      serviceAccountType: ServiceAccountType,
+      serviceAccountJsonPath: String,
+      serviceAccountEmail: String,
+      serviceAccountP12Path: String,
       storageLevel: StorageLevel): ReceiverInputDStream[SparkPubsubMessage] = {
     ssc.withNamedScope("pubsub stream") {
-      val conf = new Configuration(false)
-      conf.setBoolean(
-        PUBSUB_PREFIX + EntriesCredentialConfiguration.ENABLE_SERVICE_ACCOUNTS_SUFFIX,
-        true)
-      conf.set(
-        PUBSUB_PREFIX + EntriesCredentialConfiguration.JSON_KEYFILE_SUFFIX,
-        serviceAccountJsonFilePath
-      )
+
+      val serviceAccountCredentials = serviceAccountType match {
+        case ServiceAccountType.Metadata => new ServiceAccountCredentials()
+        case ServiceAccountType.Json =>
+          new ServiceAccountCredentials(Option(serviceAccountJsonPath))
+        case ServiceAccountType.P12 =>
+          new ServiceAccountCredentials(jsonFilePath = Option(serviceAccountP12Path),
+            emailAccount = Option(serviceAccountEmail))
+      }
+
       new PubsubInputDStream(
         ssc,
         project,
         subscription,
-        HadoopCredentialConfiguration
-            .newBuilder()
-            .withConfiguration(conf)
-            .withOverridePrefix(PUBSUB_PREFIX)
-            .build()
-            .getCredential(new util.ArrayList(PubsubScopes.all())),
+        serviceAccountCredentials,
         storageLevel)
     }
   }
+}
 
-  def createStream(
-      ssc: StreamingContext,
-      project: String,
-      subscription: String,
-      serviceAccountP12Email: String,
-      serviceAccountP12FilePath: String,
-      storageLevel: StorageLevel): ReceiverInputDStream[SparkPubsubMessage] = {
-    ssc.withNamedScope("pubsub stream") {
-      val conf = new Configuration(false)
-      conf.setBoolean(
-        PUBSUB_PREFIX + EntriesCredentialConfiguration.ENABLE_SERVICE_ACCOUNTS_SUFFIX,
-        true)
-      conf.set(
-        PUBSUB_PREFIX + EntriesCredentialConfiguration.SERVICE_ACCOUNT_EMAIL_SUFFIX,
-        serviceAccountP12Email
-      )
-      conf.set(
-        PUBSUB_PREFIX + EntriesCredentialConfiguration.SERVICE_ACCOUNT_KEYFILE_SUFFIX,
-        serviceAccountP12FilePath
-      )
-      new PubsubInputDStream(
-        ssc,
-        project,
-        subscription,
-        HadoopCredentialConfiguration
-            .newBuilder()
-            .withConfiguration(conf)
-            .withOverridePrefix(PUBSUB_PREFIX)
-            .build()
-            .getCredential(new util.ArrayList(PubsubScopes.all())),
-        storageLevel)
-    }
-  }
-
+object ServiceAccountType extends Enumeration {
+  type ServiceAccountType = Value
+  val Metadata, Json, P12 = Value
 }

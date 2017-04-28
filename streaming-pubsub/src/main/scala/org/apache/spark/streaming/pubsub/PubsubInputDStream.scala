@@ -41,7 +41,7 @@ class PubsubInputDStream(
     _ssc: StreamingContext,
     val project: String,
     val subscription: String,
-    val credential: Credential,
+    val credential: SparkGCPCredentials,
     val _storageLevel: StorageLevel
 ) extends ReceiverInputDStream[SparkPubsubMessage](_ssc) {
 
@@ -50,16 +50,22 @@ class PubsubInputDStream(
   }
 }
 
-class SparkPubsubMessage(val message: PubsubMessage) extends Externalizable {
+class SparkPubsubMessage() extends Externalizable {
 
-  def getData(): Array[Byte] = message.decodeData()
-
-  def getAttributes(): java.util.Map[String, String] = message.getAttributes()
+  var message: PubsubMessage = new PubsubMessage()
 
   override def writeExternal(out: ObjectOutput): Unit = Utils.tryOrIOException {
     val data = message.decodeData()
     out.writeInt(data.size)
     out.write(data)
+
+    val idBuff = Utils.serialize(message.getMessageId)
+    out.writeInt(idBuff.length)
+    out.write(idBuff)
+
+    val publishTimeBuff = Utils.serialize(message.getPublishTime)
+    out.writeInt(publishTimeBuff.length)
+    out.write(publishTimeBuff)
 
     val numAttributes = message.getAttributes.size()
     out.writeInt(numAttributes)
@@ -77,6 +83,16 @@ class SparkPubsubMessage(val message: PubsubMessage) extends Externalizable {
     val bodyLength = in.readInt()
     val data = new Array[Byte](bodyLength)
     in.readFully(data)
+
+    val idLength = in.readInt()
+    val idBuff = new Array[Byte](idLength)
+    in.readFully(idBuff)
+    val id: String = Utils.deserialize(idBuff)
+
+    val publishTimeLength = in.readInt()
+    val publishTimeBuff = new Array[Byte](publishTimeLength)
+    in.readFully(publishTimeBuff)
+    val publishTime: String = Utils.deserialize(publishTimeBuff)
 
     val numAttributes = in.readInt()
     val attributes = new java.util.HashMap[String, String]
@@ -96,6 +112,8 @@ class SparkPubsubMessage(val message: PubsubMessage) extends Externalizable {
     }
 
     message.encodeData(data)
+    message.setMessageId(id)
+    message.setPublishTime(publishTime)
     message.setAttributes(attributes)
   }
 }
@@ -111,13 +129,13 @@ private[pubsub]
 class PubsubReceiver(
     project: String,
     subscription: String,
-    credential: Credential,
+    credential: SparkGCPCredentials,
     storageLevel: StorageLevel)
     extends Receiver[SparkPubsubMessage](storageLevel) {
 
   val APP_NAME = "sparkstreaming-pubsub-receiver"
 
-  val BACKOFF = 100 // 100ms
+  val INIT_BACKOFF = 100 // 100ms
 
   val MAX_BACKOFF = 10 * 1000 // 10s
 
@@ -147,30 +165,38 @@ class PubsubReceiver(
     val client = new Builder(
       Transport.transport,
       Transport.jacksonFactory,
-      new RetryHttpInitializer(credential, APP_NAME))
+      new RetryHttpInitializer(credential.provider, APP_NAME))
         .setApplicationName(APP_NAME)
         .build()
     val pullRequest = new PullRequest().setMaxMessages(MAX_MESSAGE).setReturnImmediately(false)
     val subscriptionFullName = s"projects/$project/subscriptions/$subscription"
-    var backoff = BACKOFF
+    var backoff = INIT_BACKOFF
     while (!isStopped()) {
       try {
         val pullResponse =
           client.projects().subscriptions().pull(subscriptionFullName, pullRequest).execute()
         val receivedMessages = pullResponse.getReceivedMessages.asScala.toList
+        // TODO looks like store list do not support backpressure, change to store one by one
+        // TODO extend ack deadline is needed, consider backpressure for instance
         store(receivedMessages
-            .map(x => new SparkPubsubMessage(x.getMessage))
+            .map(x => {
+              var sm = new SparkPubsubMessage
+              sm.message = x.getMessage
+              sm
+            })
             .iterator)
 
         val ackRequest = new AcknowledgeRequest()
         ackRequest.setAckIds(receivedMessages.map(x => x.getAckId).asJava)
         client.projects().subscriptions().acknowledge(subscriptionFullName, ackRequest)
+        backoff = INIT_BACKOFF
       } catch {
         case e: GoogleJsonResponseException =>
           e.getDetails.getCode match {
             case RESOURCE_EXHAUSTED | CANCELLED | INTERNAL | UNAVAILABLE | DEADLINE_EXCEEDED =>
               Thread.sleep(backoff)
               backoff = Math.min(backoff * 2, MAX_BACKOFF)
+            case _ => reportError("Failed to pull messages", e)
           }
         case NonFatal(e) => reportError("Failed to pull messages", e)
       }
