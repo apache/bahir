@@ -82,6 +82,7 @@
     <module>sql-streaming-mqtt</module>
     <module>streaming-twitter</module>
     <module>streaming-zeromq</module>
+    <module>streaming-pubsub</module>
   </modules>
 
   <properties>
