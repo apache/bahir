@@ -52,7 +52,15 @@ class PubsubInputDStream(
 
 class SparkPubsubMessage() extends Externalizable {
 
-  var message: PubsubMessage = new PubsubMessage()
+  private[pubsub] var message = new PubsubMessage
+
+  def getData(): Array[Byte] = message.decodeData()
+
+  def getAttributes(): java.util.Map[String, String] = message.getAttributes
+
+  def getMessageId(): String = message.getMessageId
+
+  def getPublishTime(): String = message.getPublishTime
 
   override def writeExternal(out: ObjectOutput): Unit = Utils.tryOrIOException {
     val data = message.decodeData()
@@ -176,11 +184,11 @@ class PubsubReceiver(
         val pullResponse =
           client.projects().subscriptions().pull(subscriptionFullName, pullRequest).execute()
         val receivedMessages = pullResponse.getReceivedMessages.asScala.toList
-        // TODO looks like store list do not support backpressure, change to store one by one
+        // TODO store list do not support backpressure, change to store one by one
         // TODO extend ack deadline is needed, consider backpressure for instance
         store(receivedMessages
             .map(x => {
-              var sm = new SparkPubsubMessage
+              val sm = new SparkPubsubMessage
               sm.message = x.getMessage
               sm
             })

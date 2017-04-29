@@ -81,10 +81,9 @@ class PubsubStreamSuite extends SparkFunSuite with Eventually with BeforeAndAfte
     eventually(timeout(10000 milliseconds), interval(100 milliseconds)) {
       val sendMessages = pubsubTestUtils.generatorMessages(10)
       pubsubTestUtils.publishData(topicFullName, sendMessages)
-      assert(sendMessages.map(_.message.getData).contains(receiveMessages(0).message.getData))
-      assert(
-        sendMessages.map(_.message.getAttributes).contains(receiveMessages(0).message.getAttributes)
-      )
+      assert(sendMessages.map(m => new String(m.getData))
+          .contains(new String(receiveMessages(0).getData)))
+      assert(sendMessages.map(_.getAttributes).contains(receiveMessages(0).getAttributes))
     }
 
     ssc.stop()
