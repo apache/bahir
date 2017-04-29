@@ -24,8 +24,13 @@ import org.apache.spark.streaming.pubsub.ServiceAccountType.ServiceAccountType
 
 object PubsubUtils {
 
-  val PUBSUB_PREFIX = "sparkstreaming.pubsub"
-
+  /**
+   * Create an input stream that receives messages pushed by a Pub/Sub publisher.
+   * @param ssc           StreamingContext object
+   * @param project       Google cloud project id
+   * @param subscription  Subscription name to subscribe to
+   * @param storageLevel  RDD storage level
+   */
   def createStream(
       ssc: StreamingContext,
       project: String,
@@ -42,6 +47,18 @@ object PubsubUtils {
     }
   }
 
+  /**
+   * Create an input stream that receives messages pushed by a Pub/Sub publisher.
+   * @param ssc                     StreamingContext object
+   * @param project                 Google cloud project id
+   * @param subscription            Subscription name to subscribe to
+   * @param serviceAccountType      Type of service account: Metadata, Json, P12
+   * @param serviceAccountJsonPath  File path for Json type of service account
+   * @param serviceAccountEmail     Email account of service account
+   * @param serviceAccountP12Path   File path for P12 type of service account
+   * @param storageLevel            RDD storage level
+   * @return
+   */
   def createStream(
       ssc: StreamingContext,
       project: String,

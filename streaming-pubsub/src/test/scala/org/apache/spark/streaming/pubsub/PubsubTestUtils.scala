@@ -27,7 +27,6 @@ import java.util
 import org.apache.hadoop.conf.Configuration
 
 import org.apache.spark.internal.Logging
-import org.apache.spark.streaming.pubsub.PubsubUtils.PUBSUB_PREFIX
 
 private[pubsub] class PubsubTestUtils extends Logging {
 
@@ -39,25 +38,13 @@ private[pubsub] class PubsubTestUtils extends Logging {
   val APP_NAME = this.getClass.getSimpleName
 
   val client: Pubsub = {
-    val conf = new Configuration(false)
-    conf.setBoolean(
-      PUBSUB_PREFIX + EntriesCredentialConfiguration.ENABLE_SERVICE_ACCOUNTS_SUFFIX,
-      true)
-    conf.set(
-      PUBSUB_PREFIX + EntriesCredentialConfiguration.JSON_KEYFILE_SUFFIX,
-      serviceAccountJsonPath
-    )
     new Builder(
-      Transport.transport,
-      Transport.jacksonFactory,
-      new RetryHttpInitializer(HadoopCredentialConfiguration
-          .newBuilder()
-          .withConfiguration(conf)
-          .withOverridePrefix(PUBSUB_PREFIX)
-          .build()
-          .getCredential(new util.ArrayList(PubsubScopes.all()))
-        , APP_NAME)
-    )
+      ConnectionUtils.transport,
+      ConnectionUtils.jacksonFactory,
+      new RetryHttpInitializer(
+        new ServiceAccountCredentials(Option(serviceAccountJsonPath)).provider,
+        APP_NAME
+      ))
     .setApplicationName(APP_NAME)
     .build()
   }
