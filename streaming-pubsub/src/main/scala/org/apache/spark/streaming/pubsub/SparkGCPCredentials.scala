@@ -24,13 +24,13 @@ import com.google.cloud.hadoop.util.{EntriesCredentialConfiguration, HadoopCrede
 import java.util
 import org.apache.hadoop.conf.Configuration
 
-import org.apache.spark.streaming.pubsub.PubsubUtils.PUBSUB_PREFIX
-
 /**
  * Serializable interface providing a method executors can call to obtain an
  * GCPCredentialsProvider instance for authenticating to GCP services.
  */
 private[pubsub] sealed trait SparkGCPCredentials extends Serializable {
+
+  val PUBSUB_PREFIX = "sparkstreaming.pubsub"
 
   def provider: Credential
 }
@@ -92,25 +92,6 @@ private[pubsub] final case class ServiceAccountCredentials(
         .withOverridePrefix(PUBSUB_PREFIX)
         .build()
         .getCredential(new util.ArrayList(PubsubScopes.all()))
-  }
-
-  /**
-   * Returns a Metadata service credentials
-   */
-  private[pubsub] final case class MetadataServiceCredentials() extends SparkGCPCredentials {
-
-    override def provider: Credential = {
-      val conf = new Configuration(false)
-      conf.setBoolean(
-        PUBSUB_PREFIX + EntriesCredentialConfiguration.ENABLE_SERVICE_ACCOUNTS_SUFFIX,
-        true)
-      HadoopCredentialConfiguration
-          .newBuilder()
-          .withConfiguration(conf)
-          .withOverridePrefix(PUBSUB_PREFIX)
-          .build()
-          .getCredential(new util.ArrayList(PubsubScopes.all()))
-    }
   }
 
 }

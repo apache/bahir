@@ -51,22 +51,6 @@
       <version>v1-rev354-1.22.0</version>
     </dependency>
     <dependency>
-      <groupId>com.google.auth</groupId>
-      <artifactId>google-auth-library-credentials</artifactId>
-      <version>0.6.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.auth</groupId>
-      <artifactId>google-auth-library-oauth2-http</artifactId>
-      <version>0.6.1</version>
-      <exclusions>
-        <exclusion>
-          <groupId>com.fasterxml.jackson.core</groupId>
-          <artifactId>jackson-core</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
       <groupId>com.google.cloud.bigdataoss</groupId>
       <artifactId>util</artifactId>
       <version>1.6.0</version>
