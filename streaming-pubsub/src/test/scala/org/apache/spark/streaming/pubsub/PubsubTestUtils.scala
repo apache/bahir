@@ -30,11 +30,6 @@ import org.apache.spark.internal.Logging
 
 private[pubsub] class PubsubTestUtils extends Logging {
 
-  val projectId = "engineering-152721"
-  val serviceAccountJsonPath = "/home/bchen/.ssh/tcomp-integration-test-bigquery.json"
-  val serviceAccountEmail = "/home/bchen/.ssh/tcomp-integration-test-bigquery.p12"
-  val serviceAccountP12Path =
-    "tcomp-integration-test-bigquer@engineering-152721.iam.gserviceaccount.com"
   val APP_NAME = this.getClass.getSimpleName
 
   val client: Pubsub = {
@@ -42,7 +37,7 @@ private[pubsub] class PubsubTestUtils extends Logging {
       ConnectionUtils.transport,
       ConnectionUtils.jacksonFactory,
       new RetryHttpInitializer(
-        new ServiceAccountCredentials(Option(serviceAccountJsonPath)).provider,
+        PubsubTestUtils.credential.provider,
         APP_NAME
       ))
     .setApplicationName(APP_NAME)
@@ -89,10 +84,54 @@ private[pubsub] class PubsubTestUtils extends Logging {
     .toList
   }
 
-  def getFullTopicPath(topic: String): String = s"projects/$projectId/topics/$topic"
+  def getFullTopicPath(topic: String): String =
+    s"projects/${PubsubTestUtils.projectId}/topics/$topic"
 
-  def getFullSubscriptionPath(subscription: String): String = {
-    s"projects/$projectId/subscriptions/$subscription"
+  def getFullSubscriptionPath(subscription: String): String =
+    s"projects/${PubsubTestUtils.projectId}/subscriptions/$subscription"
+
+}
+
+private[pubsub] object PubsubTestUtils {
+
+  val envVarNameForEnablingTests = "ENABLE_PUBSUB_TESTS"
+  val envVarNameForGoogleCloudProjectId = "GCP_TEST_PROJECT_ID"
+  val envVarNameForJsonKeyPath = "GCP_TEST_JSON_KEY_PATH"
+
+  lazy val shouldRunTests = {
+    val isEnvSet = sys.env.get(envVarNameForEnablingTests) == Some("1")
+    if (isEnvSet) {
+      // scalastyle:off println
+      // Print this so that they are easily visible on the console and not hidden in the log4j logs.
+      println(
+        s"""
+           |Google Pub/Sub tests that actually send data has been enabled by setting the environment
+           |variable $envVarNameForEnablingTests to 1.
+           |This will create Pub/Sub Topics and Subscriptions in Google cloud platform.
+           |Please be aware that this may incur some Google cloud costs.
+           |Set the environment variable $envVarNameForGoogleCloudProjectId to the desired project.
+        """.stripMargin)
+      // scalastyle:on println
+    }
+    isEnvSet
   }
+
+  lazy val projectId = {
+    val id = sys.env.getOrElse(envVarNameForGoogleCloudProjectId,
+      throw new IllegalArgumentException(
+        s"Need to set environment varibable $envVarNameForGoogleCloudProjectId if enable test."))
+    // scalastyle:off println
+    // Print this so that they are easily visible on the console and not hidden in the log4j logs.
+    println(s"Using project $id for creating Pub/Sub topic and subscription for tests.")
+    // scalastyle:on println
+    id
+  }
+
+  lazy val credential =
+    sys.env.get(envVarNameForJsonKeyPath)
+        .map(path => SparkGCPCredentials.builder.jsonServiceAccount(path).build())
+        .getOrElse(SparkGCPCredentials.builder.build())
+
+
 
 }
