@@ -30,8 +30,6 @@ import org.apache.hadoop.conf.Configuration
  */
 private[pubsub] sealed trait SparkGCPCredentials extends Serializable {
 
-  val PUBSUB_PREFIX = "sparkstreaming.pubsub"
-
   def provider: Credential
 }
 
@@ -47,6 +45,9 @@ private[pubsub] final case object ApplicationDefaultCredentials extends SparkGCP
 
 /**
  * Returns a Service Account type Credential instance.
+ * If all parameters are None, then try metadata service type
+ * If jsonFilePath available, try json type
+ * If jsonFilePath is None and p12FilePath and emailAccount available, try p12 type
  *
  * @param jsonFilePath file path for json
  * @param p12FilePath  file path for p12
@@ -61,26 +62,30 @@ private[pubsub] final case class ServiceAccountCredentials(
   override def provider: Credential = {
     val conf = new Configuration(false)
     conf.setBoolean(
-      PUBSUB_PREFIX + EntriesCredentialConfiguration.ENABLE_SERVICE_ACCOUNTS_SUFFIX,
+      EntriesCredentialConfiguration.BASE_KEY_PREFIX
+          + EntriesCredentialConfiguration.ENABLE_SERVICE_ACCOUNTS_SUFFIX,
       true)
     jsonFilePath match {
       case Some(jsonFilePath) =>
         conf.set(
-          PUBSUB_PREFIX + EntriesCredentialConfiguration.JSON_KEYFILE_SUFFIX,
+          EntriesCredentialConfiguration.BASE_KEY_PREFIX
+              + EntriesCredentialConfiguration.JSON_KEYFILE_SUFFIX,
           jsonFilePath
         )
       case None =>
         p12FilePath match {
           case Some(p12FilePath) =>
             conf.set(
-              PUBSUB_PREFIX + EntriesCredentialConfiguration.SERVICE_ACCOUNT_EMAIL_SUFFIX,
+              EntriesCredentialConfiguration.BASE_KEY_PREFIX
+                  + EntriesCredentialConfiguration.SERVICE_ACCOUNT_EMAIL_SUFFIX,
               p12FilePath
             )
         }
         emailAccount match {
           case Some(emailAccount) =>
             conf.set(
-              PUBSUB_PREFIX + EntriesCredentialConfiguration.SERVICE_ACCOUNT_KEYFILE_SUFFIX,
+              EntriesCredentialConfiguration.BASE_KEY_PREFIX
+                  + EntriesCredentialConfiguration.SERVICE_ACCOUNT_KEYFILE_SUFFIX,
               emailAccount
             )
         }
@@ -89,9 +94,71 @@ private[pubsub] final case class ServiceAccountCredentials(
     HadoopCredentialConfiguration
         .newBuilder()
         .withConfiguration(conf)
-        .withOverridePrefix(PUBSUB_PREFIX)
         .build()
         .getCredential(new util.ArrayList(PubsubScopes.all()))
   }
 
+}
+
+object SparkGCPCredentials {
+
+  /**
+   * Builder for SparkGCPCredentials instance.
+   */
+  class Builder {
+    private var creds: Option[SparkGCPCredentials] = None
+
+    /**
+     * Use a json type key file for service account credential
+     *
+     * @param jsonFilePath json type key file
+     * @return Reference to this SparkGCPCredentials.Builder
+     */
+    def jsonServiceAccount(jsonFilePath: String): Builder = {
+      creds = Option(ServiceAccountCredentials(Option(jsonFilePath)))
+      this
+    }
+
+    /**
+     * Use a p12 type key file service account credential
+     *
+     * @param p12FilePath p12 type key file
+     * @param emailAccount email of service account
+     * @return Reference to this SparkGCPCredentials.Builder
+     */
+    def p12ServiceAccount(p12FilePath: String, emailAccount: String): Builder = {
+      creds = Option(ServiceAccountCredentials(
+        p12FilePath = Option(p12FilePath), emailAccount = Option(emailAccount)))
+      this
+    }
+
+    /**
+     * Use a meta data service to return service account
+     * @return Reference to this SparkGCPCredentials.Builder
+     */
+    def metadataServiceAccount(): Builder = {
+      creds = Option(ServiceAccountCredentials())
+      this
+    }
+
+    /**
+     * Returns the appropriate instance of SparkGCPCredentials given the configured
+     * parameters.
+     *
+     * - The service account credentials will be returned if they were provided.
+     *
+     * - The application default credentials will be returned otherwise.
+     * @return
+     */
+    def build(): SparkGCPCredentials = creds.getOrElse(ApplicationDefaultCredentials)
+
+  }
+
+  /**
+   * Creates a SparkGCPCredentials.Builder for constructing
+   * SparkGCPCredentials instance.
+   *
+   * @return SparkGCPCredentials.Builder instance
+   */
+  def builder: Builder = new Builder
 }

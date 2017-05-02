@@ -29,7 +29,7 @@ import org.apache.spark.SparkFunSuite
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Seconds
 
-class PubsubStreamSuite extends SparkFunSuite with Eventually with BeforeAndAfter {
+class PubsubStreamSuite extends PubsubFunSuite with Eventually with BeforeAndAfter {
 
   val batchDuration = Seconds(1)
 
@@ -37,36 +37,50 @@ class PubsubStreamSuite extends SparkFunSuite with Eventually with BeforeAndAfte
 
   private val appName: String = this.getClass.getSimpleName
 
-  private val pubsubTestUtils: PubsubTestUtils = new PubsubTestUtils
-
   private val topicName: String = s"bahirStreamTestTopic_${UUID.randomUUID()}"
-
-  private val topicFullName: String = pubsubTestUtils.getFullTopicPath(topicName)
 
   private val subscriptionName: String = s"${topicName}_sub"
 
-  private val subscriptionFullName: String = {
-    pubsubTestUtils.getFullSubscriptionPath(subscriptionName)
+  private var ssc: StreamingContext = null
+  private var pubsubTestUtils: PubsubTestUtils = null
+  private var topicFullName: String = null
+  private var subscriptionFullName: String = null
+
+  override def beforeAll(): Unit = {
+    runIfTestsEnabled("Prepare PubsubTestUtils") {
+      pubsubTestUtils = new PubsubTestUtils
+      topicFullName = pubsubTestUtils.getFullTopicPath(topicName)
+      subscriptionFullName = pubsubTestUtils.getFullSubscriptionPath(subscriptionName)
+    }
   }
 
   before {
-    pubsubTestUtils.createTopic(topicFullName)
-    pubsubTestUtils.createSubscription(topicFullName, subscriptionFullName)
+    ssc = new StreamingContext(master, appName, batchDuration)
+    if (pubsubTestUtils != null) {
+      pubsubTestUtils.createTopic(topicFullName)
+      pubsubTestUtils.createSubscription(topicFullName, subscriptionFullName)
+    }
   }
 
   after {
-    pubsubTestUtils.removeSubscription(subscriptionFullName)
-    pubsubTestUtils.removeTopic(topicFullName)
+    if (ssc != null) {
+      ssc.stop()
+    }
+    if (pubsubTestUtils != null) {
+      pubsubTestUtils.removeSubscription(subscriptionFullName)
+      pubsubTestUtils.removeTopic(topicFullName)
+    }
   }
 
-  test("pubsub input stream") {
-    val ssc = new StreamingContext(master, appName, batchDuration)
+  test("PubsubUtils API") {
+    val pubsubStream = PubsubUtils.createStream(
+      ssc, "project", "subscription",
+      SparkGCPCredentials.builder.build(), StorageLevel.MEMORY_AND_DISK_SER_2)
+  }
 
-    val receiveStream = PubsubUtils.createStream(ssc, pubsubTestUtils.projectId, subscriptionName,
-      ServiceAccountType.Json,
-      pubsubTestUtils.serviceAccountJsonPath,
-      pubsubTestUtils.serviceAccountEmail, pubsubTestUtils.serviceAccountP12Path,
-      StorageLevel.MEMORY_AND_DISK_SER_2)
+  testIfEnabled("pubsub input stream") {
+    val receiveStream = PubsubUtils.createStream(ssc, PubsubTestUtils.projectId, subscriptionName,
+      PubsubTestUtils.credential, StorageLevel.MEMORY_AND_DISK_SER_2)
 
     @volatile var receiveMessages: List[SparkPubsubMessage] = List()
     receiveStream.foreachRDD { rdd =>
