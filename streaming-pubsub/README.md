@@ -11,7 +11,7 @@ Using Maven:
     <dependency>
         <groupId>org.apache.bahir</groupId>
         <artifactId>spark-streaming-pubsub_2.11</artifactId>
-        <version>2.0.0</version>
+        <version>2.1.0</version>
     </dependency>
 
 This library can also be added to Spark jobs launched through `spark-shell` or `spark-submit` by using the `--packages` command line option.
