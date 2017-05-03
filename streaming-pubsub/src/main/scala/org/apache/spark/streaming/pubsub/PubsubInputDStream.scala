@@ -36,6 +36,12 @@ import org.apache.spark.streaming.dstream.ReceiverInputDStream
 import org.apache.spark.streaming.receiver.Receiver
 import org.apache.spark.util.Utils
 
+/**
+ * Input stream that subscribe messages from Google cloud Pub/Sub subscription.
+ * @param project Google cloud project id
+ * @param subscription Pub/Sub subscription name
+ * @param credential Google cloud project credential to access Pub/Sub service
+ */
 private[streaming]
 class PubsubInputDStream(
     _ssc: StreamingContext,
@@ -50,6 +56,12 @@ class PubsubInputDStream(
   }
 }
 
+/**
+ * A wrapper class for PubsubMessage's with a custom serialization format.
+ *
+ * This is necessary because PubsubMessage uses inner data structures
+ * which are not serializable.
+ */
 class SparkPubsubMessage() extends Externalizable {
 
   private[pubsub] var message = new PubsubMessage
@@ -63,73 +75,117 @@ class SparkPubsubMessage() extends Externalizable {
   def getPublishTime(): String = message.getPublishTime
 
   override def writeExternal(out: ObjectOutput): Unit = Utils.tryOrIOException {
-    val data = message.decodeData()
-    out.writeInt(data.size)
-    out.write(data)
+    message.decodeData() match {
+      case null => out.writeInt(-1)
+      case data =>
+        out.writeInt(data.size)
+        out.write(data)
+    }
 
-    val idBuff = Utils.serialize(message.getMessageId)
-    out.writeInt(idBuff.length)
-    out.write(idBuff)
+    message.getMessageId match {
+      case null => out.writeInt(-1)
+      case id =>
+        val idBuff = Utils.serialize(id)
+        out.writeInt(idBuff.length)
+        out.write(idBuff)
+    }
 
-    val publishTimeBuff = Utils.serialize(message.getPublishTime)
-    out.writeInt(publishTimeBuff.length)
-    out.write(publishTimeBuff)
+    message.getPublishTime match {
+      case null => out.writeInt(-1)
+      case time =>
+        val publishTimeBuff = Utils.serialize(time)
+        out.writeInt(publishTimeBuff.length)
+        out.write(publishTimeBuff)
+    }
 
-    val numAttributes = message.getAttributes.size()
-    out.writeInt(numAttributes)
-    for ((k, v) <- message.getAttributes.asScala) {
-      val keyBuff = Utils.serialize(k)
-      out.writeInt(keyBuff.length)
-      out.write(keyBuff)
-      val valBuff = Utils.serialize(v)
-      out.writeInt(valBuff.length)
-      out.write(valBuff)
+    message.getAttributes match {
+      case null => out.writeInt(-1)
+      case attrs =>
+        out.writeInt(attrs.size())
+        for ((k, v) <- message.getAttributes.asScala) {
+          val keyBuff = Utils.serialize(k)
+          out.writeInt(keyBuff.length)
+          out.write(keyBuff)
+          val valBuff = Utils.serialize(v)
+          out.writeInt(valBuff.length)
+          out.write(valBuff)
+        }
     }
   }
 
   override def readExternal(in: ObjectInput): Unit = Utils.tryOrIOException {
-    val bodyLength = in.readInt()
-    val data = new Array[Byte](bodyLength)
-    in.readFully(data)
-
-    val idLength = in.readInt()
-    val idBuff = new Array[Byte](idLength)
-    in.readFully(idBuff)
-    val id: String = Utils.deserialize(idBuff)
-
-    val publishTimeLength = in.readInt()
-    val publishTimeBuff = new Array[Byte](publishTimeLength)
-    in.readFully(publishTimeBuff)
-    val publishTime: String = Utils.deserialize(publishTimeBuff)
-
-    val numAttributes = in.readInt()
-    val attributes = new java.util.HashMap[String, String]
-
-    for (i <- 0 until numAttributes) {
-      val keyLength = in.readInt()
-      val keyBuff = new Array[Byte](keyLength)
-      in.readFully(keyBuff)
-      val key: String = Utils.deserialize(keyBuff)
-
-      val valLength = in.readInt()
-      val valBuff = new Array[Byte](valLength)
-      in.readFully(valBuff)
-      val value: String = Utils.deserialize(valBuff)
-
-      attributes.put(key, value)
+    in.readInt() match {
+      case -1 => message.encodeData(null)
+      case bodyLength =>
+        val data = new Array[Byte](bodyLength)
+        in.readFully(data)
+        message.encodeData(data)
     }
 
-    message.encodeData(data)
-    message.setMessageId(id)
-    message.setPublishTime(publishTime)
-    message.setAttributes(attributes)
+    in.readInt() match {
+      case -1 => message.setMessageId(null)
+      case idLength =>
+        val idBuff = new Array[Byte](idLength)
+        in.readFully(idBuff)
+        val id: String = Utils.deserialize(idBuff)
+        message.setMessageId(id)
+    }
+
+    in.readInt() match {
+      case -1 => message.setPublishTime(null)
+      case publishTimeLength =>
+        val publishTimeBuff = new Array[Byte](publishTimeLength)
+        in.readFully(publishTimeBuff)
+        val publishTime: String = Utils.deserialize(publishTimeBuff)
+        message.setPublishTime(publishTime)
+    }
+
+    in.readInt() match {
+      case -1 => message.setAttributes(null)
+      case numAttributes =>
+        val attributes = new java.util.HashMap[String, String]
+        for (i <- 0 until numAttributes) {
+          val keyLength = in.readInt()
+          val keyBuff = new Array[Byte](keyLength)
+          in.readFully(keyBuff)
+          val key: String = Utils.deserialize(keyBuff)
+
+          val valLength = in.readInt()
+          val valBuff = new Array[Byte](valLength)
+          in.readFully(valBuff)
+          val value: String = Utils.deserialize(valBuff)
+
+          attributes.put(key, value)
+        }
+        message.setAttributes(attributes)
+    }
   }
 }
 
 private [pubsub]
-object Transport {
+object ConnectionUtils {
   val transport = GoogleNetHttpTransport.newTrustedTransport();
   val jacksonFactory = JacksonFactory.getDefaultInstance;
+
+  /**
+   * Client can retry with these response status
+   */
+  val RESOURCE_EXHAUSTED = 429
+
+  val CANCELLED = 499
+
+  val INTERNAL = 500
+
+  val UNAVAILABLE = 503
+
+  val DEADLINE_EXCEEDED = 504
+
+  def retryable(status: Int): Boolean = {
+    status match {
+      case RESOURCE_EXHAUSTED | CANCELLED | INTERNAL | UNAVAILABLE | DEADLINE_EXCEEDED => true
+      case _ => false
+    }
+  }
 }
 
 
@@ -147,16 +203,6 @@ class PubsubReceiver(
 
   val MAX_BACKOFF = 10 * 1000 // 10s
 
-  val RESOURCE_EXHAUSTED = 429
-
-  val CANCELLED = 499
-
-  val INTERNAL = 500
-
-  val UNAVAILABLE = 503
-
-  val DEADLINE_EXCEEDED = 504
-
   val MAX_MESSAGE = 1000
 
   override def onStart(): Unit = {
@@ -171,8 +217,8 @@ class PubsubReceiver(
 
   def receive(): Unit = {
     val client = new Builder(
-      Transport.transport,
-      Transport.jacksonFactory,
+      ConnectionUtils.transport,
+      ConnectionUtils.jacksonFactory,
       new RetryHttpInitializer(credential.provider, APP_NAME))
         .setApplicationName(APP_NAME)
         .build()
@@ -184,8 +230,6 @@ class PubsubReceiver(
         val pullResponse =
           client.projects().subscriptions().pull(subscriptionFullName, pullRequest).execute()
         val receivedMessages = pullResponse.getReceivedMessages.asScala.toList
-        // TODO store list do not support backpressure, change to store one by one
-        // TODO extend ack deadline is needed, consider backpressure for instance
         store(receivedMessages
             .map(x => {
               val sm = new SparkPubsubMessage
@@ -200,11 +244,11 @@ class PubsubReceiver(
         backoff = INIT_BACKOFF
       } catch {
         case e: GoogleJsonResponseException =>
-          e.getDetails.getCode match {
-            case RESOURCE_EXHAUSTED | CANCELLED | INTERNAL | UNAVAILABLE | DEADLINE_EXCEEDED =>
-              Thread.sleep(backoff)
-              backoff = Math.min(backoff * 2, MAX_BACKOFF)
-            case _ => reportError("Failed to pull messages", e)
+          if (ConnectionUtils.retryable(e.getDetails.getCode)) {
+            Thread.sleep(backoff)
+            backoff = Math.min(backoff * 2, MAX_BACKOFF)
+          } else {
+            reportError("Failed to pull messages", e)
           }
         case NonFatal(e) => reportError("Failed to pull messages", e)
       }

@@ -19,17 +19,28 @@ package org.apache.spark.streaming.pubsub
 
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.StreamingContext
+import org.apache.spark.streaming.api.java.JavaReceiverInputDStream
+import org.apache.spark.streaming.api.java.JavaStreamingContext
 import org.apache.spark.streaming.dstream.ReceiverInputDStream
-import org.apache.spark.streaming.pubsub.ServiceAccountType.ServiceAccountType
 
 object PubsubUtils {
 
-  val PUBSUB_PREFIX = "sparkstreaming.pubsub"
-
+  /**
+   * Create an input stream that receives messages pushed by a Pub/Sub publisher
+   * using service account authentication
+   *
+   * @param ssc          StreamingContext object
+   * @param project      Google cloud project id
+   * @param subscription Subscription name to subscribe to
+   * @param credentials  SparkGCPCredentials to use for authenticating
+   * @param storageLevel RDD storage level
+   * @return
+   */
   def createStream(
       ssc: StreamingContext,
       project: String,
       subscription: String,
+      credentials: SparkGCPCredentials,
       storageLevel: StorageLevel): ReceiverInputDStream[SparkPubsubMessage] = {
     ssc.withNamedScope("pubsub stream") {
 
@@ -37,42 +48,26 @@ object PubsubUtils {
         ssc,
         project,
         subscription,
-        ApplicationDefaultCredentials,
+        credentials,
         storageLevel)
     }
   }
 
-  def createStream(
-      ssc: StreamingContext,
-      project: String,
-      subscription: String,
-      serviceAccountType: ServiceAccountType,
-      serviceAccountJsonPath: String,
-      serviceAccountEmail: String,
-      serviceAccountP12Path: String,
-      storageLevel: StorageLevel): ReceiverInputDStream[SparkPubsubMessage] = {
-    ssc.withNamedScope("pubsub stream") {
-
-      val serviceAccountCredentials = serviceAccountType match {
-        case ServiceAccountType.Metadata => new ServiceAccountCredentials()
-        case ServiceAccountType.Json =>
-          new ServiceAccountCredentials(Option(serviceAccountJsonPath))
-        case ServiceAccountType.P12 =>
-          new ServiceAccountCredentials(jsonFilePath = Option(serviceAccountP12Path),
-            emailAccount = Option(serviceAccountEmail))
-      }
-
-      new PubsubInputDStream(
-        ssc,
-        project,
-        subscription,
-        serviceAccountCredentials,
-        storageLevel)
-    }
+  /**
+   * Create an input stream that receives messages pushed by a Pub/Sub publisher
+   * using given credential
+   *
+   * @param jssc         JavaStreamingContext object
+   * @param project      Google cloud project id
+   * @param subscription Subscription name to subscribe to
+   * @param credentials  SparkGCPCredentials to use for authenticating
+   * @param storageLevel RDD storage level
+   * @return
+   */
+  def createStream(jssc: JavaStreamingContext, project: String, subscription: String,
+      credentials: SparkGCPCredentials, storageLevel: StorageLevel
+      ): JavaReceiverInputDStream[SparkPubsubMessage] = {
+    createStream(jssc.ssc, project, subscription, credentials, storageLevel)
   }
 }
 
-object ServiceAccountType extends Enumeration {
-  type ServiceAccountType = Value
-  val Metadata, Json, P12 = Value
-}
