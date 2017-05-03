@@ -75,66 +75,90 @@ class SparkPubsubMessage() extends Externalizable {
   def getPublishTime(): String = message.getPublishTime
 
   override def writeExternal(out: ObjectOutput): Unit = Utils.tryOrIOException {
-    val data = message.decodeData()
-    out.writeInt(data.size)
-    out.write(data)
+    message.decodeData() match {
+      case null => out.writeInt(-1)
+      case data =>
+        out.writeInt(data.size)
+        out.write(data)
+    }
 
-    val idBuff = Utils.serialize(message.getMessageId)
-    out.writeInt(idBuff.length)
-    out.write(idBuff)
+    message.getMessageId match {
+      case null => out.writeInt(-1)
+      case id =>
+        val idBuff = Utils.serialize(id)
+        out.writeInt(idBuff.length)
+        out.write(idBuff)
+    }
 
-    val publishTimeBuff = Utils.serialize(message.getPublishTime)
-    out.writeInt(publishTimeBuff.length)
-    out.write(publishTimeBuff)
+    message.getPublishTime match {
+      case null => out.writeInt(-1)
+      case time =>
+        val publishTimeBuff = Utils.serialize(time)
+        out.writeInt(publishTimeBuff.length)
+        out.write(publishTimeBuff)
+    }
 
-    val numAttributes = message.getAttributes.size()
-    out.writeInt(numAttributes)
-    for ((k, v) <- message.getAttributes.asScala) {
-      val keyBuff = Utils.serialize(k)
-      out.writeInt(keyBuff.length)
-      out.write(keyBuff)
-      val valBuff = Utils.serialize(v)
-      out.writeInt(valBuff.length)
-      out.write(valBuff)
+    message.getAttributes match {
+      case null => out.writeInt(-1)
+      case attrs =>
+        out.writeInt(attrs.size())
+        for ((k, v) <- message.getAttributes.asScala) {
+          val keyBuff = Utils.serialize(k)
+          out.writeInt(keyBuff.length)
+          out.write(keyBuff)
+          val valBuff = Utils.serialize(v)
+          out.writeInt(valBuff.length)
+          out.write(valBuff)
+        }
     }
   }
 
   override def readExternal(in: ObjectInput): Unit = Utils.tryOrIOException {
-    val bodyLength = in.readInt()
-    val data = new Array[Byte](bodyLength)
-    in.readFully(data)
-
-    val idLength = in.readInt()
-    val idBuff = new Array[Byte](idLength)
-    in.readFully(idBuff)
-    val id: String = Utils.deserialize(idBuff)
-
-    val publishTimeLength = in.readInt()
-    val publishTimeBuff = new Array[Byte](publishTimeLength)
-    in.readFully(publishTimeBuff)
-    val publishTime: String = Utils.deserialize(publishTimeBuff)
-
-    val numAttributes = in.readInt()
-    val attributes = new java.util.HashMap[String, String]
-
-    for (i <- 0 until numAttributes) {
-      val keyLength = in.readInt()
-      val keyBuff = new Array[Byte](keyLength)
-      in.readFully(keyBuff)
-      val key: String = Utils.deserialize(keyBuff)
-
-      val valLength = in.readInt()
-      val valBuff = new Array[Byte](valLength)
-      in.readFully(valBuff)
-      val value: String = Utils.deserialize(valBuff)
-
-      attributes.put(key, value)
+    in.readInt() match {
+      case -1 => message.encodeData(null)
+      case bodyLength =>
+        val data = new Array[Byte](bodyLength)
+        in.readFully(data)
+        message.encodeData(data)
     }
 
-    message.encodeData(data)
-    message.setMessageId(id)
-    message.setPublishTime(publishTime)
-    message.setAttributes(attributes)
+    in.readInt() match {
+      case -1 => message.setMessageId(null)
+      case idLength =>
+        val idBuff = new Array[Byte](idLength)
+        in.readFully(idBuff)
+        val id: String = Utils.deserialize(idBuff)
+        message.setMessageId(id)
+    }
+
+    in.readInt() match {
+      case -1 => message.setPublishTime(null)
+      case publishTimeLength =>
+        val publishTimeBuff = new Array[Byte](publishTimeLength)
+        in.readFully(publishTimeBuff)
+        val publishTime: String = Utils.deserialize(publishTimeBuff)
+        message.setPublishTime(publishTime)
+    }
+
+    in.readInt() match {
+      case -1 => message.setAttributes(null)
+      case numAttributes =>
+        val attributes = new java.util.HashMap[String, String]
+        for (i <- 0 until numAttributes) {
+          val keyLength = in.readInt()
+          val keyBuff = new Array[Byte](keyLength)
+          in.readFully(keyBuff)
+          val key: String = Utils.deserialize(keyBuff)
+
+          val valLength = in.readInt()
+          val valBuff = new Array[Byte](valLength)
+          in.readFully(valBuff)
+          val value: String = Utils.deserialize(valBuff)
+
+          attributes.put(key, value)
+        }
+        message.setAttributes(attributes)
+    }
   }
 }
 
