@@ -24,12 +24,22 @@ The `--packages` argument can also be used with `bin/spark-submit`.
 
 ## Examples
 
+First you need to create credential by SparkGCPCredentials, it support four type of credentials
+* application default
+    `SparkGCPCredentials.builder.build()`
+* json type service account
+    `SparkGCPCredentials.builder.jsonServiceAccount(PATH_TO_JSON_KEY).build()`
+* p12 type service account
+    `SparkGCPCredentials.builder.p12ServiceAccount(PATH_TO_P12_KEY, EMAIL_ACCOUNT).build()`
+* metadata service account(running on dataproc)
+    `SparkGCPCredentials.builder.metadataServiceAccount(PATH_TO_JSON_KEY).build()`
+
 ### Scala API
     
-    val lines = PubsubUtils.createStream(ssc, ...)
+    val lines = PubsubUtils.createStream(ssc, projectId, subscriptionName, credential, ..)
     
 ### Java API
     
-    JavaDStream<SparkPubsubMessage> lines = PubsubUtils.createStream(jssc, ...) 
+    JavaDStream<SparkPubsubMessage> lines = PubsubUtils.createStream(jssc, projectId, subscriptionName, credential...) 
 
 See end-to-end examples at [Google Cloud Pubsub Examples](streaming-pubsub/examples)
