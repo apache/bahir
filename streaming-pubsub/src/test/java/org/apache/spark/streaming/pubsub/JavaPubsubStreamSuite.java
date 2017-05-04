@@ -26,8 +26,12 @@ public class JavaPubsubStreamSuite extends LocalJavaStreamingContext {
     @Test
     public void testPubsubStream() {
         // tests the API, does not actually test data receiving
-        JavaReceiverInputDStream<SparkPubsubMessage> stream = PubsubUtils.createStream(
+        JavaReceiverInputDStream<SparkPubsubMessage> stream1 = PubsubUtils.createStream(
                 ssc, "project", "subscription",
+                new SparkGCPCredentials.Builder().build(), StorageLevel.MEMORY_AND_DISK_SER_2());
+
+        JavaReceiverInputDStream<SparkPubsubMessage> stream2 = PubsubUtils.createStream(
+                ssc, "project", "topic", "subscription",
                 new SparkGCPCredentials.Builder().build(), StorageLevel.MEMORY_AND_DISK_SER_2());
 
     }
