@@ -49,7 +49,7 @@ class JavaSampleActorReceiver<T> extends JavaActorReceiver {
 
   private final String urlOfPublisher;
 
-  public JavaSampleActorReceiver(String urlOfPublisher) {
+  JavaSampleActorReceiver(String urlOfPublisher) {
     this.urlOfPublisher = urlOfPublisher;
   }
 
