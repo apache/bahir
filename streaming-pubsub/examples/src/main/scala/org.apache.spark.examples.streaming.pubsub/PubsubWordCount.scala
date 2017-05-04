@@ -29,13 +29,16 @@ import com.google.api.services.pubsub.model.PubsubMessage
 import com.google.cloud.hadoop.util.RetryHttpInitializer
 
 import org.apache.spark.storage.StorageLevel
+import org.apache.spark.streaming.dstream.ReceiverInputDStream
 import org.apache.spark.streaming.pubsub.ConnectionUtils
 import org.apache.spark.streaming.pubsub.PubsubTestUtils
 import org.apache.spark.streaming.pubsub.PubsubUtils
 import org.apache.spark.streaming.pubsub.SparkGCPCredentials
+import org.apache.spark.streaming.pubsub.SparkPubsubMessage
 import org.apache.spark.streaming.Milliseconds
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.SparkConf
+
 
 /**
  * Consumes messages from a Google Cloud Pub/Sub subscription and does wordcount.
@@ -75,7 +78,8 @@ object PubsubWordCount {
     val sparkConf = new SparkConf().setAppName("PubsubWordCount")
     val ssc = new StreamingContext(sparkConf, Milliseconds(2000))
 
-    val pubsubStream = PubsubUtils.createStream(ssc, projectId, subscription,
+    val pubsubStream: ReceiverInputDStream[SparkPubsubMessage] = PubsubUtils.createStream(
+      ssc, projectId, None, subscription,
       SparkGCPCredentials.builder.build(), StorageLevel.MEMORY_AND_DISK_SER_2)
 
     val wordCounts =
@@ -90,6 +94,11 @@ object PubsubWordCount {
 }
 
 /**
+ * A Pub/Sub publisher for demonstration purposes, publishes message in 10 batches(seconds),
+ * you can set the size of messages in each batch by <records-per-sec>,
+ * and each message will contains only one word in this list
+ * ("google", "cloud", "pubsub", "say", "hello")
+ *
  * Usage: PubsubPublisher <projectId> <topic> <records-per-sec>
  *
  *   <stream-projectIdname> is the name of Google cloud
