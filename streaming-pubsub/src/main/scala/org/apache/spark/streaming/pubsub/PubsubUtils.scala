@@ -29,16 +29,23 @@ object PubsubUtils {
    * Create an input stream that receives messages pushed by a Pub/Sub publisher
    * using service account authentication
    *
-   * @param ssc          StreamingContext object
-   * @param project      Google cloud project id
-   * @param subscription Subscription name to subscribe to
-   * @param credentials  SparkGCPCredentials to use for authenticating
-   * @param storageLevel RDD storage level
+   * If topic is given, and the subscription doesn't exist,
+   * create subscription by the given name.
+   * Note: This Receiver will only receive the message arrived after the subscription created.
+   * If topic is not given, throw not found exception when it doesn't exist
+   *
+   * @param ssc             StreamingContext object
+   * @param project         Google cloud project id
+   * @param topic           Topic name for creating subscription if need
+   * @param subscription    Subscription name to subscribe to
+   * @param credentials     SparkGCPCredentials to use for authenticating
+   * @param storageLevel    RDD storage level
    * @return
    */
   def createStream(
       ssc: StreamingContext,
       project: String,
+      topic: Option[String],
       subscription: String,
       credentials: SparkGCPCredentials,
       storageLevel: StorageLevel): ReceiverInputDStream[SparkPubsubMessage] = {
@@ -47,6 +54,7 @@ object PubsubUtils {
       new PubsubInputDStream(
         ssc,
         project,
+        topic,
         subscription,
         credentials,
         storageLevel)
@@ -56,6 +64,8 @@ object PubsubUtils {
   /**
    * Create an input stream that receives messages pushed by a Pub/Sub publisher
    * using given credential
+   *
+   * Throw not found exception if the subscription doesn't exist
    *
    * @param jssc         JavaStreamingContext object
    * @param project      Google cloud project id
@@ -67,7 +77,29 @@ object PubsubUtils {
   def createStream(jssc: JavaStreamingContext, project: String, subscription: String,
       credentials: SparkGCPCredentials, storageLevel: StorageLevel
       ): JavaReceiverInputDStream[SparkPubsubMessage] = {
-    createStream(jssc.ssc, project, subscription, credentials, storageLevel)
+    createStream(jssc.ssc, project, None, subscription, credentials, storageLevel)
+  }
+
+  /**
+   * Create an input stream that receives messages pushed by a Pub/Sub publisher
+   * using given credential
+   *
+   * If the subscription doesn't exist, create subscription by the given name.
+   * Note: This Receiver will only receive the message arrived after the subscription created.
+   *
+   * @param jssc            JavaStreamingContext object
+   * @param project         Google cloud project id
+   * @param topic           Topic name for creating subscription if need
+   * @param subscription    Subscription name to subscribe to
+   * @param credentials     SparkGCPCredentials to use for authenticating
+   * @param storageLevel    RDD storage level
+   * @return
+   */
+  def createStream(jssc: JavaStreamingContext,
+      project: String, topic: String, subscription: String,
+      credentials: SparkGCPCredentials, storageLevel: StorageLevel
+  ): JavaReceiverInputDStream[SparkPubsubMessage] = {
+    createStream(jssc.ssc, project, Some(topic), subscription, credentials, storageLevel)
   }
 }
 

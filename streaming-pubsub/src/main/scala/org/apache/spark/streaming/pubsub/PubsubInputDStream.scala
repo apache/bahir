@@ -28,6 +28,7 @@ import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.pubsub.Pubsub.Builder
 import com.google.api.services.pubsub.model.{AcknowledgeRequest, PubsubMessage, PullRequest}
+import com.google.api.services.pubsub.model.Subscription
 import com.google.cloud.hadoop.util.RetryHttpInitializer
 
 import org.apache.spark.storage.StorageLevel
@@ -38,21 +39,23 @@ import org.apache.spark.util.Utils
 
 /**
  * Input stream that subscribe messages from Google cloud Pub/Sub subscription.
- * @param project Google cloud project id
- * @param subscription Pub/Sub subscription name
- * @param credential Google cloud project credential to access Pub/Sub service
+ * @param project         Google cloud project id
+ * @param topic           Topic name for creating subscription if need
+ * @param subscription    Pub/Sub subscription name
+ * @param credential      Google cloud project credential to access Pub/Sub service
  */
 private[streaming]
 class PubsubInputDStream(
     _ssc: StreamingContext,
     val project: String,
+    val topic: Option[String],
     val subscription: String,
     val credential: SparkGCPCredentials,
     val _storageLevel: StorageLevel
 ) extends ReceiverInputDStream[SparkPubsubMessage](_ssc) {
 
   override def getReceiver(): Receiver[SparkPubsubMessage] = {
-    new PubsubReceiver(project, subscription, credential, _storageLevel)
+    new PubsubReceiver(project, topic, subscription, credential, _storageLevel)
   }
 }
 
@@ -167,6 +170,10 @@ object ConnectionUtils {
   val transport = GoogleNetHttpTransport.newTrustedTransport();
   val jacksonFactory = JacksonFactory.getDefaultInstance;
 
+  // The topic or subscription already exists.
+  // This is an error on creation operations.
+  val ALREADY_EXISTS = 409
+
   /**
    * Client can retry with these response status
    */
@@ -192,6 +199,7 @@ object ConnectionUtils {
 private[pubsub]
 class PubsubReceiver(
     project: String,
+    topic: Option[String],
     subscription: String,
     credential: SparkGCPCredentials,
     storageLevel: StorageLevel)
@@ -205,25 +213,44 @@ class PubsubReceiver(
 
   val MAX_MESSAGE = 1000
 
-  override def onStart(): Unit = {
+  lazy val client = new Builder(
+    ConnectionUtils.transport,
+    ConnectionUtils.jacksonFactory,
+    new RetryHttpInitializer(credential.provider, APP_NAME))
+      .setApplicationName(APP_NAME)
+      .build()
 
+  val projectFullName: String = s"projects/$project"
+  val subscriptionFullName: String = s"$projectFullName/subscriptions/$subscription"
+
+  override def onStart(): Unit = {
+    topic match {
+      case Some(t) =>
+        val sub: Subscription = new Subscription
+        sub.setTopic(s"$projectFullName/topics/$t")
+        try {
+          client.projects().subscriptions().create(subscriptionFullName, sub).execute()
+        } catch {
+          case e: GoogleJsonResponseException =>
+            if (e.getDetails.getCode == ConnectionUtils.ALREADY_EXISTS) {
+              // Ignore subscription already exists exception.
+            } else {
+              reportError("Failed to create subscription", e)
+            }
+          case NonFatal(e) =>
+            reportError("Failed to create subscription", e)
+        }
+      case None => // do nothing
+    }
     new Thread() {
       override def run() {
         receive()
       }
     }.start()
-
   }
 
   def receive(): Unit = {
-    val client = new Builder(
-      ConnectionUtils.transport,
-      ConnectionUtils.jacksonFactory,
-      new RetryHttpInitializer(credential.provider, APP_NAME))
-        .setApplicationName(APP_NAME)
-        .build()
     val pullRequest = new PullRequest().setMaxMessages(MAX_MESSAGE).setReturnImmediately(false)
-    val subscriptionFullName = s"projects/$project/subscriptions/$subscription"
     var backoff = INIT_BACKOFF
     while (!isStopped()) {
       try {

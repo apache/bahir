@@ -75,7 +75,7 @@ object PubsubWordCount {
     val sparkConf = new SparkConf().setAppName("PubsubWordCount")
     val ssc = new StreamingContext(sparkConf, Milliseconds(2000))
 
-    val pubsubStream = PubsubUtils.createStream(ssc, projectId, subscription,
+    val pubsubStream = PubsubUtils.createStream(ssc, projectId, None, subscription,
       SparkGCPCredentials.builder.build(), StorageLevel.MEMORY_AND_DISK_SER_2)
 
     val wordCounts =
