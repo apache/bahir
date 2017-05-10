@@ -72,23 +72,25 @@ private[pubsub] final case class ServiceAccountCredentials(
               + EntriesCredentialConfiguration.JSON_KEYFILE_SUFFIX,
           jsonFilePath
         )
-      case None =>
-        p12FilePath match {
-          case Some(p12FilePath) =>
-            conf.set(
-              EntriesCredentialConfiguration.BASE_KEY_PREFIX
-                  + EntriesCredentialConfiguration.SERVICE_ACCOUNT_EMAIL_SUFFIX,
-              p12FilePath
-            )
-        }
-        emailAccount match {
-          case Some(emailAccount) =>
-            conf.set(
-              EntriesCredentialConfiguration.BASE_KEY_PREFIX
-                  + EntriesCredentialConfiguration.SERVICE_ACCOUNT_KEYFILE_SUFFIX,
-              emailAccount
-            )
-        }
+      case _ => // do nothing
+    }
+    p12FilePath match {
+      case Some(p12FilePath) =>
+        conf.set(
+          EntriesCredentialConfiguration.BASE_KEY_PREFIX
+              + EntriesCredentialConfiguration.SERVICE_ACCOUNT_KEYFILE_SUFFIX,
+          p12FilePath
+        )
+      case _ => // do nothing
+    }
+    emailAccount match {
+      case Some(emailAccount) =>
+        conf.set(
+          EntriesCredentialConfiguration.BASE_KEY_PREFIX
+              + EntriesCredentialConfiguration.SERVICE_ACCOUNT_EMAIL_SUFFIX,
+          emailAccount
+        )
+      case _ => // do nothing
     }
 
     HadoopCredentialConfiguration
