@@ -32,7 +32,7 @@ First you need to create credential by SparkGCPCredentials, it support four type
 * p12 type service account
     `SparkGCPCredentials.builder.p12ServiceAccount(PATH_TO_P12_KEY, EMAIL_ACCOUNT).build()`
 * metadata service account(running on dataproc)
-    `SparkGCPCredentials.builder.metadataServiceAccount(PATH_TO_JSON_KEY).build()`
+    `SparkGCPCredentials.builder.metadataServiceAccount().build()`
 
 ### Scala API
     
