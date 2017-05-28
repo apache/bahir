@@ -267,7 +267,7 @@ class PubsubReceiver(
 
         val ackRequest = new AcknowledgeRequest()
         ackRequest.setAckIds(receivedMessages.map(x => x.getAckId).asJava)
-        client.projects().subscriptions().acknowledge(subscriptionFullName, ackRequest)
+        client.projects().subscriptions().acknowledge(subscriptionFullName, ackRequest).execute()
         backoff = INIT_BACKOFF
       } catch {
         case e: GoogleJsonResponseException =>
