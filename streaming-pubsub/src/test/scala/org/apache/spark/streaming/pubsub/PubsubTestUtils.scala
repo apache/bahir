@@ -19,12 +19,13 @@ package org.apache.spark.streaming.pubsub
 
 import scala.collection.JavaConverters._
 
-import com.google.api.services.pubsub.{Pubsub, PubsubScopes}
+import com.google.api.services.pubsub.Pubsub
 import com.google.api.services.pubsub.Pubsub.Builder
-import com.google.api.services.pubsub.model.{PublishRequest, PubsubMessage, Subscription, Topic}
-import com.google.cloud.hadoop.util.{EntriesCredentialConfiguration, HadoopCredentialConfiguration, RetryHttpInitializer}
-import java.util
-import org.apache.hadoop.conf.Configuration
+import com.google.api.services.pubsub.model.PublishRequest
+import com.google.api.services.pubsub.model.PubsubMessage
+import com.google.api.services.pubsub.model.Subscription
+import com.google.api.services.pubsub.model.Topic
+import com.google.cloud.hadoop.util.RetryHttpInitializer
 
 import org.apache.spark.internal.Logging
 
@@ -40,8 +41,8 @@ private[pubsub] class PubsubTestUtils extends Logging {
         PubsubTestUtils.credential.provider,
         APP_NAME
       ))
-    .setApplicationName(APP_NAME)
-    .build()
+        .setApplicationName(APP_NAME)
+        .build()
   }
 
   def createTopic(topic: String): Unit = {
@@ -71,17 +72,17 @@ private[pubsub] class PubsubTestUtils extends Logging {
 
   def generatorMessages(num: Int): List[SparkPubsubMessage] = {
     (1 to num)
-    .map( n => {
-      val m = new PubsubMessage()
-      m.encodeData(s"data$n".getBytes)
-      m.setAttributes(Map("a1" -> s"v1$n", "a2" -> s"v2$n").asJava)
-    })
-    .map( m => {
-      val sm = new SparkPubsubMessage()
-      sm.message = m
-      sm
-    })
-    .toList
+        .map(n => {
+          val m = new PubsubMessage()
+          m.encodeData(s"data$n".getBytes)
+          m.setAttributes(Map("a1" -> s"v1$n", "a2" -> s"v2$n").asJava)
+        })
+        .map(m => {
+          val sm = new SparkPubsubMessage()
+          sm.message = m
+          sm
+        })
+        .toList
   }
 
   def getFullTopicPath(topic: String): String =
@@ -97,6 +98,8 @@ private[pubsub] object PubsubTestUtils {
   val envVarNameForEnablingTests = "ENABLE_PUBSUB_TESTS"
   val envVarNameForGoogleCloudProjectId = "GCP_TEST_PROJECT_ID"
   val envVarNameForJsonKeyPath = "GCP_TEST_JSON_KEY_PATH"
+  val envVarNameForP12KeyPath = "GCP_TEST_P12_KEY_PATH"
+  val envVarNameForAccount = "GCP_TEST_ACCOUNT"
 
   lazy val shouldRunTests = {
     val isEnvSet = sys.env.get(envVarNameForEnablingTests) == Some("1")
@@ -130,8 +133,10 @@ private[pubsub] object PubsubTestUtils {
   lazy val credential =
     sys.env.get(envVarNameForJsonKeyPath)
         .map(path => SparkGCPCredentials.builder.jsonServiceAccount(path).build())
-        .getOrElse(SparkGCPCredentials.builder.build())
-
-
-
+        .getOrElse(
+          sys.env.get(envVarNameForP12KeyPath)
+            .map(path => SparkGCPCredentials.builder.p12ServiceAccount(
+              path, sys.env.get(envVarNameForAccount).get
+            ).build())
+            .getOrElse(SparkGCPCredentials.builder.build()))
 }
