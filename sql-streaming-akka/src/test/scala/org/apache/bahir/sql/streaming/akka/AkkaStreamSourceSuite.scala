@@ -40,11 +40,10 @@ class AkkaStreamSourceSuite extends SparkFunSuite with BeforeAndAfter {
   private val conf = new SparkConf().setMaster("local[4]").setAppName("AkkaStreamSourceSuite")
   protected val spark = SparkSession.builder().config(conf).getOrCreate()
 
-  akkaTestUtils = new AkkaTestUtils
-  akkaTestUtils.setup()
-
   before {
     tempDir.mkdirs()
+    akkaTestUtils = new AkkaTestUtils
+    akkaTestUtils.setup()
   }
 
   after {
