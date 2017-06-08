@@ -200,7 +200,7 @@ if [ -z "$RELEASE_TAG" ]; then
   RELEASE_TAG="v$RELEASE_VERSION-$RELEASE_RC"
 fi
 
-RELEASE_STAGING_LOCATION="https://dist.apache.org/repos/dist/dev/bahir/"
+RELEASE_STAGING_LOCATION="https://dist.apache.org/repos/dist/dev/bahir/bahir-spark"
 
 
 echo "  "
@@ -233,10 +233,6 @@ function checkout_code {
     git_hash=`git rev-parse --short HEAD`
     echo "Checked out Bahir git hash $git_hash"
 
-    git clean -d -f -x
-    #rm .gitignore
-    #rm -rf .git
-
     cd "$BASE_DIR" #return to base dir
 }
 
@@ -247,30 +243,31 @@ if [[ "$RELEASE_PREPARE" == "true" ]]; then
     cd target/bahir
 
     # Build and prepare the release
-    $MVN $PUBLISH_PROFILES release:clean release:prepare $DRY_RUN -Darguments="-Dgpg.passphrase=\"$GPG_PASSPHRASE\" -DskipTests" -DreleaseVersion="$RELEASE_VERSION" -DdevelopmentVersion="$DEVELOPMENT_VERSION" -Dtag="$RELEASE_TAG"
+#$MVN $PUBLISH_PROFILES release:clean release:prepare $DRY_RUN -Darguments="-Dgpg.passphrase=\"$GPG_PASSPHRASE\" -DskipTests" -DreleaseVersion="$RELEASE_VERSION" -DdevelopmentVersion="$DEVELOPMENT_VERSION" -Dtag="$RELEASE_TAG"
 
     cd .. #exit bahir
 
     if [ -z "$DRY_RUN" ]; then
-        svn co $RELEASE_STAGING_LOCATION svn-bahir
-        mkdir -p svn-bahir/$RELEASE_VERSION-$RELEASE_RC
-
         cd "$BASE_DIR/target/bahir"
         git checkout $RELEASE_TAG
         git clean -d -f -x
 
         $MVN $PUBLISH_PROFILES clean install -DskiptTests -Darguments="-DskipTests"
 
+        cd "$BASE_DIR/target"
+        svn co $RELEASE_STAGING_LOCATION svn-bahir
+        mkdir -p svn-bahir/$RELEASE_VERSION-$RELEASE_RC
+
         cp bahir/distribution/target/*.tar.gz svn-bahir/$RELEASE_VERSION-$RELEASE_RC/
         cp bahir/distribution/target/*.zip    svn-bahir/$RELEASE_VERSION-$RELEASE_RC/
 
         cd svn-bahir/$RELEASE_VERSION-$RELEASE_RC/
         rm -f *.asc
-        for i in *.zip *.tgz; do gpg --output $i.asc --detach-sig --armor $i; done
+        for i in *.zip *.tar.gz; do gpg --output $i.asc --detach-sig --armor $i; done
         rm -f *.md5
-        for i in *.zip *.tgz; do openssl md5 -hex $i | sed 's/MD5(\([^)]*\))= \([0-9a-f]*\)/\2 *\1/' > $i.md5; done
+        for i in *.zip *.tar.gz; do openssl md5 -hex $i | sed 's/MD5(\([^)]*\))= \([0-9a-f]*\)/\2 *\1/' > $i.md5; done
         rm -f *.sha
-        for i in *.zip *.tgz; do shasum $i > $i.sha; done
+        for i in *.zip *.tar.gz; do shasum $i > $i.sha; done
 
         cd .. #exit $RELEASE_VERSION-$RELEASE_RC/
 
