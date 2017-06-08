@@ -254,6 +254,13 @@ if [[ "$RELEASE_PREPARE" == "true" ]]; then
     if [ -z "$DRY_RUN" ]; then
         svn co $RELEASE_STAGING_LOCATION svn-bahir
         mkdir -p svn-bahir/$RELEASE_VERSION-$RELEASE_RC
+
+        cd "$BASE_DIR/target/bahir"
+        git checkout $RELEASE_TAG
+        git clean -d -f -x
+
+        $MVN $PUBLISH_PROFILES clean install -DskiptTests -Darguments="-DskipTests"
+
         cp bahir/distribution/target/*.tar.gz svn-bahir/$RELEASE_VERSION-$RELEASE_RC/
         cp bahir/distribution/target/*.zip    svn-bahir/$RELEASE_VERSION-$RELEASE_RC/
 
