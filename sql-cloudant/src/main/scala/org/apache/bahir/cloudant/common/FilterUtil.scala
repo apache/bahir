@@ -17,7 +17,7 @@
 package org.apache.bahir.cloudant.common
 
 import org.slf4j.LoggerFactory
-import play.api.libs.json.{JsString, JsValue}
+import play.api.libs.json.{JsObject, JsString, JsValue}
 
 import org.apache.spark.sql.sources._
 
@@ -32,7 +32,7 @@ class FilterInterpreter(origFilters: Array[Filter]) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  lazy val firstField = {
+  lazy val firstField: String = {
     if (origFilters.length > 0) getFilterAttribute(origFilters(0))
     else null
   }
@@ -138,9 +138,14 @@ class FilterUtil(filters: Map[String, Array[Filter]]) {
 object FilterDDocs {
   def filter(row: JsValue): Boolean = {
     if (row == null) return true
-    val id : String = JsonUtil.getField(row, "_id").
-        getOrElse(null).as[JsString].value
-    if (id.startsWith("_design")) {
+    val id : String = if (row.as[JsObject].keys.contains("_id")) {
+      JsonUtil.getField(row, "_id").orNull.as[JsString].value
+    } else if (row.as[JsObject].keys.contains("id")) {
+      JsonUtil.getField(row, "id").orNull.as[JsString].value
+    } else {
+      null
+    }
+    if (id != null && id.startsWith("_design")) {
       false
     } else {
       true

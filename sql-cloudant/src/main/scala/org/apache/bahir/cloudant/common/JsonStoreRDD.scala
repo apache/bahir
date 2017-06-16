@@ -17,7 +17,7 @@
 package org.apache.bahir.cloudant.common
 
 import org.slf4j.LoggerFactory
-import play.api.libs.json.{JsNull, Json, JsString, JsValue}
+import play.api.libs.json.{Json, JsValue}
 
 import org.apache.spark.Partition
 import org.apache.spark.SparkContext
@@ -36,7 +36,7 @@ private[cloudant] class JsonStoreRDDPartition(val url: String, val skip: Int, va
     val idx: Int, val config: CloudantConfig, val selector: JsValue, val fields: JsValue,
     val queryUsed: Boolean)
     extends Partition with Serializable{
-  val index = idx
+  val index: Int = idx
 }
 
 /**
@@ -55,23 +55,30 @@ class JsonStoreRDD(sc: SparkContext, config: CloudantConfig)
   private val logger = LoggerFactory.getLogger(getClass)
 
   private def getTotalPartition(totalRows: Int, queryUsed: Boolean): Int = {
-    if (totalRows == 0 || ! config.allowPartition(queryUsed) )  1
-    else if (totalRows < config.partitions * config.minInPartition) {
-      val total = totalRows / config.minInPartition
-      if (total == 0 ) {
-        total + 1
+    // Note: _changes API does not work for partition
+    if (config.endpoint == JsonStoreConfigManager.CHANGES_INDEX) {
+      1
+    } else {
+      if (totalRows == 0 || ! config.allowPartition(queryUsed) )  {
+        1
+      } else if (totalRows < config.partitions * config.minInPartition) {
+        val total = totalRows / config.minInPartition
+        if (total == 0 ) {
+          total + 1
+        } else {
+          total
+        }
+      }
+      else if (config.maxInPartition <=0) {
+        config.partitions
       } else {
-        total
-      }
-    }
-    else if (config.maxInPartition <=0) config.partitions
-    else {
-      val total = totalRows / config.maxInPartition
-      if ( totalRows % config.maxInPartition != 0) {
-        total + 1
-      }
-      else {
-        total
+        val total = totalRows / config.maxInPartition
+        if ( totalRows % config.maxInPartition != 0) {
+          total + 1
+        }
+        else {
+          total
+        }
       }
     }
   }
@@ -122,20 +129,29 @@ class JsonStoreRDD(sc: SparkContext, config: CloudantConfig)
     logger.info("getPartitions:" + requiredcolumns + "," + filters)
 
     val filterInterpreter = new FilterInterpreter(filters)
-    val origAttrToFilters = ( if (filters==null || filters.length==0) null
-                              else filterInterpreter.getFiltersForPostProcess(null))
+    val origAttrToFilters = {
+      if (filters == null || filters.length == 0) {
+        null
+      } else {
+        filterInterpreter.getFiltersForPostProcess(null)
+      }
+    }
 
     val (selector, fields) : (JsValue, JsValue) = {
-      if (!config.queryEnabled() || origAttrToFilters == null) (null, null)
+      if (!config.queryEnabled || origAttrToFilters == null) (null, null)
       else {
         val selectors: Map[String, Map[String, JsValue]] =
           origAttrToFilters.transform( (name, attrFilters) => convertAttrToMangoJson(attrFilters))
-        val filteredSelectors = selectors.filter((t) => ! t._2.isEmpty)
+        val filteredSelectors = selectors.filter((t) => t._2.nonEmpty)
 
-        if (! filteredSelectors.isEmpty) {
-          val queryColumns = (
-              if (requiredcolumns == null || requiredcolumns.size == 0) null
-              else Json.toJson(requiredcolumns))
+        if (filteredSelectors.nonEmpty) {
+          val queryColumns = {
+              if (requiredcolumns == null || requiredcolumns.length == 0) {
+                null
+              } else {
+                Json.toJson(requiredcolumns)
+              }
+          }
           (Json.toJson(filteredSelectors), queryColumns)
         } else (null, null)
       }
@@ -154,7 +170,7 @@ class JsonStoreRDD(sc: SparkContext, config: CloudantConfig)
 
     val (min, minInclusive, max, maxInclusive) = filterInterpreter.getInfo(searchField)
     val (url: String, pusheddown: Boolean, queryUsed: Boolean) = config.getRangeUrl(searchField,
-            min, minInclusive, max, maxInclusive, false, selector!=null)
+            min, minInclusive, max, maxInclusive, includeDoc = false, selector != null)
 
     implicit val postData : String = {
       if (queryUsed) {
@@ -183,7 +199,7 @@ class JsonStoreRDD(sc: SparkContext, config: CloudantConfig)
       Iterator[String] = {
     val myPartition = splitIn.asInstanceOf[JsonStoreRDDPartition]
     implicit val postData : String = {
-      if (myPartition.queryUsed && myPartition.fields !=null) {
+      if (myPartition.queryUsed && myPartition.fields != null) {
         Json.stringify(Json.obj("selector" -> myPartition.selector, "fields" -> myPartition.fields,
             "limit" -> myPartition.limit, "skip" -> myPartition.skip))
       } else if (myPartition.queryUsed) {

@@ -1,0 +1,27 @@
+[
+	{
+		"flightId": "AA93",
+		"_id": "696869c2-1035-4d4c-8142-86985f5f199e",
+		"customerId": "uid0@email.com",
+		"dateOfBooking": "2017-04-12T22:19:45.910Z"
+	},
+	{
+		"language": "javascript",
+		"views": {
+			
+		},
+		"_id": "_design/view",
+		"indexes": {
+			"n_bookings": {
+				"index": "function(doc){\n    index(\"default\", doc._id);\n  \t    if(doc.customerId){\n         \tindex(\"customerId\", doc.customerId, {\"store\": \"yes\"});\n  \t    }\n}",
+				"analyzer": "standard"
+			}
+		}
+	},
+	{
+		"flightId": "AA330",
+		"_id": "ccb8fc78-1b29-42ef-bff2-a4a81ae1f807",
+		"customerId": "uid0@email.com",
+		"dateOfBooking": "2017-04-12T22:19:46.140Z"
+	}
+]
