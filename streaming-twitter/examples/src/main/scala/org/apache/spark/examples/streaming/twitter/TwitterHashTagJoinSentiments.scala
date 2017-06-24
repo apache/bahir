@@ -64,7 +64,7 @@ object TwitterHashTagJoinSentiments {
     val hashTags = stream.flatMap(status => status.getText.split(" ").filter(_.startsWith("#")))
 
     // Read in the word-sentiment list and create a static RDD from it
-    val wordSentimentFilePath = "data/streaming/AFINN-111.txt"
+    val wordSentimentFilePath = "streaming-twitter/examples/data/AFINN-111.txt"
     val wordSentiments = ssc.sparkContext.textFile(wordSentimentFilePath).map { line =>
       val Array(word, happinessValue) = line.split("\t")
       (word, happinessValue.toInt)
