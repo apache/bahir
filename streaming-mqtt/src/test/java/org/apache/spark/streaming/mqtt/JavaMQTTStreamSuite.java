@@ -54,16 +54,16 @@ public class JavaMQTTStreamSuite extends LocalJavaStreamingContext {
       brokerUrl, topics, "testid", "user", "password", true);
 
     JavaReceiverInputDStream<Tuple2<String, byte[]>> test11 = MQTTUtils.createPairedByteArrayStream(ssc,
-            brokerUrl, topics);
+      brokerUrl, topics);
     JavaReceiverInputDStream<Tuple2<String, byte[]>> test12 = MQTTUtils.createPairedByteArrayStream(ssc,
-            brokerUrl, topics, StorageLevel.MEMORY_AND_DISK_SER_2());
+      brokerUrl, topics, StorageLevel.MEMORY_AND_DISK_SER_2());
     JavaReceiverInputDStream<Tuple2<String, byte[]>> test13 = MQTTUtils.createPairedByteArrayStream(ssc,
-            brokerUrl, topics, StorageLevel.MEMORY_AND_DISK_SER_2(), "testid", "user",
-            "password", true, 1, 10, 30, 3);
+      brokerUrl, topics, StorageLevel.MEMORY_AND_DISK_SER_2(), "testid", "user",
+      "password", true, 1, 10, 30, 3);
     JavaReceiverInputDStream<Tuple2<String, byte[]>> test14 = MQTTUtils.createPairedByteArrayStream(ssc,
-            brokerUrl, topics, "testid", "user", "password", true, 1, 10, 30, 3);
+      brokerUrl, topics, "testid", "user", "password", true, 1, 10, 30, 3);
     JavaReceiverInputDStream<Tuple2<String, byte[]>> test15 = MQTTUtils.createPairedByteArrayStream(ssc,
-            brokerUrl, topics, "testid", "user", "password", true);
+      brokerUrl, topics, "testid", "user", "password", true);
 
   }
 }
