@@ -52,6 +52,7 @@ this actor can be configured to handle failures, etc.
 
     val lines = MQTTUtils.createStream(ssc, brokerUrl, topic)
     val lines = MQTTUtils.createPairedStream(ssc, brokerUrl, topic)
+    val lines = MQTTUtils.createPairedByteArrayStreamStream(ssc, brokerUrl, topic)
 
 Additional mqtt connection options can be provided:
 
@@ -68,5 +69,6 @@ this actor can be configured to handle failures, etc.
 
     JavaDStream<String> lines = MQTTUtils.createStream(jssc, brokerUrl, topic);
     JavaReceiverInputDStream<Tuple2<String, String>> lines = MQTTUtils.createPairedStream(jssc, brokerUrl, topics);
+    JavaReceiverInputDStream<Tuple2<String, String>> lines = MQTTUtils.createPairedByteArrayStream(jssc, brokerUrl, topics);
 
 See end-to-end examples at [MQTT Examples](https://github.com/apache/bahir/tree/master/streaming-mqtt/examples)
