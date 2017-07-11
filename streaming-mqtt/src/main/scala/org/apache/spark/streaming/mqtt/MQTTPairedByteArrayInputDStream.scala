@@ -17,8 +17,6 @@
 
 package org.apache.spark.streaming.mqtt
 
-import java.nio.charset.StandardCharsets
-
 import org.eclipse.paho.client.mqttv3._
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 
@@ -30,9 +28,9 @@ import org.apache.spark.streaming.receiver.Receiver
 /**
  * Input stream that subscribe messages from a Mqtt Broker.
  * Uses eclipse paho as MqttClient http://www.eclipse.org/paho/
- * @param _ssc               Spark Streaming StreamingContext
+ * @param _ssc:              Spark Streaming StreamingContext,
  * @param brokerUrl          Url of remote mqtt publisher
- * @param topic              topic name to subscribe to
+ * @param topics             topic name Array to subscribe to
  * @param storageLevel       RDD storage level.
  * @param clientId           ClientId to use for the mqtt connection
  * @param username           Username for authentication to the mqtt publisher
@@ -43,11 +41,10 @@ import org.apache.spark.streaming.receiver.Receiver
  * @param keepAliveInterval  Keepalive interal for the mqtt connection
  * @param mqttVersion        Version to use for the mqtt connection
  */
-private[streaming]
-class MQTTInputDStream(
+private[streaming] class MQTTPairedByteArrayInputDStream(
     _ssc: StreamingContext,
     brokerUrl: String,
-    topic: String,
+    topics: Array[String],
     storageLevel: StorageLevel,
     clientId: Option[String] = None,
     username: Option[String] = None,
@@ -56,31 +53,28 @@ class MQTTInputDStream(
     qos: Option[Int] = None,
     connectionTimeout: Option[Int] = None,
     keepAliveInterval: Option[Int] = None,
-    mqttVersion: Option[Int] = None
-  ) extends ReceiverInputDStream[String](_ssc) {
+    mqttVersion: Option[Int] = None) extends ReceiverInputDStream[(String, Array[Byte])](_ssc) {
 
   private[streaming] override def name: String = s"MQTT stream [$id]"
 
-  def getReceiver(): Receiver[String] = {
-    new MQTTReceiver(brokerUrl, topic, storageLevel, clientId, username, password, cleanSession,
-      qos, connectionTimeout, keepAliveInterval, mqttVersion)
+  def getReceiver(): Receiver[(String, Array[Byte])] = {
+    new MQTTByteArrayPairReceiver(brokerUrl, topics, storageLevel, clientId, username,
+        password, cleanSession, qos, connectionTimeout, keepAliveInterval, mqttVersion)
   }
 }
 
-private[streaming]
-class MQTTReceiver(
-    brokerUrl: String,
-    topic: String,
-    storageLevel: StorageLevel,
-    clientId: Option[String],
-    username: Option[String],
-    password: Option[String],
-    cleanSession: Option[Boolean],
-    qos: Option[Int],
-    connectionTimeout: Option[Int],
-    keepAliveInterval: Option[Int],
-    mqttVersion: Option[Int]
-  ) extends Receiver[String](storageLevel) {
+private[streaming] class MQTTByteArrayPairReceiver(
+  brokerUrl: String,
+  topics: Array[String],
+  storageLevel: StorageLevel,
+  clientId: Option[String],
+  username: Option[String],
+  password: Option[String],
+  cleanSession: Option[Boolean],
+  qos: Option[Int],
+  connectionTimeout: Option[Int],
+  keepAliveInterval: Option[Int],
+  mqttVersion: Option[Int]) extends Receiver[(String, Array[Byte])](storageLevel) {
 
   def onStop() {
 
@@ -93,7 +87,7 @@ class MQTTReceiver(
 
     // Initializing Mqtt Client specifying brokerUrl, clientID and MqttClientPersistance
     val client = new MqttClient(brokerUrl, clientId.getOrElse(MqttClient.generateClientId()),
-                                persistence)
+      persistence)
 
     // Initialize mqtt parameters
     val mqttConnectionOptions = new MqttConnectOptions()
@@ -117,7 +111,7 @@ class MQTTReceiver(
 
       // Handles Mqtt message
       override def messageArrived(topic: String, message: MqttMessage) {
-        store(new String(message.getPayload(), StandardCharsets.UTF_8))
+        store((topic, message.getPayload()))
       }
 
       override def deliveryComplete(token: IMqttDeliveryToken) {
@@ -136,7 +130,15 @@ class MQTTReceiver(
     client.connect(mqttConnectionOptions)
 
     // Subscribe to Mqtt topic
-    client.subscribe(topic, qos.getOrElse(1))
+    var i = 0
+    val qosArray = Array.ofDim[Int](topics.length)
+    for (i <- qosArray.indices) {
+      qosArray(i) = qos.getOrElse(1)
+    }
+    client.subscribe(topics, qosArray)
 
   }
 }
+
+
+
