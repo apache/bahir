@@ -30,6 +30,7 @@ import org.apache.spark.streaming.receiver.Receiver
 /**
  * Input stream that subscribe messages from a Mqtt Broker.
  * Uses eclipse paho as MqttClient http://www.eclipse.org/paho/
+ * @param _ssc               Spark Streaming StreamingContext
  * @param brokerUrl          Url of remote mqtt publisher
  * @param topic              topic name to subscribe to
  * @param storageLevel       RDD storage level.
