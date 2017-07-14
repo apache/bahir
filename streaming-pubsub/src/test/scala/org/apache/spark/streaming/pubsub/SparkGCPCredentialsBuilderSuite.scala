@@ -17,64 +17,104 @@
 
 package org.apache.spark.streaming.pubsub
 
-import java.io.FileNotFoundException
+import java.io.{File, IOException, FileOutputStream, InputStream, OutputStream}
+import java.security.SignatureException
 
 import org.scalatest.concurrent.Timeouts
+import org.scalatest.{BeforeAndAfter, FunSuite};
 
 import org.apache.spark.util.Utils
 import org.apache.spark.SparkFunSuite
 
-class SparkGCPCredentialsBuilderSuite extends SparkFunSuite with Timeouts {
+class SparkGCPCredentialsBuilderSuite
+    extends FunSuite with Timeouts with BeforeAndAfter{
   private def builder = SparkGCPCredentials.builder
+  private val jsonResourcePath = "/org/apache/spark/streaming/pubusb/key-file.json"
+  private val p12ResourcePath = "/org/apache/spark/streaming/pubusb/key-file.p12"
 
-  private val jsonCreds = ServiceAccountCredentials(
-    jsonFilePath = Option("json-key-path")
-  )
+  private var jsonFilePath: Option[String] = null
+  private var p12FilePath: Option[String] = null
+  private val emailAccount = Option(
+    "pubsub-subscriber@apache-bahir-streaming-pubsub.iam.gserviceaccount.com")
 
-  private val p12Creds = ServiceAccountCredentials(
-    p12FilePath = Option("p12-key-path"),
-    emailAccount = Option("email")
-  )
+  before {
+    def streamPipe(input: InputStream, output: OutputStream) {
+      val BUFFER_SIZE: Int = 1024;
+      val buffer: Array[Byte] = new Array[Byte](_length = BUFFER_SIZE);
+      var n: Int = input.read(buffer);
+      while (n > 0) {
+        output.write(buffer, 0, n);
+        n = input.read(buffer);
+      }
+    }
 
-  private val metadataCreds = ServiceAccountCredentials()
+    val jsonIn = getClass.getResourceAsStream(jsonResourcePath)
+    val jsonFile = File.createTempFile("key-file", "json")
+    jsonFile.deleteOnExit
+    val jsonOut = new FileOutputStream(jsonFile)
+    streamPipe(jsonIn, jsonOut)
+    jsonIn.close
+    jsonOut.close
+    jsonFilePath = Some(jsonFile.getPath)
+
+    val p12In = getClass.getResourceAsStream(p12ResourcePath)
+    val p12File = File.createTempFile("key-file", "p12")
+    p12File.deleteOnExit
+    val p12Out = new FileOutputStream(p12File)
+    streamPipe(p12In, p12Out)
+    p12In.close
+    p12Out.close
+    p12FilePath = Some(p12File.getPath)
+  }
 
   test("should build application default") {
     assert(builder.build() === ApplicationDefaultCredentials)
   }
 
   test("should build json service account") {
+    val jsonCreds = ServiceAccountCredentials(jsonFilePath = jsonFilePath)
     assertResult(jsonCreds) {
-      builder.jsonServiceAccount(jsonCreds.jsonFilePath.get).build()
+      builder.jsonServiceAccount(jsonFilePath.get).build()
     }
   }
 
   test("should provide json creds") {
-    val thrown = intercept[FileNotFoundException] {
-      jsonCreds.provider
+    val jsonCreds = ServiceAccountCredentials(jsonFilePath = jsonFilePath)
+    val credential = jsonCreds.provider
+    intercept[IOException] {
+      credential.refreshToken
     }
-    assert(thrown.getMessage === "json-key-path (No such file or directory)")
   }
 
   test("should build p12 service account") {
+    val p12Creds = ServiceAccountCredentials(
+      p12FilePath = p12FilePath, emailAccount = emailAccount)
     assertResult(p12Creds) {
-      builder.p12ServiceAccount(p12Creds.p12FilePath.get, p12Creds.emailAccount.get).build()
+      builder.p12ServiceAccount(p12FilePath.get, emailAccount.get).build()
     }
   }
 
   test("should provide p12 creds") {
-    val thrown = intercept[FileNotFoundException] {
-      p12Creds.provider
+    val p12Creds = ServiceAccountCredentials(
+      p12FilePath = p12FilePath, emailAccount = emailAccount)
+    val credential = p12Creds.provider
+    intercept[IOException] {
+      credential.refreshToken
     }
-    assert(thrown.getMessage === "p12-key-path (No such file or directory)")
   }
 
   test("should build metadata service account") {
+    val metadataCreds = ServiceAccountCredentials()
     assertResult(metadataCreds) {
       builder.metadataServiceAccount().build()
     }
   }
 
   test("SparkGCPCredentials classes should be serializable") {
+    val jsonCreds = ServiceAccountCredentials(jsonFilePath = jsonFilePath)
+    val p12Creds = ServiceAccountCredentials(
+      p12FilePath = p12FilePath, emailAccount = emailAccount)
+    val metadataCreds = ServiceAccountCredentials()
     assertResult(jsonCreds) {
       Utils.deserialize[ServiceAccountCredentials](Utils.serialize(jsonCreds))
     }
