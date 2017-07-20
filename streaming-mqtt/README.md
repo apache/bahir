@@ -52,7 +52,7 @@ this actor can be configured to handle failures, etc.
 
     val lines = MQTTUtils.createStream(ssc, brokerUrl, topic)
     val lines = MQTTUtils.createPairedStream(ssc, brokerUrl, topic)
-    val lines = MQTTUtils.createPairedByteArrayStreamStream(ssc, brokerUrl, topic)
+    val lines = MQTTUtils.createPairedByteArrayStream(ssc, brokerUrl, topic)
 
 Additional mqtt connection options can be provided:
 
