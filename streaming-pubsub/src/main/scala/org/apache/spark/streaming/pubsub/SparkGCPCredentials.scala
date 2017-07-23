@@ -17,9 +17,9 @@
 
 package org.apache.spark.streaming.pubsub
 
-import com.google.api.client.json.jackson.JacksonFactory
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
+import com.google.api.client.json.jackson.JacksonFactory
 import com.google.api.services.pubsub.PubsubScopes
 import com.google.cloud.hadoop.util.{CredentialFactory, HttpTransportFactory}
 import java.io.{ByteArrayInputStream, File, FileOutputStream}
@@ -63,12 +63,10 @@ private[pubsub] final case class ServiceAccountCredentials(
     extends SparkGCPCredentials {
   private def getFileBuffer: Array[Byte] = {
     val filePath = jsonFilePath orElse p12FilePath
-    if (filePath.isEmpty)
-      Array[Byte]()
-    else
-      Files.readAllBytes(Paths.get(filePath.get))
+    if (filePath.isEmpty) Array[Byte]()
+    else Files.readAllBytes(Paths.get(filePath.get))
   }
-  val fileBytes = getFileBuffer
+  private val fileBytes = getFileBuffer
 
   override def provider: Credential = {
     val jsonFactory = new JacksonFactory
@@ -76,14 +74,14 @@ private[pubsub] final case class ServiceAccountCredentials(
     val transport = HttpTransportFactory.createHttpTransport(
       HttpTransportFactory.HttpTransportType.JAVA_NET, null)
 
-    if (!jsonFilePath.isEmpty){
+    if (!jsonFilePath.isEmpty) {
       val stream = new ByteArrayInputStream(fileBytes)
       CredentialFactory.GoogleCredentialWithRetry.fromGoogleCredential(
         GoogleCredential.fromStream(stream, transport, jsonFactory)
         .createScoped(scopes))
     } else if (!p12FilePath.isEmpty && !emailAccount.isEmpty) {
       val tempFile = File.createTempFile(emailAccount.get, ".p12")
-      tempFile.deleteOnExit()
+      tempFile.deleteOnExit
       val p12Out = new FileOutputStream(tempFile)
       p12Out.write(fileBytes, 0, fileBytes.length)
       p12Out.close
@@ -95,8 +93,7 @@ private[pubsub] final case class ServiceAccountCredentials(
         .setServiceAccountScopes(scopes)
         .setServiceAccountPrivateKeyFromP12File(tempFile)
         .setRequestInitializer(new CredentialFactory.CredentialHttpRetryInitializer()))
-    } else
-      (new CredentialFactory).getCredentialFromMetadataServiceAccount
+    } else (new CredentialFactory).getCredentialFromMetadataServiceAccount
   }
 
 }

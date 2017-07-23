@@ -17,17 +17,16 @@
 
 package org.apache.spark.streaming.pubsub
 
-import java.io.{File, IOException, FileOutputStream, InputStream, OutputStream}
-import java.security.SignatureException
+import java.io.{File, FileOutputStream, InputStream, IOException, OutputStream}
 
 import org.scalatest.concurrent.Timeouts
-import org.scalatest.{BeforeAndAfter, FunSuite};
+import org.scalatest.BeforeAndAfter
 
 import org.apache.spark.util.Utils
 import org.apache.spark.SparkFunSuite
 
 class SparkGCPCredentialsBuilderSuite
-    extends FunSuite with Timeouts with BeforeAndAfter{
+    extends SparkFunSuite with Timeouts with BeforeAndAfter{
   private def builder = SparkGCPCredentials.builder
   private val jsonResourcePath = "/org/apache/spark/streaming/pubusb/key-file.json.key"
   private val p12ResourcePath = "/org/apache/spark/streaming/pubusb/key-file.p12.key"
