@@ -29,8 +29,8 @@ import org.apache.spark.SparkFunSuite
 class SparkGCPCredentialsBuilderSuite
     extends FunSuite with Timeouts with BeforeAndAfter{
   private def builder = SparkGCPCredentials.builder
-  private val jsonResourcePath = "/org/apache/spark/streaming/pubusb/key-file.json"
-  private val p12ResourcePath = "/org/apache/spark/streaming/pubusb/key-file.p12"
+  private val jsonResourcePath = "/org/apache/spark/streaming/pubusb/key-file.json.key"
+  private val p12ResourcePath = "/org/apache/spark/streaming/pubusb/key-file.p12.key"
 
   private var jsonFilePath: Option[String] = null
   private var p12FilePath: Option[String] = null
