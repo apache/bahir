@@ -1,0 +1,2379 @@
+[
+	{
+		"miles": "4258",
+		"destPort": "BOM",
+		"_id": "AA0",
+		"originPort": "AMS"
+	},
+	{
+		"miles": "5737",
+		"destPort": "DEL",
+		"_id": "AA1",
+		"originPort": "AMS"
+	},
+	{
+		"miles": "6524",
+		"destPort": "SIN",
+		"_id": "AA10",
+		"originPort": "AMS"
+	},
+	{
+		"miles": "8205",
+		"destPort": "HKG",
+		"_id": "AA100",
+		"originPort": "GVA"
+	},
+	{
+		"miles": "457",
+		"destPort": "LHR",
+		"_id": "AA101",
+		"originPort": "GVA"
+	},
+	{
+		"miles": "3671",
+		"destPort": "YUL",
+		"_id": "AA102",
+		"originPort": "GVA"
+	},
+	{
+		"miles": "1493",
+		"destPort": "SVO",
+		"_id": "AA103",
+		"originPort": "GVA"
+	},
+	{
+		"miles": "3859",
+		"destPort": "JFK",
+		"_id": "AA104",
+		"originPort": "GVA"
+	},
+	{
+		"miles": "250",
+		"destPort": "CDG",
+		"_id": "AA105",
+		"originPort": "GVA"
+	},
+	{
+		"miles": "439",
+		"destPort": "FCO",
+		"_id": "AA106",
+		"originPort": "GVA"
+	},
+	{
+		"miles": "6519",
+		"destPort": "SIN",
+		"_id": "AA107",
+		"originPort": "GVA"
+	},
+	{
+		"miles": "12391",
+		"destPort": "SYD",
+		"_id": "AA108",
+		"originPort": "GVA"
+	},
+	{
+		"miles": "2434",
+		"destPort": "IKA",
+		"_id": "AA109",
+		"originPort": "GVA"
+	},
+	{
+		"miles": "13306",
+		"destPort": "SYD",
+		"_id": "AA11",
+		"originPort": "AMS"
+	},
+	{
+		"miles": "10029",
+		"destPort": "NRT",
+		"_id": "AA110",
+		"originPort": "GVA"
+	},
+	{
+		"miles": "2673",
+		"destPort": "BOM",
+		"_id": "AA111",
+		"originPort": "HKG"
+	},
+	{
+		"miles": "2345",
+		"destPort": "DEL",
+		"_id": "AA112",
+		"originPort": "HKG"
+	},
+	{
+		"miles": "8277",
+		"destPort": "FRA",
+		"_id": "AA113",
+		"originPort": "HKG"
+	},
+	{
+		"miles": "8252",
+		"destPort": "LHR",
+		"_id": "AA114",
+		"originPort": "HKG"
+	},
+	{
+		"miles": "10345",
+		"destPort": "YUL",
+		"_id": "AA115",
+		"originPort": "HKG"
+	},
+	{
+		"miles": "6063",
+		"destPort": "SVO",
+		"_id": "AA116",
+		"originPort": "HKG"
+	},
+	{
+		"miles": "10279",
+		"destPort": "JFK",
+		"_id": "AA117",
+		"originPort": "HKG"
+	},
+	{
+		"miles": "8493",
+		"destPort": "CDG",
+		"_id": "AA118",
+		"originPort": "HKG"
+	},
+	{
+		"miles": "7694",
+		"destPort": "FCO",
+		"_id": "AA119",
+		"originPort": "HKG"
+	},
+	{
+		"miles": "2527",
+		"destPort": "IKA",
+		"_id": "AA12",
+		"originPort": "AMS"
+	},
+	{
+		"miles": "1607",
+		"destPort": "SIN",
+		"_id": "AA120",
+		"originPort": "HKG"
+	},
+	{
+		"miles": "4586",
+		"destPort": "SYD",
+		"_id": "AA121",
+		"originPort": "HKG"
+	},
+	{
+		"miles": "3843",
+		"destPort": "IKA",
+		"_id": "AA122",
+		"originPort": "HKG"
+	},
+	{
+		"miles": "1788",
+		"destPort": "NRT",
+		"_id": "AA123",
+		"originPort": "HKG"
+	},
+	{
+		"miles": "2992",
+		"destPort": "BOM",
+		"_id": "AA124",
+		"originPort": "IST"
+	},
+	{
+		"miles": "4202",
+		"destPort": "DEL",
+		"_id": "AA125",
+		"originPort": "IST"
+	},
+	{
+		"miles": "1185",
+		"destPort": "FRA",
+		"_id": "AA126",
+		"originPort": "IST"
+	},
+	{
+		"miles": "7016",
+		"destPort": "HKG",
+		"_id": "AA127",
+		"originPort": "IST"
+	},
+	{
+		"miles": "1554",
+		"destPort": "LHR",
+		"_id": "AA128",
+		"originPort": "IST"
+	},
+	{
+		"miles": "5757",
+		"destPort": "YUL",
+		"_id": "AA129",
+		"originPort": "IST"
+	},
+	{
+		"miles": "9522",
+		"destPort": "NRT",
+		"_id": "AA13",
+		"originPort": "AMS"
+	},
+	{
+		"miles": "1093",
+		"destPort": "SVO",
+		"_id": "AA130",
+		"originPort": "IST"
+	},
+	{
+		"miles": "6010",
+		"destPort": "JFK",
+		"_id": "AA131",
+		"originPort": "IST"
+	},
+	{
+		"miles": "1394",
+		"destPort": "CDG",
+		"_id": "AA132",
+		"originPort": "IST"
+	},
+	{
+		"miles": "852",
+		"destPort": "FCO",
+		"_id": "AA133",
+		"originPort": "IST"
+	},
+	{
+		"miles": "5379",
+		"destPort": "SIN",
+		"_id": "AA134",
+		"originPort": "IST"
+	},
+	{
+		"miles": "11772",
+		"destPort": "SYD",
+		"_id": "AA135",
+		"originPort": "IST"
+	},
+	{
+		"miles": "1270",
+		"destPort": "IKA",
+		"_id": "AA136",
+		"originPort": "IST"
+	},
+	{
+		"miles": "9162",
+		"destPort": "NRT",
+		"_id": "AA137",
+		"originPort": "IST"
+	},
+	{
+		"miles": "544",
+		"destPort": "BOM",
+		"_id": "AA138",
+		"originPort": "KHI"
+	},
+	{
+		"miles": "655",
+		"destPort": "DEL",
+		"_id": "AA139",
+		"originPort": "KHI"
+	},
+	{
+		"miles": "7662",
+		"destPort": "BOM",
+		"_id": "AA14",
+		"originPort": "AKL"
+	},
+	{
+		"miles": "3539",
+		"destPort": "FRA",
+		"_id": "AA140",
+		"originPort": "KHI"
+	},
+	{
+		"miles": "3596",
+		"destPort": "HKG",
+		"_id": "AA141",
+		"originPort": "KHI"
+	},
+	{
+		"miles": "5276",
+		"destPort": "LHR",
+		"_id": "AA142",
+		"originPort": "KHI"
+	},
+	{
+		"miles": "8888",
+		"destPort": "YUL",
+		"_id": "AA143",
+		"originPort": "KHI"
+	},
+	{
+		"miles": "2608",
+		"destPort": "SVO",
+		"_id": "AA144",
+		"originPort": "KHI"
+	},
+	{
+		"miles": "9104",
+		"destPort": "JFK",
+		"_id": "AA145",
+		"originPort": "KHI"
+	},
+	{
+		"miles": "3810",
+		"destPort": "CDG",
+		"_id": "AA146",
+		"originPort": "KHI"
+	},
+	{
+		"miles": "3307",
+		"destPort": "FCO",
+		"_id": "AA147",
+		"originPort": "KHI"
+	},
+	{
+		"miles": "2943",
+		"destPort": "SIN",
+		"_id": "AA148",
+		"originPort": "KHI"
+	},
+	{
+		"miles": "8269",
+		"destPort": "SYD",
+		"_id": "AA149",
+		"originPort": "KHI"
+	},
+	{
+		"miles": "9406",
+		"destPort": "DEL",
+		"_id": "AA15",
+		"originPort": "AKL"
+	},
+	{
+		"miles": "1199",
+		"destPort": "IKA",
+		"_id": "AA150",
+		"originPort": "KHI"
+	},
+	{
+		"miles": "5742",
+		"destPort": "NRT",
+		"_id": "AA151",
+		"originPort": "KHI"
+	},
+	{
+		"miles": "1714",
+		"destPort": "BOM",
+		"_id": "AA152",
+		"originPort": "KWI"
+	},
+	{
+		"miles": "1755",
+		"destPort": "DEL",
+		"_id": "AA153",
+		"originPort": "KWI"
+	},
+	{
+		"miles": "2499",
+		"destPort": "FRA",
+		"_id": "AA154",
+		"originPort": "KWI"
+	},
+	{
+		"miles": "4092",
+		"destPort": "HKG",
+		"_id": "AA155",
+		"originPort": "KWI"
+	},
+	{
+		"miles": "2903",
+		"destPort": "LHR",
+		"_id": "AA156",
+		"originPort": "KWI"
+	},
+	{
+		"miles": "6264",
+		"destPort": "YUL",
+		"_id": "AA157",
+		"originPort": "KWI"
+	},
+	{
+		"miles": "1918",
+		"destPort": "SVO",
+		"_id": "AA158",
+		"originPort": "KWI"
+	},
+	{
+		"miles": "6335",
+		"destPort": "JFK",
+		"_id": "AA159",
+		"originPort": "KWI"
+	},
+	{
+		"miles": "6883",
+		"destPort": "FRA",
+		"_id": "AA16",
+		"originPort": "AKL"
+	},
+	{
+		"miles": "2739",
+		"destPort": "CDG",
+		"_id": "AA160",
+		"originPort": "KWI"
+	},
+	{
+		"miles": "2168",
+		"destPort": "FCO",
+		"_id": "AA161",
+		"originPort": "KWI"
+	},
+	{
+		"miles": "2942",
+		"destPort": "SIN",
+		"_id": "AA162",
+		"originPort": "KWI"
+	},
+	{
+		"miles": "8007",
+		"destPort": "SYD",
+		"_id": "AA163",
+		"originPort": "KWI"
+	},
+	{
+		"miles": "1200",
+		"destPort": "IKA",
+		"_id": "AA164",
+		"originPort": "KWI"
+	},
+	{
+		"miles": "5168",
+		"destPort": "NRT",
+		"_id": "AA165",
+		"originPort": "KWI"
+	},
+	{
+		"miles": "5140",
+		"destPort": "BOM",
+		"_id": "AA166",
+		"originPort": "LOS"
+	},
+	{
+		"miles": "6015",
+		"destPort": "DEL",
+		"_id": "AA167",
+		"originPort": "LOS"
+	},
+	{
+		"miles": "3018",
+		"destPort": "FRA",
+		"_id": "AA168",
+		"originPort": "LOS"
+	},
+	{
+		"miles": "8930",
+		"destPort": "HKG",
+		"_id": "AA169",
+		"originPort": "LOS"
+	},
+	{
+		"miles": "6883",
+		"destPort": "HKG",
+		"_id": "AA17",
+		"originPort": "AKL"
+	},
+	{
+		"miles": "3098",
+		"destPort": "LHR",
+		"_id": "AA170",
+		"originPort": "LOS"
+	},
+	{
+		"miles": "6734",
+		"destPort": "YUL",
+		"_id": "AA171",
+		"originPort": "LOS"
+	},
+	{
+		"miles": "4806",
+		"destPort": "SVO",
+		"_id": "AA172",
+		"originPort": "LOS"
+	},
+	{
+		"miles": "6508",
+		"destPort": "JFK",
+		"_id": "AA173",
+		"originPort": "LOS"
+	},
+	{
+		"miles": "2922",
+		"destPort": "CDG",
+		"_id": "AA174",
+		"originPort": "LOS"
+	},
+	{
+		"miles": "2497",
+		"destPort": "FCO",
+		"_id": "AA175",
+		"originPort": "LOS"
+	},
+	{
+		"miles": "7428",
+		"destPort": "SIN",
+		"_id": "AA176",
+		"originPort": "LOS"
+	},
+	{
+		"miles": "11898",
+		"destPort": "SYD",
+		"_id": "AA177",
+		"originPort": "LOS"
+	},
+	{
+		"miles": "3659",
+		"destPort": "IKA",
+		"_id": "AA178",
+		"originPort": "LOS"
+	},
+	{
+		"miles": "11076",
+		"destPort": "NRT",
+		"_id": "AA179",
+		"originPort": "LOS"
+	},
+	{
+		"miles": "14202",
+		"destPort": "LHR",
+		"_id": "AA18",
+		"originPort": "AKL"
+	},
+	{
+		"miles": "4477",
+		"destPort": "BOM",
+		"_id": "AA180",
+		"originPort": "LHR"
+	},
+	{
+		"miles": "5907",
+		"destPort": "DEL",
+		"_id": "AA181",
+		"originPort": "LHR"
+	},
+	{
+		"miles": "400",
+		"destPort": "FRA",
+		"_id": "AA182",
+		"originPort": "LHR"
+	},
+	{
+		"miles": "8252",
+		"destPort": "HKG",
+		"_id": "AA183",
+		"originPort": "LHR"
+	},
+	{
+		"miles": "3251",
+		"destPort": "YUL",
+		"_id": "AA184",
+		"originPort": "LHR"
+	},
+	{
+		"miles": "1557",
+		"destPort": "SVO",
+		"_id": "AA185",
+		"originPort": "LHR"
+	},
+	{
+		"miles": "3456",
+		"destPort": "JFK",
+		"_id": "AA186",
+		"originPort": "LHR"
+	},
+	{
+		"miles": "209",
+		"destPort": "CDG",
+		"_id": "AA187",
+		"originPort": "LHR"
+	},
+	{
+		"miles": "892",
+		"destPort": "FCO",
+		"_id": "AA188",
+		"originPort": "LHR"
+	},
+	{
+		"miles": "6754",
+		"destPort": "SIN",
+		"_id": "AA189",
+		"originPort": "LHR"
+	},
+	{
+		"miles": "10968",
+		"destPort": "YUL",
+		"_id": "AA19",
+		"originPort": "AKL"
+	},
+	{
+		"miles": "13477",
+		"destPort": "SYD",
+		"_id": "AA190",
+		"originPort": "LHR"
+	},
+	{
+		"miles": "2738",
+		"destPort": "IKA",
+		"_id": "AA191",
+		"originPort": "LHR"
+	},
+	{
+		"miles": "9536",
+		"destPort": "NRT",
+		"_id": "AA192",
+		"originPort": "LHR"
+	},
+	{
+		"miles": "3189",
+		"destPort": "BOM",
+		"_id": "AA193",
+		"originPort": "MNL"
+	},
+	{
+		"miles": "3656",
+		"destPort": "DEL",
+		"_id": "AA194",
+		"originPort": "MNL"
+	},
+	{
+		"miles": "6394",
+		"destPort": "FRA",
+		"_id": "AA195",
+		"originPort": "MNL"
+	},
+	{
+		"miles": "702",
+		"destPort": "HKG",
+		"_id": "AA196",
+		"originPort": "MNL"
+	},
+	{
+		"miles": "9564",
+		"destPort": "LHR",
+		"_id": "AA197",
+		"originPort": "MNL"
+	},
+	{
+		"miles": "2332",
+		"destPort": "YUL",
+		"_id": "AA198",
+		"originPort": "MNL"
+	},
+	{
+		"miles": "6906",
+		"destPort": "SVO",
+		"_id": "AA199",
+		"originPort": "MNL"
+	},
+	{
+		"miles": "228",
+		"destPort": "FRA",
+		"_id": "AA2",
+		"originPort": "AMS"
+	},
+	{
+		"miles": "14622",
+		"destPort": "SVO",
+		"_id": "AA20",
+		"originPort": "AKL"
+	},
+	{
+		"miles": "10368",
+		"destPort": "JFK",
+		"_id": "AA200",
+		"originPort": "MNL"
+	},
+	{
+		"miles": "9336",
+		"destPort": "CDG",
+		"_id": "AA201",
+		"originPort": "MNL"
+	},
+	{
+		"miles": "8536",
+		"destPort": "FCO",
+		"_id": "AA202",
+		"originPort": "MNL"
+	},
+	{
+		"miles": "1481",
+		"destPort": "SIN",
+		"_id": "AA203",
+		"originPort": "MNL"
+	},
+	{
+		"miles": "3892",
+		"destPort": "SYD",
+		"_id": "AA204",
+		"originPort": "MNL"
+	},
+	{
+		"miles": "4503",
+		"destPort": "IKA",
+		"_id": "AA205",
+		"originPort": "MNL"
+	},
+	{
+		"miles": "1862",
+		"destPort": "NRT",
+		"_id": "AA206",
+		"originPort": "MNL"
+	},
+	{
+		"miles": "10206",
+		"destPort": "BOM",
+		"_id": "AA207",
+		"originPort": "MEX"
+	},
+	{
+		"miles": "12054",
+		"destPort": "DEL",
+		"_id": "AA208",
+		"originPort": "MEX"
+	},
+	{
+		"miles": "7124",
+		"destPort": "FRA",
+		"_id": "AA209",
+		"originPort": "MEX"
+	},
+	{
+		"miles": "10730",
+		"destPort": "JFK",
+		"_id": "AA21",
+		"originPort": "AKL"
+	},
+	{
+		"miles": "10726",
+		"destPort": "HKG",
+		"_id": "AA210",
+		"originPort": "MEX"
+	},
+	{
+		"miles": "6649",
+		"destPort": "LHR",
+		"_id": "AA211",
+		"originPort": "MEX"
+	},
+	{
+		"miles": "2306",
+		"destPort": "YUL",
+		"_id": "AA212",
+		"originPort": "MEX"
+	},
+	{
+		"miles": "8058",
+		"destPort": "SVO",
+		"_id": "AA213",
+		"originPort": "MEX"
+	},
+	{
+		"miles": "2086",
+		"destPort": "JFK",
+		"_id": "AA214",
+		"originPort": "MEX"
+	},
+	{
+		"miles": "6856",
+		"destPort": "CDG",
+		"_id": "AA215",
+		"originPort": "MEX"
+	},
+	{
+		"miles": "7639",
+		"destPort": "FCO",
+		"_id": "AA216",
+		"originPort": "MEX"
+	},
+	{
+		"miles": "12638",
+		"destPort": "SIN",
+		"_id": "AA217",
+		"originPort": "MEX"
+	},
+	{
+		"miles": "9457",
+		"destPort": "SYD",
+		"_id": "AA218",
+		"originPort": "MEX"
+	},
+	{
+		"miles": "8487",
+		"destPort": "IKA",
+		"_id": "AA219",
+		"originPort": "MEX"
+	},
+	{
+		"miles": "14452",
+		"destPort": "CDG",
+		"_id": "AA22",
+		"originPort": "AKL"
+	},
+	{
+		"miles": "8588",
+		"destPort": "NRT",
+		"_id": "AA220",
+		"originPort": "MEX"
+	},
+	{
+		"miles": "7942",
+		"destPort": "BOM",
+		"_id": "AA221",
+		"originPort": "YUL"
+	},
+	{
+		"miles": "3821",
+		"destPort": "DEL",
+		"_id": "AA222",
+		"originPort": "YUL"
+	},
+	{
+		"miles": "3640",
+		"destPort": "FRA",
+		"_id": "AA223",
+		"originPort": "YUL"
+	},
+	{
+		"miles": "10345",
+		"destPort": "HKG",
+		"_id": "AA224",
+		"originPort": "YUL"
+	},
+	{
+		"miles": "3251",
+		"destPort": "LHR",
+		"_id": "AA225",
+		"originPort": "YUL"
+	},
+	{
+		"miles": "5259",
+		"destPort": "SVO",
+		"_id": "AA226",
+		"originPort": "YUL"
+	},
+	{
+		"miles": "330",
+		"destPort": "JFK",
+		"_id": "AA227",
+		"originPort": "YUL"
+	},
+	{
+		"miles": "3433",
+		"destPort": "CDG",
+		"_id": "AA228",
+		"originPort": "YUL"
+	},
+	{
+		"miles": "4100",
+		"destPort": "FCO",
+		"_id": "AA229",
+		"originPort": "YUL"
+	},
+	{
+		"miles": "14061",
+		"destPort": "FCO",
+		"_id": "AA23",
+		"originPort": "AKL"
+	},
+	{
+		"miles": "9193",
+		"destPort": "SIN",
+		"_id": "AA230",
+		"originPort": "YUL"
+	},
+	{
+		"miles": "12045",
+		"destPort": "SYD",
+		"_id": "AA231",
+		"originPort": "YUL"
+	},
+	{
+		"miles": "6223",
+		"destPort": "IKA",
+		"_id": "AA232",
+		"originPort": "YUL"
+	},
+	{
+		"miles": "8199",
+		"destPort": "NRT",
+		"_id": "AA233",
+		"originPort": "YUL"
+	},
+	{
+		"miles": "3136",
+		"destPort": "BOM",
+		"_id": "AA234",
+		"originPort": "SVO"
+	},
+	{
+		"miles": "2708",
+		"destPort": "DEL",
+		"_id": "AA235",
+		"originPort": "SVO"
+	},
+	{
+		"miles": "1253",
+		"destPort": "FRA",
+		"_id": "AA236",
+		"originPort": "SVO"
+	},
+	{
+		"miles": "6063",
+		"destPort": "HKG",
+		"_id": "AA237",
+		"originPort": "SVO"
+	},
+	{
+		"miles": "1557",
+		"destPort": "LHR",
+		"_id": "AA238",
+		"originPort": "SVO"
+	},
+	{
+		"miles": "5259",
+		"destPort": "YUL",
+		"_id": "AA239",
+		"originPort": "SVO"
+	},
+	{
+		"miles": "5230",
+		"destPort": "SIN",
+		"_id": "AA24",
+		"originPort": "AKL"
+	},
+	{
+		"miles": "5620",
+		"destPort": "JFK",
+		"_id": "AA240",
+		"originPort": "SVO"
+	},
+	{
+		"miles": "1533",
+		"destPort": "CDG",
+		"_id": "AA241",
+		"originPort": "SVO"
+	},
+	{
+		"miles": "1476",
+		"destPort": "FCO",
+		"_id": "AA242",
+		"originPort": "SVO"
+	},
+	{
+		"miles": "5242",
+		"destPort": "SIN",
+		"_id": "AA243",
+		"originPort": "SVO"
+	},
+	{
+		"miles": "11044",
+		"destPort": "SYD",
+		"_id": "AA244",
+		"originPort": "SVO"
+	},
+	{
+		"miles": "1526",
+		"destPort": "IKA",
+		"_id": "AA245",
+		"originPort": "SVO"
+	},
+	{
+		"miles": "4667",
+		"destPort": "NRT",
+		"_id": "AA246",
+		"originPort": "SVO"
+	},
+	{
+		"miles": "2817",
+		"destPort": "BOM",
+		"_id": "AA247",
+		"originPort": "NBO"
+	},
+	{
+		"miles": "3364",
+		"destPort": "DEL",
+		"_id": "AA248",
+		"originPort": "NBO"
+	},
+	{
+		"miles": "3925",
+		"destPort": "FRA",
+		"_id": "AA249",
+		"originPort": "NBO"
+	},
+	{
+		"miles": "1343",
+		"destPort": "SYD",
+		"_id": "AA25",
+		"originPort": "AKL"
+	},
+	{
+		"miles": "5347",
+		"destPort": "HKG",
+		"_id": "AA250",
+		"originPort": "NBO"
+	},
+	{
+		"miles": "4247",
+		"destPort": "LHR",
+		"_id": "AA251",
+		"originPort": "NBO"
+	},
+	{
+		"miles": "7271",
+		"destPort": "YUL",
+		"_id": "AA252",
+		"originPort": "NBO"
+	},
+	{
+		"miles": "3955",
+		"destPort": "SVO",
+		"_id": "AA253",
+		"originPort": "NBO"
+	},
+	{
+		"miles": "7349",
+		"destPort": "JFK",
+		"_id": "AA254",
+		"originPort": "NBO"
+	},
+	{
+		"miles": "4027",
+		"destPort": "CDG",
+		"_id": "AA255",
+		"originPort": "NBO"
+	},
+	{
+		"miles": "3353",
+		"destPort": "FCO",
+		"_id": "AA256",
+		"originPort": "NBO"
+	},
+	{
+		"miles": "4628",
+		"destPort": "SIN",
+		"_id": "AA257",
+		"originPort": "NBO"
+	},
+	{
+		"miles": "7536",
+		"destPort": "SYD",
+		"_id": "AA258",
+		"originPort": "NBO"
+	},
+	{
+		"miles": "2718",
+		"destPort": "IKA",
+		"_id": "AA259",
+		"originPort": "NBO"
+	},
+	{
+		"miles": "9338",
+		"destPort": "IKA",
+		"_id": "AA26",
+		"originPort": "AKL"
+	},
+	{
+		"miles": "7019",
+		"destPort": "NRT",
+		"_id": "AA260",
+		"originPort": "NBO"
+	},
+	{
+		"miles": "7718",
+		"destPort": "BOM",
+		"_id": "AA261",
+		"originPort": "JFK"
+	},
+	{
+		"miles": "9550",
+		"destPort": "DEL",
+		"_id": "AA262",
+		"originPort": "JFK"
+	},
+	{
+		"miles": "3851",
+		"destPort": "FRA",
+		"_id": "AA263",
+		"originPort": "JFK"
+	},
+	{
+		"miles": "10279",
+		"destPort": "HKG",
+		"_id": "AA264",
+		"originPort": "JFK"
+	},
+	{
+		"miles": "3456",
+		"destPort": "LHR",
+		"_id": "AA265",
+		"originPort": "JFK"
+	},
+	{
+		"miles": "330",
+		"destPort": "YUL",
+		"_id": "AA266",
+		"originPort": "JFK"
+	},
+	{
+		"miles": "5620",
+		"destPort": "SVO",
+		"_id": "AA267",
+		"originPort": "JFK"
+	},
+	{
+		"miles": "3628",
+		"destPort": "CDG",
+		"_id": "AA268",
+		"originPort": "JFK"
+	},
+	{
+		"miles": "4280",
+		"destPort": "FCO",
+		"_id": "AA269",
+		"originPort": "JFK"
+	},
+	{
+		"miles": "8275",
+		"destPort": "NRT",
+		"_id": "AA27",
+		"originPort": "AKL"
+	},
+	{
+		"miles": "9525",
+		"destPort": "SIN",
+		"_id": "AA270",
+		"originPort": "JFK"
+	},
+	{
+		"miles": "12052",
+		"destPort": "SYD",
+		"_id": "AA271",
+		"originPort": "JFK"
+	},
+	{
+		"miles": "6113",
+		"destPort": "IKA",
+		"_id": "AA272",
+		"originPort": "JFK"
+	},
+	{
+		"miles": "8133",
+		"destPort": "NRT",
+		"_id": "AA273",
+		"originPort": "JFK"
+	},
+	{
+		"miles": "4349",
+		"destPort": "BOM",
+		"_id": "AA274",
+		"originPort": "CDG"
+	},
+	{
+		"miles": "5679",
+		"destPort": "DEL",
+		"_id": "AA275",
+		"originPort": "CDG"
+	},
+	{
+		"miles": "269",
+		"destPort": "FRA",
+		"_id": "AA276",
+		"originPort": "CDG"
+	},
+	{
+		"miles": "8493",
+		"destPort": "HKG",
+		"_id": "AA277",
+		"originPort": "CDG"
+	},
+	{
+		"miles": "209",
+		"destPort": "LHR",
+		"_id": "AA278",
+		"originPort": "CDG"
+	},
+	{
+		"miles": "3433",
+		"destPort": "YUL",
+		"_id": "AA279",
+		"originPort": "CDG"
+	},
+	{
+		"miles": "1871",
+		"destPort": "BOM",
+		"_id": "AA28",
+		"originPort": "BKK"
+	},
+	{
+		"miles": "1533",
+		"destPort": "SVO",
+		"_id": "AA280",
+		"originPort": "CDG"
+	},
+	{
+		"miles": "3628",
+		"destPort": "JFK",
+		"_id": "AA281",
+		"originPort": "CDG"
+	},
+	{
+		"miles": "688",
+		"destPort": "FCO",
+		"_id": "AA282",
+		"originPort": "CDG"
+	},
+	{
+		"miles": "6667",
+		"destPort": "SIN",
+		"_id": "AA283",
+		"originPort": "CDG"
+	},
+	{
+		"miles": "13249",
+		"destPort": "SYD",
+		"_id": "AA284",
+		"originPort": "CDG"
+	},
+	{
+		"miles": "2610",
+		"destPort": "IKA",
+		"_id": "AA285",
+		"originPort": "CDG"
+	},
+	{
+		"miles": "9771",
+		"destPort": "NRT",
+		"_id": "AA286",
+		"originPort": "CDG"
+	},
+	{
+		"miles": "9334",
+		"destPort": "BOM",
+		"_id": "AA287",
+		"originPort": "PRG"
+	},
+	{
+		"miles": "3549",
+		"destPort": "DEL",
+		"_id": "AA288",
+		"originPort": "PRG"
+	},
+	{
+		"miles": "253",
+		"destPort": "FRA",
+		"_id": "AA289",
+		"originPort": "PRG"
+	},
+	{
+		"miles": "1815",
+		"destPort": "DEL",
+		"_id": "AA29",
+		"originPort": "BKK"
+	},
+	{
+		"miles": "5460",
+		"destPort": "HKG",
+		"_id": "AA290",
+		"originPort": "PRG"
+	},
+	{
+		"miles": "649",
+		"destPort": "LHR",
+		"_id": "AA291",
+		"originPort": "PRG"
+	},
+	{
+		"miles": "3852",
+		"destPort": "YUL",
+		"_id": "AA292",
+		"originPort": "PRG"
+	},
+	{
+		"miles": "1036",
+		"destPort": "SVO",
+		"_id": "AA293",
+		"originPort": "PRG"
+	},
+	{
+		"miles": "4066",
+		"destPort": "JFK",
+		"_id": "AA294",
+		"originPort": "PRG"
+	},
+	{
+		"miles": "542",
+		"destPort": "CDG",
+		"_id": "AA295",
+		"originPort": "PRG"
+	},
+	{
+		"miles": "581",
+		"destPort": "FCO",
+		"_id": "AA296",
+		"originPort": "PRG"
+	},
+	{
+		"miles": "6126",
+		"destPort": "SIN",
+		"_id": "AA297",
+		"originPort": "PRG"
+	},
+	{
+		"miles": "9997",
+		"destPort": "SYD",
+		"_id": "AA298",
+		"originPort": "PRG"
+	},
+	{
+		"miles": "2093",
+		"destPort": "IKA",
+		"_id": "AA299",
+		"originPort": "PRG"
+	},
+	{
+		"miles": "8551",
+		"destPort": "HKG",
+		"_id": "AA3",
+		"originPort": "AMS"
+	},
+	{
+		"miles": "5575",
+		"destPort": "FRA",
+		"_id": "AA30",
+		"originPort": "BKK"
+	},
+	{
+		"miles": "8531",
+		"destPort": "NRT",
+		"_id": "AA300",
+		"originPort": "PRG"
+	},
+	{
+		"miles": "9547",
+		"destPort": "BOM",
+		"_id": "AA301",
+		"originPort": "GIG"
+	},
+	{
+		"miles": "11263",
+		"destPort": "DEL",
+		"_id": "AA302",
+		"originPort": "GIG"
+	},
+	{
+		"miles": "9775",
+		"destPort": "FRA",
+		"_id": "AA303",
+		"originPort": "GIG"
+	},
+	{
+		"miles": "13429",
+		"destPort": "HKG",
+		"_id": "AA304",
+		"originPort": "GIG"
+	},
+	{
+		"miles": "6914",
+		"destPort": "LHR",
+		"_id": "AA305",
+		"originPort": "GIG"
+	},
+	{
+		"miles": "6175",
+		"destPort": "YUL",
+		"_id": "AA306",
+		"originPort": "GIG"
+	},
+	{
+		"miles": "8606",
+		"destPort": "SVO",
+		"_id": "AA307",
+		"originPort": "GIG"
+	},
+	{
+		"miles": "4816",
+		"destPort": "JFK",
+		"_id": "AA308",
+		"originPort": "GIG"
+	},
+	{
+		"miles": "5697",
+		"destPort": "CDG",
+		"_id": "AA309",
+		"originPort": "GIG"
+	},
+	{
+		"miles": "1065",
+		"destPort": "HKG",
+		"_id": "AA31",
+		"originPort": "BKK"
+	},
+	{
+		"miles": "5707",
+		"destPort": "FCO",
+		"_id": "AA310",
+		"originPort": "GIG"
+	},
+	{
+		"miles": "9775",
+		"destPort": "SIN",
+		"_id": "AA311",
+		"originPort": "GIG"
+	},
+	{
+		"miles": "12741",
+		"destPort": "SYD",
+		"_id": "AA312",
+		"originPort": "GIG"
+	},
+	{
+		"miles": "7828",
+		"destPort": "IKA",
+		"_id": "AA313",
+		"originPort": "GIG"
+	},
+	{
+		"miles": "13512",
+		"destPort": "NRT",
+		"_id": "AA314",
+		"originPort": "GIG"
+	},
+	{
+		"miles": "3840",
+		"destPort": "BOM",
+		"_id": "AA315",
+		"originPort": "FCO"
+	},
+	{
+		"miles": "3679",
+		"destPort": "DEL",
+		"_id": "AA316",
+		"originPort": "FCO"
+	},
+	{
+		"miles": "6238",
+		"destPort": "FRA",
+		"_id": "AA317",
+		"originPort": "FCO"
+	},
+	{
+		"miles": "7694",
+		"destPort": "HKG",
+		"_id": "AA318",
+		"originPort": "FCO"
+	},
+	{
+		"miles": "892",
+		"destPort": "LHR",
+		"_id": "AA319",
+		"originPort": "FCO"
+	},
+	{
+		"miles": "8038",
+		"destPort": "LHR",
+		"_id": "AA32",
+		"originPort": "BKK"
+	},
+	{
+		"miles": "4100",
+		"destPort": "YUL",
+		"_id": "AA320",
+		"originPort": "FCO"
+	},
+	{
+		"miles": "1476",
+		"destPort": "SVO",
+		"_id": "AA321",
+		"originPort": "FCO"
+	},
+	{
+		"miles": "4280",
+		"destPort": "JFK",
+		"_id": "AA322",
+		"originPort": "FCO"
+	},
+	{
+		"miles": "688",
+		"destPort": "CDG",
+		"_id": "AA323",
+		"originPort": "FCO"
+	},
+	{
+		"miles": "6238",
+		"destPort": "SIN",
+		"_id": "AA324",
+		"originPort": "FCO"
+	},
+	{
+		"miles": "12450",
+		"destPort": "SYD",
+		"_id": "AA325",
+		"originPort": "FCO"
+	},
+	{
+		"miles": "2121",
+		"destPort": "IKA",
+		"_id": "AA326",
+		"originPort": "FCO"
+	},
+	{
+		"miles": "9840",
+		"destPort": "NRT",
+		"_id": "AA327",
+		"originPort": "FCO"
+	},
+	{
+		"miles": "2432",
+		"destPort": "BOM",
+		"_id": "AA328",
+		"originPort": "SIN"
+	},
+	{
+		"miles": "2578",
+		"destPort": "DEL",
+		"_id": "AA329",
+		"originPort": "SIN"
+	},
+	{
+		"miles": "11618",
+		"destPort": "YUL",
+		"_id": "AA33",
+		"originPort": "BKK"
+	},
+	{
+		"miles": "6379",
+		"destPort": "FRA",
+		"_id": "AA330",
+		"originPort": "SIN"
+	},
+	{
+		"miles": "1605",
+		"destPort": "HKG",
+		"_id": "AA331",
+		"originPort": "SIN"
+	},
+	{
+		"miles": "6754",
+		"destPort": "LHR",
+		"_id": "AA332",
+		"originPort": "SIN"
+	},
+	{
+		"miles": "9193",
+		"destPort": "YUL",
+		"_id": "AA333",
+		"originPort": "SIN"
+	},
+	{
+		"miles": "5252",
+		"destPort": "SVO",
+		"_id": "AA334",
+		"originPort": "SIN"
+	},
+	{
+		"miles": "9525",
+		"destPort": "JFK",
+		"_id": "AA335",
+		"originPort": "SIN"
+	},
+	{
+		"miles": "6667",
+		"destPort": "CDG",
+		"_id": "AA336",
+		"originPort": "SIN"
+	},
+	{
+		"miles": "6238",
+		"destPort": "FCO",
+		"_id": "AA337",
+		"originPort": "SIN"
+	},
+	{
+		"miles": "3912",
+		"destPort": "SYD",
+		"_id": "AA338",
+		"originPort": "SIN"
+	},
+	{
+		"miles": "4110",
+		"destPort": "IKA",
+		"_id": "AA339",
+		"originPort": "SIN"
+	},
+	{
+		"miles": "4396",
+		"destPort": "SVO",
+		"_id": "AA34",
+		"originPort": "BKK"
+	},
+	{
+		"miles": "3294",
+		"destPort": "NRT",
+		"_id": "AA340",
+		"originPort": "SIN"
+	},
+	{
+		"miles": "4842",
+		"destPort": "BOM",
+		"_id": "AA341",
+		"originPort": "ARN"
+	},
+	{
+		"miles": "6057",
+		"destPort": "DEL",
+		"_id": "AA342",
+		"originPort": "ARN"
+	},
+	{
+		"miles": "730",
+		"destPort": "FRA",
+		"_id": "AA343",
+		"originPort": "ARN"
+	},
+	{
+		"miles": "8871",
+		"destPort": "HKG",
+		"_id": "AA344",
+		"originPort": "ARN"
+	},
+	{
+		"miles": "908",
+		"destPort": "LHR",
+		"_id": "AA345",
+		"originPort": "ARN"
+	},
+	{
+		"miles": "4725",
+		"destPort": "YUL",
+		"_id": "AA346",
+		"originPort": "ARN"
+	},
+	{
+		"miles": "760",
+		"destPort": "SVO",
+		"_id": "AA347",
+		"originPort": "ARN"
+	},
+	{
+		"miles": "3917",
+		"destPort": "JFK",
+		"_id": "AA348",
+		"originPort": "ARN"
+	},
+	{
+		"miles": "963",
+		"destPort": "CDG",
+		"_id": "AA349",
+		"originPort": "ARN"
+	},
+	{
+		"miles": "11401",
+		"destPort": "JFK",
+		"_id": "AA35",
+		"originPort": "BKK"
+	},
+	{
+		"miles": "1519",
+		"destPort": "FCO",
+		"_id": "AA350",
+		"originPort": "ARN"
+	},
+	{
+		"miles": "5992",
+		"destPort": "SIN",
+		"_id": "AA351",
+		"originPort": "ARN"
+	},
+	{
+		"miles": "13627",
+		"destPort": "SYD",
+		"_id": "AA352",
+		"originPort": "ARN"
+	},
+	{
+		"miles": "2214",
+		"destPort": "IKA",
+		"_id": "AA353",
+		"originPort": "ARN"
+	},
+	{
+		"miles": "9726",
+		"destPort": "NRT",
+		"_id": "AA354",
+		"originPort": "ARN"
+	},
+	{
+		"miles": "6308",
+		"destPort": "BOM",
+		"_id": "AA355",
+		"originPort": "SYD"
+	},
+	{
+		"miles": "7795",
+		"destPort": "DEL",
+		"_id": "AA356",
+		"originPort": "SYD"
+	},
+	{
+		"miles": "13033",
+		"destPort": "FRA",
+		"_id": "AA357",
+		"originPort": "SYD"
+	},
+	{
+		"miles": "4586",
+		"destPort": "HKG",
+		"_id": "AA358",
+		"originPort": "SYD"
+	},
+	{
+		"miles": "13477",
+		"destPort": "LHR",
+		"_id": "AA359",
+		"originPort": "SYD"
+	},
+	{
+		"miles": "7810",
+		"destPort": "CDG",
+		"_id": "AA36",
+		"originPort": "BKK"
+	},
+	{
+		"miles": "12045",
+		"destPort": "YUL",
+		"_id": "AA360",
+		"originPort": "SYD"
+	},
+	{
+		"miles": "11044",
+		"destPort": "SVO",
+		"_id": "AA361",
+		"originPort": "SYD"
+	},
+	{
+		"miles": "12052",
+		"destPort": "JFK",
+		"_id": "AA362",
+		"originPort": "SYD"
+	},
+	{
+		"miles": "13249",
+		"destPort": "CDG",
+		"_id": "AA363",
+		"originPort": "SYD"
+	},
+	{
+		"miles": "12450",
+		"destPort": "FCO",
+		"_id": "AA364",
+		"originPort": "SYD"
+	},
+	{
+		"miles": "3916",
+		"destPort": "SIN",
+		"_id": "AA365",
+		"originPort": "SYD"
+	},
+	{
+		"miles": "8021",
+		"destPort": "IKA",
+		"_id": "AA366",
+		"originPort": "SYD"
+	},
+	{
+		"miles": "6904",
+		"destPort": "NRT",
+		"_id": "AA367",
+		"originPort": "SYD"
+	},
+	{
+		"miles": "1743",
+		"destPort": "BOM",
+		"_id": "AA368",
+		"originPort": "IKA"
+	},
+	{
+		"miles": "1582",
+		"destPort": "DEL",
+		"_id": "AA369",
+		"originPort": "IKA"
+	},
+	{
+		"miles": "7011",
+		"destPort": "FCO",
+		"_id": "AA37",
+		"originPort": "BKK"
+	},
+	{
+		"miles": "2342",
+		"destPort": "FRA",
+		"_id": "AA370",
+		"originPort": "IKA"
+	},
+	{
+		"miles": "4712",
+		"destPort": "HKG",
+		"_id": "AA371",
+		"originPort": "IKA"
+	},
+	{
+		"miles": "2738",
+		"destPort": "LHR",
+		"_id": "AA372",
+		"originPort": "IKA"
+	},
+	{
+		"miles": "7465",
+		"destPort": "YUL",
+		"_id": "AA373",
+		"originPort": "IKA"
+	},
+	{
+		"miles": "11537",
+		"destPort": "SVO",
+		"_id": "AA374",
+		"originPort": "IKA"
+	},
+	{
+		"miles": "7681",
+		"destPort": "JFK",
+		"_id": "AA375",
+		"originPort": "IKA"
+	},
+	{
+		"miles": "2610",
+		"destPort": "CDG",
+		"_id": "AA376",
+		"originPort": "IKA"
+	},
+	{
+		"miles": "2121",
+		"destPort": "FCO",
+		"_id": "AA377",
+		"originPort": "IKA"
+	},
+	{
+		"miles": "4110",
+		"destPort": "SIN",
+		"_id": "AA378",
+		"originPort": "IKA"
+	},
+	{
+		"miles": "9693",
+		"destPort": "SYD",
+		"_id": "AA379",
+		"originPort": "IKA"
+	},
+	{
+		"miles": "897",
+		"destPort": "SIN",
+		"_id": "AA38",
+		"originPort": "BKK"
+	},
+	{
+		"miles": "6858",
+		"destPort": "NRT",
+		"_id": "AA380",
+		"originPort": "IKA"
+	},
+	{
+		"miles": "4184",
+		"destPort": "BOM",
+		"_id": "AA381",
+		"originPort": "NRT"
+	},
+	{
+		"miles": "4959",
+		"destPort": "DEL",
+		"_id": "AA382",
+		"originPort": "NRT"
+	},
+	{
+		"miles": "9776",
+		"destPort": "FRA",
+		"_id": "AA383",
+		"originPort": "NRT"
+	},
+	{
+		"miles": "1788",
+		"destPort": "HKG",
+		"_id": "AA384",
+		"originPort": "NRT"
+	},
+	{
+		"miles": "9536",
+		"destPort": "LHR",
+		"_id": "AA385",
+		"originPort": "NRT"
+	},
+	{
+		"miles": "8199",
+		"destPort": "YUL",
+		"_id": "AA386",
+		"originPort": "NRT"
+	},
+	{
+		"miles": "4667",
+		"destPort": "SVO",
+		"_id": "AA387",
+		"originPort": "NRT"
+	},
+	{
+		"miles": "8133",
+		"destPort": "JFK",
+		"_id": "AA388",
+		"originPort": "NRT"
+	},
+	{
+		"miles": "9771",
+		"destPort": "CDG",
+		"_id": "AA389",
+		"originPort": "NRT"
+	},
+	{
+		"miles": "5774",
+		"destPort": "SYD",
+		"_id": "AA39",
+		"originPort": "BKK"
+	},
+	{
+		"miles": "9840",
+		"destPort": "FCO",
+		"_id": "AA390",
+		"originPort": "NRT"
+	},
+	{
+		"miles": "3294",
+		"destPort": "SIN",
+		"_id": "AA391",
+		"originPort": "NRT"
+	},
+	{
+		"miles": "6904",
+		"destPort": "SYD",
+		"_id": "AA392",
+		"originPort": "NRT"
+	},
+	{
+		"miles": "4770",
+		"destPort": "IKA",
+		"_id": "AA393",
+		"originPort": "NRT"
+	},
+	{
+		"miles": "230",
+		"destPort": "LHR",
+		"_id": "AA4",
+		"originPort": "AMS"
+	},
+	{
+		"miles": "3394",
+		"destPort": "IKA",
+		"_id": "AA40",
+		"originPort": "BKK"
+	},
+	{
+		"miles": "2849",
+		"destPort": "NRT",
+		"_id": "AA41",
+		"originPort": "BKK"
+	},
+	{
+		"miles": "4263",
+		"destPort": "BOM",
+		"_id": "AA42",
+		"originPort": "BRU"
+	},
+	{
+		"miles": "5679",
+		"destPort": "DEL",
+		"_id": "AA43",
+		"originPort": "BRU"
+	},
+	{
+		"miles": "190",
+		"destPort": "FRA",
+		"_id": "AA44",
+		"originPort": "BRU"
+	},
+	{
+		"miles": "8493",
+		"destPort": "HKG",
+		"_id": "AA45",
+		"originPort": "BRU"
+	},
+	{
+		"miles": "211",
+		"destPort": "LHR",
+		"_id": "AA46",
+		"originPort": "BRU"
+	},
+	{
+		"miles": "3452",
+		"destPort": "YUL",
+		"_id": "AA47",
+		"originPort": "BRU"
+	},
+	{
+		"miles": "1383",
+		"destPort": "SVO",
+		"_id": "AA48",
+		"originPort": "BRU"
+	},
+	{
+		"miles": "3662",
+		"destPort": "JFK",
+		"_id": "AA49",
+		"originPort": "BRU"
+	},
+	{
+		"miles": "3422",
+		"destPort": "YUL",
+		"_id": "AA5",
+		"originPort": "AMS"
+	},
+	{
+		"miles": "170",
+		"destPort": "CDG",
+		"_id": "AA50",
+		"originPort": "BRU"
+	},
+	{
+		"miles": "734",
+		"destPort": "FCO",
+		"_id": "AA51",
+		"originPort": "BRU"
+	},
+	{
+		"miles": "6551",
+		"destPort": "SIN",
+		"_id": "AA52",
+		"originPort": "BRU"
+	},
+	{
+		"miles": "13249",
+		"destPort": "SYD",
+		"_id": "AA53",
+		"originPort": "BRU"
+	},
+	{
+		"miles": "2525",
+		"destPort": "IKA",
+		"_id": "AA54",
+		"originPort": "BRU"
+	},
+	{
+		"miles": "9631",
+		"destPort": "NRT",
+		"_id": "AA55",
+		"originPort": "BRU"
+	},
+	{
+		"miles": "2699",
+		"destPort": "BOM",
+		"_id": "AA56",
+		"originPort": "CAI"
+	},
+	{
+		"miles": "2738",
+		"destPort": "DEL",
+		"_id": "AA57",
+		"originPort": "CAI"
+	},
+	{
+		"miles": "1815",
+		"destPort": "FRA",
+		"_id": "AA58",
+		"originPort": "CAI"
+	},
+	{
+		"miles": "6099",
+		"destPort": "HKG",
+		"_id": "AA59",
+		"originPort": "CAI"
+	},
+	{
+		"miles": "1330",
+		"destPort": "SVO",
+		"_id": "AA6",
+		"originPort": "AMS"
+	},
+	{
+		"miles": "2185",
+		"destPort": "LHR",
+		"_id": "AA60",
+		"originPort": "CAI"
+	},
+	{
+		"miles": "6514",
+		"destPort": "YUL",
+		"_id": "AA61",
+		"originPort": "CAI"
+	},
+	{
+		"miles": "1796",
+		"destPort": "SVO",
+		"_id": "AA62",
+		"originPort": "CAI"
+	},
+	{
+		"miles": "6730",
+		"destPort": "JFK",
+		"_id": "AA63",
+		"originPort": "CAI"
+	},
+	{
+		"miles": "1995",
+		"destPort": "CDG",
+		"_id": "AA64",
+		"originPort": "CAI"
+	},
+	{
+		"miles": "1329",
+		"destPort": "FCO",
+		"_id": "AA65",
+		"originPort": "CAI"
+	},
+	{
+		"miles": "5127",
+		"destPort": "SIN",
+		"_id": "AA66",
+		"originPort": "CAI"
+	},
+	{
+		"miles": "10855",
+		"destPort": "SYD",
+		"_id": "AA67",
+		"originPort": "CAI"
+	},
+	{
+		"miles": "1216",
+		"destPort": "IKA",
+		"_id": "AA68",
+		"originPort": "CAI"
+	},
+	{
+		"miles": "8245",
+		"destPort": "NRT",
+		"_id": "AA69",
+		"originPort": "CAI"
+	},
+	{
+		"miles": "3639",
+		"destPort": "JFK",
+		"_id": "AA7",
+		"originPort": "AMS"
+	},
+	{
+		"miles": "1199",
+		"destPort": "BOM",
+		"_id": "AA70",
+		"originPort": "DXB"
+	},
+	{
+		"miles": "1359",
+		"destPort": "DEL",
+		"_id": "AA71",
+		"originPort": "DXB"
+	},
+	{
+		"miles": "3008",
+		"destPort": "FRA",
+		"_id": "AA72",
+		"originPort": "DXB"
+	},
+	{
+		"miles": "3695",
+		"destPort": "HKG",
+		"_id": "AA73",
+		"originPort": "DXB"
+	},
+	{
+		"miles": "3412",
+		"destPort": "LHR",
+		"_id": "AA74",
+		"originPort": "DXB"
+	},
+	{
+		"miles": "6793",
+		"destPort": "YUL",
+		"_id": "AA75",
+		"originPort": "DXB"
+	},
+	{
+		"miles": "2303",
+		"destPort": "SVO",
+		"_id": "AA76",
+		"originPort": "DXB"
+	},
+	{
+		"miles": "6831",
+		"destPort": "JFK",
+		"_id": "AA77",
+		"originPort": "DXB"
+	},
+	{
+		"miles": "3258",
+		"destPort": "CDG",
+		"_id": "AA78",
+		"originPort": "DXB"
+	},
+	{
+		"miles": "2696",
+		"destPort": "FCO",
+		"_id": "AA79",
+		"originPort": "DXB"
+	},
+	{
+		"miles": "261",
+		"destPort": "CDG",
+		"_id": "AA8",
+		"originPort": "AMS"
+	},
+	{
+		"miles": "3630",
+		"destPort": "SIN",
+		"_id": "AA80",
+		"originPort": "DXB"
+	},
+	{
+		"miles": "7580",
+		"destPort": "SYD",
+		"_id": "AA81",
+		"originPort": "DXB"
+	},
+	{
+		"miles": "759",
+		"destPort": "IKA",
+		"_id": "AA82",
+		"originPort": "DXB"
+	},
+	{
+		"miles": "4828",
+		"destPort": "NRT",
+		"_id": "AA83",
+		"originPort": "DXB"
+	},
+	{
+		"miles": "4082",
+		"destPort": "BOM",
+		"_id": "AA84",
+		"originPort": "FRA"
+	},
+	{
+		"miles": "5463",
+		"destPort": "DEL",
+		"_id": "AA85",
+		"originPort": "FRA"
+	},
+	{
+		"miles": "8277",
+		"destPort": "HKG",
+		"_id": "AA86",
+		"originPort": "FRA"
+	},
+	{
+		"miles": "400",
+		"destPort": "LHR",
+		"_id": "AA87",
+		"originPort": "FRA"
+	},
+	{
+		"miles": "3640",
+		"destPort": "YUL",
+		"_id": "AA88",
+		"originPort": "FRA"
+	},
+	{
+		"miles": "1253",
+		"destPort": "SVO",
+		"_id": "AA89",
+		"originPort": "FRA"
+	},
+	{
+		"miles": "809",
+		"destPort": "FCO",
+		"_id": "AA9",
+		"originPort": "AMS"
+	},
+	{
+		"miles": "3851",
+		"destPort": "JFK",
+		"_id": "AA90",
+		"originPort": "FRA"
+	},
+	{
+		"miles": "289",
+		"destPort": "CDG",
+		"_id": "AA91",
+		"originPort": "FRA"
+	},
+	{
+		"miles": "598",
+		"destPort": "FCO",
+		"_id": "AA92",
+		"originPort": "FRA"
+	},
+	{
+		"miles": "6379",
+		"destPort": "SIN",
+		"_id": "AA93",
+		"originPort": "FRA"
+	},
+	{
+		"miles": "13033",
+		"destPort": "SYD",
+		"_id": "AA94",
+		"originPort": "FRA"
+	},
+	{
+		"miles": "2342",
+		"destPort": "IKA",
+		"_id": "AA95",
+		"originPort": "FRA"
+	},
+	{
+		"miles": "9776",
+		"destPort": "NRT",
+		"_id": "AA96",
+		"originPort": "FRA"
+	},
+	{
+		"miles": "4173",
+		"destPort": "BOM",
+		"_id": "AA97",
+		"originPort": "GVA"
+	},
+	{
+		"miles": "5391",
+		"destPort": "DEL",
+		"_id": "AA98",
+		"originPort": "GVA"
+	},
+	{
+		"miles": "287",
+		"destPort": "FRA",
+		"_id": "AA99",
+		"originPort": "GVA"
+	},
+	{
+		"indexes": {
+			"n_flightsegments": {
+				"index": "function(doc){\n\t    index(\"default\", doc._id);\n    \t    if(doc.originPort){\n           \tindex(\"originPort\", doc.originPort, {\"store\": \"yes\"});\n    \t    }\n    \t    if(doc.destPort){\n           \tindex(\"destPort\", doc.destPort, {\"store\": \"yes\"});\n    \t    }\n}",
+				"analyzer": "standard"
+			}
+		},
+		"_id": "_design/view",
+		"language": "javascript",
+		"views": {
+			
+		}
+	}
+]

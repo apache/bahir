@@ -17,10 +17,7 @@
 
 package org.apache.spark.examples.sql.cloudant
 
-import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.storage.StorageLevel
 
 object CloudantDFOption{
   def main(args: Array[String]) {

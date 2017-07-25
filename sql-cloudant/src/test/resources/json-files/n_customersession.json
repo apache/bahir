@@ -1,0 +1,21 @@
+[
+	{
+		"language": "javascript",
+		"indexes": {
+			"n_customersessions": {
+				"index": "function(doc){\n\t    index(\"default\", doc._id);\n    \t    if(doc.customerid){\n           \tindex(\"customerid\", doc.customerid, {\"store\": \"yes\"});\n    \t    }\n}",
+				"analyzer": "standard"
+			}
+		},
+		"_id": "_design/view",
+		"views": {
+			
+		}
+	},
+	{
+		"customerid": "uid0@email.com",
+		"lastAccessedTime": "2017-04-12T22:19:45.449Z",
+		"_id": "a1346fce-2b45-422c-a5d0-1554a47b31e6",
+		"timeoutTime": "2017-04-13T22:19:45.449Z"
+	}
+]
