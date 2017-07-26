@@ -1,0 +1,58 @@
+[
+	{
+		"_id": "BOM",
+		"airportName": "Mumbai"
+	},
+	{
+		"_id": "CDG",
+		"airportName": "Paris"
+	},
+	{
+		"_id": "DEL",
+		"airportName": "Delhi"
+	},
+	{
+		"_id": "FCO",
+		"airportName": "Rome"
+	},
+	{
+		"_id": "FRA",
+		"airportName": "Frankfurt"
+	},
+	{
+		"_id": "HKG",
+		"airportName": "Hong Kong"
+	},
+	{
+		"_id": "IKA",
+		"airportName": "Tehran"
+	},
+	{
+		"_id": "JFK",
+		"airportName": "New York"
+	},
+	{
+		"_id": "LHR",
+		"airportName": "London"
+	},
+	{
+		"_id": "NRT",
+		"airportName": "Tokyo"
+	},
+	{
+		"_id": "SIN",
+		"airportName": "Singapore"
+	},
+	{
+		"_id": "SVO",
+		"airportName": "Moscow"
+	},
+	{
+		"_id": "SYD",
+		"airportName": "Sydney"
+	},
+	{
+		"_id": "YUL",
+		"airportName": "Montreal"
+	}
+]

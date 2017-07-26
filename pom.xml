@@ -467,6 +467,7 @@
               <exclude>**/*.iml</exclude>
               <exclude>**/src/main/resources/application.conf</exclude>
               <exclude>**/src/main/resources/reference.conf</exclude>
+              <exclude>**/json-files/**</exclude>
             </excludes>
           </configuration>
         </plugin>

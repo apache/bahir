@@ -31,14 +31,13 @@ The `--packages` argument can also be used with `bin/spark-submit`.
 
 Submit a job in Python:
     
-    spark-submit  --master local[4] --jars <path to cloudant-spark.jar>  <path to python script> 
+    spark-submit  --master local[4] --packages org.apache.bahir:spark-sql-cloudant_SCALA_VERSION:PACKAGE_VERSION  <path to python script> 
     
 Submit a job in Scala:
 
-	spark-submit --class "<your class>" --master local[4] --jars <path to cloudant-spark.jar> <path to your app jar>
+	spark-submit --class "<your class>" --master local[4] --packages org.apache.bahir:spark-sql-cloudant_SCALA_VERSION:PACKAGE_VERSION <path to spark-sql-cloudant jar>
 
 This library is compiled for Scala 2.11 only, and intends to support Spark 2.0 onwards.
-
 
 ## Configuration options	
 The configuration is obtained in the following sequence:
@@ -52,25 +51,51 @@ Here each subsequent configuration overrides the previous one. Thus, configurati
 
 
 ### Configuration in application.conf
-Default values are defined in [here](cloudant-spark-sql/src/main/resources/application.conf).
+Default values are defined in [here](src/main/resources/application.conf).
 
 ### Configuration on SparkConf
 
 Name | Default | Meaning
 --- |:---:| ---
+cloudant.endpoint|`_all_docs`|endpoint for RelationProvider when loading data from Cloudant to DataFrames or SQL temporary tables. Select between the Cloudant `_all_docs` or `_changes` API endpoint.  See **Note** below for differences between endpoints.
 cloudant.protocol|https|protocol to use to transfer data: http or https
-cloudant.host||cloudant host url
-cloudant.username||cloudant userid
-cloudant.password||cloudant password
-cloudant.useQuery|false|By default, _all_docs endpoint is used if configuration 'view' and 'index' (see below) are not set. When useQuery is enabled, _find endpoint will be used in place of _all_docs when query condition is not on primary key field (_id), so that query predicates may be driven into datastore. 
-cloudant.queryLimit|25|The maximum number of results returned when querying the _find endpoint.
-jsonstore.rdd.partitions|10|the number of partitions intent used to drive JsonStoreRDD loading query result in parallel. The actual number is calculated based on total rows returned and satisfying maxInPartition and minInPartition
+cloudant.host| |cloudant host url
+cloudant.username| |cloudant userid
+cloudant.password| |cloudant password
+cloudant.useQuery|false|by default, `_all_docs` endpoint is used if configuration 'view' and 'index' (see below) are not set. When useQuery is enabled, `_find` endpoint will be used in place of `_all_docs` when query condition is not on primary key field (_id), so that query predicates may be driven into datastore. 
+cloudant.queryLimit|25|the maximum number of results returned when querying the `_find` endpoint.
+cloudant.storageLevel|MEMORY_ONLY|the storage level for persisting Spark RDDs during load when `cloudant.endpoint` is set to `_changes`.  See [RDD Persistence section](https://spark.apache.org/docs/latest/programming-guide.html#rdd-persistence) in Spark's Progamming Guide for all available storage level options.
+cloudant.timeout|60000|stop the response after waiting the defined number of milliseconds for data.  Only supported with `changes` endpoint.
+jsonstore.rdd.partitions|10|the number of partitions intent used to drive JsonStoreRDD loading query result in parallel. The actual number is calculated based on total rows returned and satisfying maxInPartition and minInPartition. Only supported with `_all_docs` endpoint.
 jsonstore.rdd.maxInPartition|-1|the max rows in a partition. -1 means unlimited
 jsonstore.rdd.minInPartition|10|the min rows in a partition.
-jsonstore.rdd.requestTimeout|900000| the request timeout in milliseconds
-bulkSize|200| the bulk save size
-schemaSampleSize| "-1" | the sample size for RDD schema discovery. 1 means we are using only first document for schema discovery; -1 means all documents; 0 will be treated as 1; any number N means min(N, total) docs 
-createDBOnSave|"false"| whether to create a new database during save operation. If false, a database should already exist. If true, a new database will be created. If true, and a database with a provided name already exists, an error will be raised. 
+jsonstore.rdd.requestTimeout|900000|the request timeout in milliseconds
+bulkSize|200|the bulk save size
+schemaSampleSize|-1|the sample size for RDD schema discovery. 1 means we are using only the first document for schema discovery; -1 means all documents; 0 will be treated as 1; any number N means min(N, total) docs. Only supported with `_all_docs` endpoint.
+createDBOnSave|false|whether to create a new database during save operation. If false, a database should already exist. If true, a new database will be created. If true, and a database with a provided name already exists, an error will be raised. 
+
+The `cloudant.endpoint` option sets ` _changes` or `_all_docs` API endpoint to be called while loading Cloudant data into Spark DataFrames or SQL Tables.
+
+**Note:** When using `_changes` API, please consider: 
+1. Results are partially ordered and may not be be presented in order in 
+which documents were updated.
+2. In case of shards' unavailability, you may see duplicate results (changes that have been seen already)
+3. Can use `selector` option to filter Cloudant docs during load
+4. Supports a real snapshot of the database and represents it in a single point of time.
+5. Only supports a single partition.
+
+
+When using `_all_docs` API:
+1. Supports parallel reads (using offset and range) and partitioning.
+2. Using partitions may not represent the true snapshot of a database.  Some docs
+   may be added or deleted in the database between loading data into different 
+   Spark partitions.
+
+If loading Cloudant docs from a database greater than 100 MB, set `cloudant.endpoint` to `_changes` and `spark.streaming.unpersist` to `false`.
+This will enable RDD persistence during load against `_changes` endpoint and allow the persisted RDDs to be accessible after streaming completes.  
+ 
+See [CloudantChangesDFSuite](src/test/scala/org/apache/bahir/cloudant/CloudantChangesDFSuite.scala) 
+for examples of loading data into a Spark DataFrame with `_changes` API.
 
 ### Configuration on Spark SQL Temporary Table or DataFrame
 
@@ -78,13 +103,14 @@ Besides all the configurations passed to a temporary table or dataframe through 
 
 Name | Default | Meaning
 --- |:---:| ---
-database||cloudant database name
-view||cloudant view w/o the database name. only used for load.
-index||cloudant search index w/o the database name. only used for load data with less than or equal to 200 results.
-path||cloudant: as database name if database is not present
-schemaSampleSize|"-1"| the sample size used to discover the schema for this temp table. -1 scans all documents
 bulkSize|200| the bulk save size
-createDBOnSave|"false"| whether to create a new database during save operation. If false, a database should already exist. If true, a new database will be created. If true, and a database with a provided name already exists, an error will be raised. 
+createDBOnSave|false| whether to create a new database during save operation. If false, a database should already exist. If true, a new database will be created. If true, and a database with a provided name already exists, an error will be raised. 
+database| | Cloudant database name
+index| | Cloudant Search index without the database name. Search index queries are limited to returning 200 results so can only be used to load data with <= 200 results.
+path| | Cloudant: as database name if database is not present
+schemaSampleSize|-1| the sample size used to discover the schema for this temp table. -1 scans all documents
+selector|all documents| a selector written in Cloudant Query syntax, specifying conditions for selecting documents when the `cloudant.endpoint` option is set to `_changes`. Only documents satisfying the selector's conditions will be retrieved from Cloudant and loaded into Spark.
+view| | Cloudant view w/o the database name. only used for load.
 
 For fast loading, views are loaded without include_docs. Thus, a derived schema will always be: `{id, key, value}`, where `value `can be a compount field. An example of loading data from a view: 
 
@@ -102,7 +128,6 @@ cloudant.username||cloudant userid
 cloudant.password||cloudant password
 database||cloudant database name
 selector| all documents| a selector written in Cloudant Query syntax, specifying conditions for selecting documents. Only documents satisfying the selector's conditions will be retrieved from Cloudant and loaded into Spark.
-
 
 ### Configuration in spark-submit using --conf option
 

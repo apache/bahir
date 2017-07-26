@@ -17,9 +17,7 @@
 
 package org.apache.spark.examples.sql.cloudant
 
-import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.SQLContext
 
 object CloudantApp {
   def main(args: Array[String]) {
@@ -37,7 +35,7 @@ object CloudantApp {
     // create a temp table from Cloudant db and query it using sql syntax
     spark.sql(
         s"""
-        |CREATE TEMPORARY TABLE airportTable
+        |CREATE TEMPORARY VIEW airportTable
         |USING org.apache.bahir.cloudant
         |OPTIONS ( database 'n_airportcodemapping')
         """.stripMargin)
@@ -56,7 +54,7 @@ object CloudantApp {
     // create a temp table from Cloudant index  and query it using sql syntax
     spark.sql(
         s"""
-        |CREATE TEMPORARY TABLE flightTable
+        |CREATE TEMPORARY VIEW flightTable
         |USING org.apache.bahir.cloudant
         |OPTIONS (database 'n_flight', index '_design/view/_search/n_flights')
         """.stripMargin)
@@ -68,6 +66,6 @@ object CloudantApp {
         """.stripMargin)
     flightData.printSchema()
     flightData.map(t => "flightSegmentId: " + t(0) + ", scheduledDepartureTime: " + t(1))
-                   .collect().foreach(println) // scalastyle:ignore
+      .collect().foreach(println) // scalastyle:ignore
   }
 }
