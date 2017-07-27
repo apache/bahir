@@ -22,7 +22,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.json.jackson.JacksonFactory
 import com.google.api.services.pubsub.PubsubScopes
 import com.google.cloud.hadoop.util.{CredentialFactory, HttpTransportFactory}
-import java.io.{ByteArrayInputStream, File, FileOutputStream}
+import java.io.{ByteArrayInputStream, File, FileNotFoundException, FileOutputStream}
 import java.nio.file.{Files, Paths}
 import java.util
 import org.apache.hadoop.conf.Configuration
@@ -63,8 +63,10 @@ private[pubsub] final case class ServiceAccountCredentials(
     extends SparkGCPCredentials {
   private def getFileBuffer: Array[Byte] = {
     val filePath = jsonFilePath orElse p12FilePath
-    if (filePath.isEmpty || !Files.exists(Paths.get(filePath.get))) Array[Byte]()
-    else Files.readAllBytes(Paths.get(filePath.get))
+    if (filePath.isEmpty) Array[Byte]()
+    else if (!Files.exists(Paths.get(filePath.get))) {
+      throw new FileNotFoundException(s"The key file path(${filePath.get}) doesn't exist.")
+    } else Files.readAllBytes(Paths.get(filePath.get))
   }
   private val fileBytes = getFileBuffer
 

@@ -37,19 +37,11 @@ class SparkGCPCredentialsBuilderSuite
     assume(
       !jsonFilePath.isEmpty,
       s"as the environment variable ${PubsubTestUtils.envVarNameForJsonKeyPath} is not set.")
-    assume(
-      Files.exists(Paths.get(jsonFilePath.get)),
-      s"as the key file ${PubsubTestUtils.envVarNameForJsonKeyPath}(${jsonFilePath.get})" +
-      " doesn't exist.")
   }
   private def p12Assumption {
     assume(
       !p12FilePath.isEmpty,
       s"as the environment variable ${PubsubTestUtils.envVarNameForP12KeyPath} is not set.")
-    assume(
-      Files.exists(Paths.get(p12FilePath.get)),
-      s"as the key file ${PubsubTestUtils.envVarNameForP12KeyPath}(${p12FilePath.get})" +
-      " doesn't exist.")
     assume(
       !emailAccount.isEmpty,
       s"as the environment variable ${PubsubTestUtils.envVarNameForAccount} is not set.")
