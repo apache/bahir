@@ -17,7 +17,7 @@
 
 package org.apache.spark.streaming.pubsub
 
-import java.io.{File, FileOutputStream, InputStream, IOException, OutputStream}
+import java.nio.file.{Files, Paths}
 
 import org.scalatest.concurrent.Timeouts
 import org.scalatest.BeforeAndAfter
@@ -28,42 +28,31 @@ import org.apache.spark.SparkFunSuite
 class SparkGCPCredentialsBuilderSuite
     extends SparkFunSuite with Timeouts with BeforeAndAfter{
   private def builder = SparkGCPCredentials.builder
-  private val jsonResourcePath = "/org/apache/spark/streaming/pubusb/key-file.json.key"
-  private val p12ResourcePath = "/org/apache/spark/streaming/pubusb/key-file.p12.key"
 
-  private var jsonFilePath: Option[String] = null
-  private var p12FilePath: Option[String] = null
-  private val emailAccount = Option(
-    "pubsub-subscriber@apache-bahir-streaming-pubsub.iam.gserviceaccount.com")
+  private val jsonFilePath = sys.env.get(PubsubTestUtils.envVarNameForJsonKeyPath)
+  private val p12FilePath = sys.env.get(PubsubTestUtils.envVarNameForP12KeyPath)
+  private val emailAccount = sys.env.get(PubsubTestUtils.envVarNameForAccount)
 
-  before {
-    def streamPipe(input: InputStream, output: OutputStream) {
-      val BUFFER_SIZE: Int = 1024;
-      val buffer: Array[Byte] = new Array[Byte](_length = BUFFER_SIZE);
-      var n: Int = input.read(buffer);
-      while (n > 0) {
-        output.write(buffer, 0, n);
-        n = input.read(buffer);
-      }
-    }
-
-    val jsonIn = getClass.getResourceAsStream(jsonResourcePath)
-    val jsonFile = File.createTempFile("key-file", "json")
-    jsonFile.deleteOnExit
-    val jsonOut = new FileOutputStream(jsonFile)
-    streamPipe(jsonIn, jsonOut)
-    jsonIn.close
-    jsonOut.close
-    jsonFilePath = Some(jsonFile.getPath)
-
-    val p12In = getClass.getResourceAsStream(p12ResourcePath)
-    val p12File = File.createTempFile("key-file", "p12")
-    p12File.deleteOnExit
-    val p12Out = new FileOutputStream(p12File)
-    streamPipe(p12In, p12Out)
-    p12In.close
-    p12Out.close
-    p12FilePath = Some(p12File.getPath)
+  private def jsonAssumption {
+    assume(
+      !jsonFilePath.isEmpty,
+      s"as the environment variable ${PubsubTestUtils.envVarNameForJsonKeyPath} is not set.")
+    assume(
+      Files.exists(Paths.get(jsonFilePath.get)),
+      s"as the key file ${PubsubTestUtils.envVarNameForJsonKeyPath}(${jsonFilePath.get})" +
+      " doesn't exist.")
+  }
+  private def p12Assumption {
+    assume(
+      !p12FilePath.isEmpty,
+      s"as the environment variable ${PubsubTestUtils.envVarNameForP12KeyPath} is not set.")
+    assume(
+      Files.exists(Paths.get(p12FilePath.get)),
+      s"as the key file ${PubsubTestUtils.envVarNameForP12KeyPath}(${p12FilePath.get})" +
+      " doesn't exist.")
+    assume(
+      !emailAccount.isEmpty,
+      s"as the environment variable ${PubsubTestUtils.envVarNameForAccount} is not set.")
   }
 
   test("should build application default") {
@@ -71,6 +60,8 @@ class SparkGCPCredentialsBuilderSuite
   }
 
   test("should build json service account") {
+    jsonAssumption
+
     val jsonCreds = ServiceAccountCredentials(jsonFilePath = jsonFilePath)
     assertResult(jsonCreds) {
       builder.jsonServiceAccount(jsonFilePath.get).build()
@@ -78,14 +69,16 @@ class SparkGCPCredentialsBuilderSuite
   }
 
   test("should provide json creds") {
+    jsonAssumption
+
     val jsonCreds = ServiceAccountCredentials(jsonFilePath = jsonFilePath)
     val credential = jsonCreds.provider
-    intercept[IOException] {
-      credential.refreshToken
-    }
+    assert(credential.refreshToken, "Failed to retrive a new access token.")
   }
 
   test("should build p12 service account") {
+    p12Assumption
+
     val p12Creds = ServiceAccountCredentials(
       p12FilePath = p12FilePath, emailAccount = emailAccount)
     assertResult(p12Creds) {
@@ -94,12 +87,12 @@ class SparkGCPCredentialsBuilderSuite
   }
 
   test("should provide p12 creds") {
+    p12Assumption
+
     val p12Creds = ServiceAccountCredentials(
       p12FilePath = p12FilePath, emailAccount = emailAccount)
     val credential = p12Creds.provider
-    intercept[IOException] {
-      credential.refreshToken
-    }
+    assert(credential.refreshToken, "Failed to retrive a new access token.")
   }
 
   test("should build metadata service account") {
@@ -110,6 +103,9 @@ class SparkGCPCredentialsBuilderSuite
   }
 
   test("SparkGCPCredentials classes should be serializable") {
+    jsonAssumption
+    p12Assumption
+
     val jsonCreds = ServiceAccountCredentials(jsonFilePath = jsonFilePath)
     val p12Creds = ServiceAccountCredentials(
       p12FilePath = p12FilePath, emailAccount = emailAccount)
