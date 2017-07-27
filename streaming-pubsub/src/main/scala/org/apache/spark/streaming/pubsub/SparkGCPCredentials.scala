@@ -63,7 +63,7 @@ private[pubsub] final case class ServiceAccountCredentials(
     extends SparkGCPCredentials {
   private def getFileBuffer: Array[Byte] = {
     val filePath = jsonFilePath orElse p12FilePath
-    if (filePath.isEmpty) Array[Byte]()
+    if (filePath.isEmpty || !Files.exists(Paths.get(filePath.get))) Array[Byte]()
     else Files.readAllBytes(Paths.get(filePath.get))
   }
   private val fileBytes = getFileBuffer
