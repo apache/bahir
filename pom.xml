@@ -467,7 +467,6 @@
               <exclude>**/*.iml</exclude>
               <exclude>**/src/main/resources/application.conf</exclude>
               <exclude>**/src/main/resources/reference.conf</exclude>
-              <exclude>**/src/test/resources/**/*.key</exclude>
             </excludes>
           </configuration>
         </plugin>
