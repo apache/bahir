@@ -52,7 +52,7 @@ To run the PubSub test cases, you need to generate **Google API service account 
 
 1. Go to [Google API Console](console.cloud.google.com)
 2. Choose the `Credentials` Tab> `Create credentials` button> `Service account key`
-3. Fill the account name and assign `Role> Pub/Sub> Pub/Sub Editor` to create one. You need to create one for JSON key file, another for P12.
+3. Fill the account name, assign `Role> Pub/Sub> Pub/Sub Editor` and check the option `Furnish a private key` to create one. You need to create one for JSON key file, another for P12.
 4. The account email is the `Service account ID`
 
 #### Setting the environment variables and run test
