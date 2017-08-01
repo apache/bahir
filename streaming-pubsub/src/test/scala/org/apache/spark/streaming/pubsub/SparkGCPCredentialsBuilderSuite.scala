@@ -17,64 +17,91 @@
 
 package org.apache.spark.streaming.pubsub
 
-import java.io.FileNotFoundException
+import java.nio.file.{Files, Paths}
 
 import org.scalatest.concurrent.Timeouts
+import org.scalatest.BeforeAndAfter
 
 import org.apache.spark.util.Utils
 import org.apache.spark.SparkFunSuite
 
-class SparkGCPCredentialsBuilderSuite extends SparkFunSuite with Timeouts {
+class SparkGCPCredentialsBuilderSuite
+    extends SparkFunSuite with Timeouts with BeforeAndAfter{
   private def builder = SparkGCPCredentials.builder
 
-  private val jsonCreds = ServiceAccountCredentials(
-    jsonFilePath = Option("json-key-path")
-  )
+  private val jsonFilePath = sys.env.get(PubsubTestUtils.envVarNameForJsonKeyPath)
+  private val p12FilePath = sys.env.get(PubsubTestUtils.envVarNameForP12KeyPath)
+  private val emailAccount = sys.env.get(PubsubTestUtils.envVarNameForAccount)
 
-  private val p12Creds = ServiceAccountCredentials(
-    p12FilePath = Option("p12-key-path"),
-    emailAccount = Option("email")
-  )
-
-  private val metadataCreds = ServiceAccountCredentials()
+  private def jsonAssumption {
+    assume(
+      !jsonFilePath.isEmpty,
+      s"as the environment variable ${PubsubTestUtils.envVarNameForJsonKeyPath} is not set.")
+  }
+  private def p12Assumption {
+    assume(
+      !p12FilePath.isEmpty,
+      s"as the environment variable ${PubsubTestUtils.envVarNameForP12KeyPath} is not set.")
+    assume(
+      !emailAccount.isEmpty,
+      s"as the environment variable ${PubsubTestUtils.envVarNameForAccount} is not set.")
+  }
 
   test("should build application default") {
     assert(builder.build() === ApplicationDefaultCredentials)
   }
 
   test("should build json service account") {
+    jsonAssumption
+
+    val jsonCreds = ServiceAccountCredentials(jsonFilePath = jsonFilePath)
     assertResult(jsonCreds) {
-      builder.jsonServiceAccount(jsonCreds.jsonFilePath.get).build()
+      builder.jsonServiceAccount(jsonFilePath.get).build()
     }
   }
 
   test("should provide json creds") {
-    val thrown = intercept[FileNotFoundException] {
-      jsonCreds.provider
-    }
-    assert(thrown.getMessage === "json-key-path (No such file or directory)")
+    jsonAssumption
+
+    val jsonCreds = ServiceAccountCredentials(jsonFilePath = jsonFilePath)
+    val credential = jsonCreds.provider
+    assert(credential.refreshToken, "Failed to retrive a new access token.")
   }
 
   test("should build p12 service account") {
+    p12Assumption
+
+    val p12Creds = ServiceAccountCredentials(
+      p12FilePath = p12FilePath, emailAccount = emailAccount)
     assertResult(p12Creds) {
-      builder.p12ServiceAccount(p12Creds.p12FilePath.get, p12Creds.emailAccount.get).build()
+      builder.p12ServiceAccount(p12FilePath.get, emailAccount.get).build()
     }
   }
 
   test("should provide p12 creds") {
-    val thrown = intercept[FileNotFoundException] {
-      p12Creds.provider
-    }
-    assert(thrown.getMessage === "p12-key-path (No such file or directory)")
+    p12Assumption
+
+    val p12Creds = ServiceAccountCredentials(
+      p12FilePath = p12FilePath, emailAccount = emailAccount)
+    val credential = p12Creds.provider
+    assert(credential.refreshToken, "Failed to retrive a new access token.")
   }
 
   test("should build metadata service account") {
+    val metadataCreds = ServiceAccountCredentials()
     assertResult(metadataCreds) {
       builder.metadataServiceAccount().build()
     }
   }
 
   test("SparkGCPCredentials classes should be serializable") {
+    jsonAssumption
+    p12Assumption
+
+    val jsonCreds = ServiceAccountCredentials(jsonFilePath = jsonFilePath)
+    val p12Creds = ServiceAccountCredentials(
+      p12FilePath = p12FilePath, emailAccount = emailAccount)
+    val metadataCreds = ServiceAccountCredentials()
     assertResult(jsonCreds) {
       Utils.deserialize[ServiceAccountCredentials](Utils.serialize(jsonCreds))
     }

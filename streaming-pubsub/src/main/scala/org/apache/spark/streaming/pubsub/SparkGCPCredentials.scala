@@ -19,8 +19,11 @@ package org.apache.spark.streaming.pubsub
 
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
+import com.google.api.client.json.jackson.JacksonFactory
 import com.google.api.services.pubsub.PubsubScopes
-import com.google.cloud.hadoop.util.{EntriesCredentialConfiguration, HadoopCredentialConfiguration}
+import com.google.cloud.hadoop.util.{CredentialFactory, HttpTransportFactory}
+import java.io.{ByteArrayInputStream, File, FileNotFoundException, FileOutputStream}
+import java.nio.file.{Files, Paths}
 import java.util
 import org.apache.hadoop.conf.Configuration
 
@@ -58,46 +61,42 @@ private[pubsub] final case class ServiceAccountCredentials(
     p12FilePath: Option[String] = None,
     emailAccount: Option[String] = None)
     extends SparkGCPCredentials {
+  private val fileBytes = getFileBuffer
 
   override def provider: Credential = {
-    val conf = new Configuration(false)
-    conf.setBoolean(
-      EntriesCredentialConfiguration.BASE_KEY_PREFIX
-          + EntriesCredentialConfiguration.ENABLE_SERVICE_ACCOUNTS_SUFFIX,
-      true)
-    jsonFilePath match {
-      case Some(jsonFilePath) =>
-        conf.set(
-          EntriesCredentialConfiguration.BASE_KEY_PREFIX
-              + EntriesCredentialConfiguration.JSON_KEYFILE_SUFFIX,
-          jsonFilePath
-        )
-      case _ => // do nothing
-    }
-    p12FilePath match {
-      case Some(p12FilePath) =>
-        conf.set(
-          EntriesCredentialConfiguration.BASE_KEY_PREFIX
-              + EntriesCredentialConfiguration.SERVICE_ACCOUNT_KEYFILE_SUFFIX,
-          p12FilePath
-        )
-      case _ => // do nothing
-    }
-    emailAccount match {
-      case Some(emailAccount) =>
-        conf.set(
-          EntriesCredentialConfiguration.BASE_KEY_PREFIX
-              + EntriesCredentialConfiguration.SERVICE_ACCOUNT_EMAIL_SUFFIX,
-          emailAccount
-        )
-      case _ => // do nothing
-    }
+    val jsonFactory = new JacksonFactory
+    val scopes = new util.ArrayList(PubsubScopes.all())
+    val transport = HttpTransportFactory.createHttpTransport(
+      HttpTransportFactory.HttpTransportType.JAVA_NET, null)
 
-    HadoopCredentialConfiguration
-        .newBuilder()
-        .withConfiguration(conf)
-        .build()
-        .getCredential(new util.ArrayList(PubsubScopes.all()))
+    if (!jsonFilePath.isEmpty) {
+      val stream = new ByteArrayInputStream(fileBytes)
+      CredentialFactory.GoogleCredentialWithRetry.fromGoogleCredential(
+        GoogleCredential.fromStream(stream, transport, jsonFactory)
+        .createScoped(scopes))
+    } else if (!p12FilePath.isEmpty && !emailAccount.isEmpty) {
+      val tempFile = File.createTempFile(emailAccount.get, ".p12")
+      tempFile.deleteOnExit
+      val p12Out = new FileOutputStream(tempFile)
+      p12Out.write(fileBytes, 0, fileBytes.length)
+      p12Out.close
+
+      new CredentialFactory.GoogleCredentialWithRetry(
+        new GoogleCredential.Builder().setTransport(transport)
+        .setJsonFactory(jsonFactory)
+        .setServiceAccountId(emailAccount.get)
+        .setServiceAccountScopes(scopes)
+        .setServiceAccountPrivateKeyFromP12File(tempFile)
+        .setRequestInitializer(new CredentialFactory.CredentialHttpRetryInitializer()))
+    } else (new CredentialFactory).getCredentialFromMetadataServiceAccount
+  }
+
+  private def getFileBuffer: Array[Byte] = {
+    val filePath = jsonFilePath orElse p12FilePath
+    if (filePath.isEmpty) Array[Byte]()
+    else if (!Files.exists(Paths.get(filePath.get))) {
+      throw new FileNotFoundException(s"The key file path(${filePath.get}) doesn't exist.")
+    } else Files.readAllBytes(Paths.get(filePath.get))
   }
 
 }
