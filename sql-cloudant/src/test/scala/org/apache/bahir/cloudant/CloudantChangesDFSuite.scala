@@ -17,7 +17,7 @@
 
 package org.apache.bahir.cloudant
 
-import play.libs.Json
+import play.api.libs.json._
 
 import org.apache.spark.sql.SparkSession
 
@@ -63,7 +63,7 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
     // Find then delete a doc to verify it's not included when loading data
     val doc = db.find("003bd483-9f98-4203-afdd-c539a4f38d21")
     val json = try {  Json.parse(doc) } finally { doc.close() }
-    db.remove(json.get("_id").textValue(), json.get("_rev").textValue())
+    db.remove((json \ "_id").get.as[String], (json \ "_rev").get.as[String])
 
     val df = spark.read.format("org.apache.bahir.cloudant").load("n_flight")
     // all docs in database minus the design doc and _deleted=true doc
