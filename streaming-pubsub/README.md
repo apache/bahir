@@ -4,20 +4,20 @@ A library for reading data from [Google Cloud Pub/Sub](https://cloud.google.com/
 
 Using SBT:
     
-    libraryDependencies += "org.apache.bahir" %% "spark-streaming-pubsub" % "2.2.0-SNAPSHOT"
+    libraryDependencies += "org.apache.bahir" %% "spark-streaming-pubsub" % "{{site.SPARK_VERSION}}"
     
 Using Maven:
     
     <dependency>
         <groupId>org.apache.bahir</groupId>
-        <artifactId>spark-streaming-pubsub_2.11</artifactId>
-        <version>2.2.0-SNAPSHOT</version>
+        <artifactId>spark-streaming-pubsub_{{site.SCALA_BINARY_VERSION}}</artifactId>
+        <version>{{site.SPARK_VERSION}}</version>
     </dependency>
 
 This library can also be added to Spark jobs launched through `spark-shell` or `spark-submit` by using the `--packages` command line option.
 For example, to include it when starting the spark shell:
 
-    $ bin/spark-shell --packages org.apache.bahir:spark-streaming-pubsub_2.11:2.2.0-SNAPSHOT
+    $ bin/spark-shell --packages org.apache.bahir:spark-streaming-pubsub_{{site.SCALA_BINARY_VERSION}}:{{site.SPARK_VERSION}}
 
 Unlike using `--jars`, using `--packages` ensures that this library and its dependencies will be added to the classpath.
 The `--packages` argument can also be used with `bin/spark-submit`.

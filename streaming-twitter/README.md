@@ -5,20 +5,20 @@ A library for reading social data from [twitter](http://twitter.com/) using Spar
 
 Using SBT:
 
-    libraryDependencies += "org.apache.bahir" %% "spark-streaming-twitter" % "2.1.0-SNAPSHOT"
+    libraryDependencies += "org.apache.bahir" %% "spark-streaming-twitter" % "{{site.SPARK_VERSION}}"
 
 Using Maven:
 
     <dependency>
         <groupId>org.apache.bahir</groupId>
-        <artifactId>spark-streaming-twitter_2.11</artifactId>
-        <version>2.1.0-SNAPSHOT</version>
+        <artifactId>spark-streaming-twitter_{{site.SCALA_BINARY_VERSION}}</artifactId>
+        <version>{{site.SPARK_VERSION}}</version>
     </dependency>
 
 This library can also be added to Spark jobs launched through `spark-shell` or `spark-submit` by using the `--packages` command line option.
 For example, to include it when starting the spark shell:
 
-    $ bin/spark-shell --packages org.apache.bahir:spark-streaming-twitter_2.11:2.1.0-SNAPSHOT
+    $ bin/spark-shell --packages org.apache.bahir:spark-streaming-twitter_{{site.SCALA_BINARY_VERSION}}:{{site.SPARK_VERSION}}
 
 Unlike using `--jars`, using `--packages` ensures that this library and its dependencies will be added to the classpath.
 The `--packages` argument can also be used with `bin/spark-submit`.
