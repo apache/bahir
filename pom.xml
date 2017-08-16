@@ -103,7 +103,8 @@
 
     <!-- Streaming Akka connector -->
     <akka.group>com.typesafe.akka</akka.group>
-    <akka.version>2.3.15</akka.version>
+    <akka.version>2.4.20</akka.version>
+    <akka_zeromq.version>2.3.16</akka_zeromq.version>
 
     <protobuf.version>2.5.0</protobuf.version>
     <jsr305.version>3.0.1</jsr305.version>
@@ -283,7 +284,7 @@
       <dependency>
         <groupId>${akka.group}</groupId>
         <artifactId>akka-zeromq_${scala.binary.version}</artifactId>
-        <version>${akka.version}</version>
+        <version>${akka_zeromq.version}</version>
         <exclusions>
           <exclusion>
             <groupId>${akka.group}</groupId>
