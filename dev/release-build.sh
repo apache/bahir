@@ -267,7 +267,7 @@ if [[ "$RELEASE_PREPARE" == "true" ]]; then
         rm -f *.md5
         for i in *.zip *.tar.gz; do openssl md5 -hex $i | sed 's/MD5(\([^)]*\))= \([0-9a-f]*\)/\2 *\1/' > $i.md5; done
         rm -f *.sha
-        for i in *.zip *.tar.gz; do shasum $i > $i.sha; done
+        for i in *.zip *.tar.gz; do shasum --algorithm 512 --check $i > $i.sha512; done
 
         cd .. #exit $RELEASE_VERSION-$RELEASE_RC/
 
