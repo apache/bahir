@@ -36,6 +36,7 @@ class ClientSparkFunSuite extends SparkFunSuite with BeforeAndAfter {
 
   var client: CloudantClient = _
   val conf: SparkConf = new SparkConf().setMaster("local[4]")
+  var deletedDoc = new JsonObject()
   var spark: SparkSession = _
 
   override def beforeAll() {
@@ -81,10 +82,10 @@ class ClientSparkFunSuite extends SparkFunSuite with BeforeAndAfter {
     // insert docs and design docs from JSON flat files
     for (dbName: String <- TestUtils.testDatabasesList) {
       val db = client.database(dbName, true)
-      val jsonFilePath = System.getProperty("user.dir") +
-        "/src/test/resources/json-files/" + dbName + ".json"
-      if (new File(jsonFilePath).exists()) {
-        val jsonFileArray = new Gson().fromJson(new FileReader(jsonFilePath), classOf[JsonArray])
+      val jsonFilePath = getClass.getResource("/json-files/" + dbName + ".json")
+      if (jsonFilePath != null && new File(jsonFilePath.getFile).exists()) {
+        val jsonFileArray = new Gson().fromJson(new FileReader(jsonFilePath.getFile),
+          classOf[JsonArray])
         val listOfObjects = new util.ArrayList[JsonObject]
         if (jsonFileArray != null) {
           var i = 0
@@ -99,6 +100,10 @@ class ClientSparkFunSuite extends SparkFunSuite with BeforeAndAfter {
         while (i < responses.size()) {
           assert(responses.get(i).getStatusCode == 200 || responses.get(i).getStatusCode == 201)
           i += 1
+        }
+        if (dbName == "n_flight") {
+          deletedDoc.addProperty("_id", responses.get(0).getId)
+          deletedDoc.addProperty("_rev", responses.get(0).getRev)
         }
 
       }

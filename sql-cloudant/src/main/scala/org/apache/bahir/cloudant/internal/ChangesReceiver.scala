@@ -16,17 +16,15 @@
  */
 package org.apache.bahir.cloudant.internal
 
-import org.slf4j.{Logger, LoggerFactory}
-import play.api.libs.json.Json
+import java.io.{BufferedReader, InputStreamReader}
+
 import scalaj.http._
 
-import org.apache.spark.SparkConf
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.receiver.Receiver
 
 import org.apache.bahir.cloudant.CloudantChangesConfig
 import org.apache.bahir.cloudant.common._
-
 
 class ChangesReceiver(config: CloudantChangesConfig)
   extends Receiver[String](StorageLevel.MEMORY_AND_DISK) {
@@ -39,28 +37,21 @@ class ChangesReceiver(config: CloudantChangesConfig)
   }
 
   private def receive(): Unit = {
-    // Get total number of docs in database using _all_docs endpoint
-    val limit = new JsonStoreDataAccess(config)
-      .getTotalRows(config.getTotalUrl, queryUsed = false)
-
-    // Get continuous _changes url
+    // Get normal _changes url
     val url = config.getChangesReceiverUrl.toString
     val selector: String = {
       "{\"selector\":" + config.getSelector + "}"
     }
 
-    var count = 0
     val clRequest: HttpRequest = config.username match {
       case null =>
         Http(url)
           .postData(selector)
-          .timeout(connTimeoutMs = 1000, readTimeoutMs = 0)
           .header("Content-Type", "application/json")
           .header("User-Agent", "spark-cloudant")
       case _ =>
         Http(url)
           .postData(selector)
-          .timeout(connTimeoutMs = 1000, readTimeoutMs = 0)
           .header("Content-Type", "application/json")
           .header("User-Agent", "spark-cloudant")
           .auth(config.username, config.password)
@@ -68,27 +59,15 @@ class ChangesReceiver(config: CloudantChangesConfig)
 
     clRequest.exec((code, headers, is) => {
       if (code == 200) {
-        scala.io.Source.fromInputStream(is, "utf-8").getLines().foreach(line => {
-          if (count < limit) {
-            if (line.length() > 0) {
-              val json = Json.parse(line)
-              val jsonDoc = (json \ "doc").getOrElse(null)
-              var doc = ""
-              if (jsonDoc != null) {
-                doc = Json.stringify(jsonDoc)
-                // Verify that doc is not empty and is not deleted
-                val deleted = (jsonDoc \ "_deleted").getOrElse(null)
-                if (!doc.isEmpty && deleted == null) {
-                  store(doc)
-                  count += 1
-                }
-              }
+        var json = new ChangesRow()
+        if (is != null) {
+          val bufferedReader = new BufferedReader(new InputStreamReader(is))
+          while ((json = ChangesRowScanner.readRowFromReader(bufferedReader)) != null) {
+            if (!isStopped() && json != null && !json.getDoc.has("_deleted")) {
+              store(json.getDoc.toString)
             }
-          } else {
-            // exit loop once limit is reached
-            return
           }
-        })
+        }
       } else {
         val status = headers.getOrElse("Status", IndexedSeq.empty)
         val errorMsg = "Error retrieving _changes feed " + config.getDbname + ": " + status(0)
