@@ -22,7 +22,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
-import org.apache.spark.streaming.{Seconds, StreamingContext}
+import org.apache.spark.streaming.{Seconds, StreamingContext, StreamingContextState}
 
 import org.apache.bahir.cloudant.common.{JsonStoreDataAccess, JsonStoreRDD, _}
 import org.apache.bahir.cloudant.internal.ChangesReceiver
@@ -125,7 +125,7 @@ class DefaultSource extends RelationProvider
           /* Create a streaming context to handle transforming docs in
           * larger databases into Spark datasets
           */
-          val ssc = new StreamingContext(sqlContext.sparkContext, Seconds(10))
+          val ssc = new StreamingContext(sqlContext.sparkContext, Seconds(8))
 
           val changesConfig = config.asInstanceOf[CloudantChangesConfig]
           val changes = ssc.receiverStream(

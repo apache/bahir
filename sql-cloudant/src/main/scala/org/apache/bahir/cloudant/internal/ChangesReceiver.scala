@@ -78,13 +78,14 @@ class ChangesReceiver(config: CloudantChangesConfig)
                 doc = Json.stringify(jsonDoc)
                 // Verify that doc is not empty and is not deleted
                 val deleted = (jsonDoc \ "_deleted").getOrElse(null)
-                if (!doc.isEmpty && deleted == null) {
+                if (!isStopped() && !doc.isEmpty && deleted == null) {
                   store(doc)
                   count += 1
                 }
               }
             }
           } else {
+            stop("Cloudant _changes feed finished.")
             // exit loop once limit is reached
             return
           }

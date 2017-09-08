@@ -130,7 +130,7 @@ class JsonStoreDataAccess (config: CloudantConfig)  {
         " request error: " + clResponse.body)
     }
     val data = postProcessor(clResponse.body)
-    logger.debug(s"got result:$data")
+    logger.debug(s"got result: $data")
     data
   }
 

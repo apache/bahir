@@ -47,6 +47,7 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
     // Caching df in memory to speed computations
     // and not to retrieve data from cloudant again
     df.cache()
+
     // all docs in database minus the design doc
     assert(df.count() == 1967)
   }
