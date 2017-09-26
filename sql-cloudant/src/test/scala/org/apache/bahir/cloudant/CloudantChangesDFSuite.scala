@@ -17,6 +17,8 @@
 
 package org.apache.bahir.cloudant
 
+import scala.util.Try
+
 import play.api.libs.json._
 
 import org.apache.spark.sql.SparkSession
@@ -102,20 +104,25 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
     val df = spark.read.format("org.apache.bahir.cloudant")
       .load("n_airportcodemapping")
 
+    val saveDfToDb = "airportcodemapping_df"
+
+    // If 'airportcodemapping_df' exists, delete it.
+    Try {
+      client.deleteDB(saveDfToDb)
+    }
+
     // Saving dataframe to Cloudant db
     // to create a Cloudant db during save set the option createDBOnSave=true
     val df2 = df.filter(df("_id") >= "CAA")
       .select("_id", "airportName")
       .write.format("org.apache.bahir.cloudant")
       .option("createDBOnSave", "true")
-      .save("airportcodemapping_df")
+      .save(saveDfToDb)
 
     val dfAirport = spark.read.format("org.apache.bahir.cloudant")
-      .load("airportcodemapping_df")
+      .load(saveDfToDb)
 
     assert(dfAirport.count() == 13)
-
-    deleteTestDb("airportcodemapping_df")
   }
 
   // view option tests
