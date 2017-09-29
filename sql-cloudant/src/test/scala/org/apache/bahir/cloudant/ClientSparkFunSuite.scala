@@ -107,7 +107,7 @@ class ClientSparkFunSuite extends SparkFunSuite with BeforeAndAfter {
 
   def deleteTestDbs() {
     for (db: String <- TestUtils.testDatabasesList) {
-      client.deleteDB(db)
+      deleteTestDb(db)
     }
   }
 
