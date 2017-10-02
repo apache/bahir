@@ -125,9 +125,10 @@ class DefaultSource extends RelationProvider
           /* Create a streaming context to handle transforming docs in
           * larger databases into Spark datasets
           */
-          val ssc = new StreamingContext(sqlContext.sparkContext, Seconds(8))
-
           val changesConfig = config.asInstanceOf[CloudantChangesConfig]
+          val ssc = new StreamingContext(sqlContext.sparkContext,
+            Seconds(changesConfig.getBatchInterval))
+
           val changes = ssc.receiverStream(
             new ChangesReceiver(changesConfig))
           changes.persist(changesConfig.getStorageLevelForStreaming)
@@ -158,7 +159,11 @@ class DefaultSource extends RelationProvider
           // run streaming until all docs from continuous feed are received
           ssc.awaitTermination
 
-          dataFrame.schema
+          if(dataFrame.schema.nonEmpty) {
+            dataFrame.schema
+          } else {
+            throw new CloudantException(CloudantChangesConfig.receiverErrorMsg)
+          }
         }
       }
       CloudantReadWriteRelation(config, schema, dataFrame)(sqlContext)

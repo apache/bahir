@@ -27,12 +27,16 @@ class CloudantChangesConfig(protocol: String, host: String, dbName: String,
                             bulkSize: Int, schemaSampleSize: Int,
                             createDBOnSave: Boolean, endpoint: String, selector: String,
                             timeout: Int, storageLevel: StorageLevel, useQuery: Boolean,
-                            queryLimit: Int)
+                            queryLimit: Int, batchInterval: Int)
   extends CloudantConfig(protocol, host, dbName, indexName, viewName)(username, password,
     partitions, maxInPartition, minInPartition, requestTimeout, bulkSize, schemaSampleSize,
     createDBOnSave, endpoint, useQuery, queryLimit) {
 
   override val defaultIndex: String = endpoint
+
+  def getBatchInterval : Int = {
+    batchInterval
+  }
 
   def getSelector : String = {
     if (selector != null && !selector.isEmpty) {
@@ -79,4 +83,9 @@ class CloudantChangesConfig(protocol: String, host: String, dbName: String,
   def getTotalUrl: String = {
     dbUrl + "/" + JsonStoreConfigManager.ALL_DOCS_INDEX
   }
+}
+
+object CloudantChangesConfig {
+  // Error message from internal _changes receiver
+  var receiverErrorMsg: String = ""
 }

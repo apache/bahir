@@ -86,4 +86,20 @@ class CloudantOptionSuite extends ClientSparkFunSuite with BeforeAndAfter {
     assert(thrown.getMessage === s"Cloudant database name is empty. " +
       s"Please supply the required value.")
   }
+
+  testIfEnabled("incorrect password throws an error message for changes receiver") {
+    spark = SparkSession.builder().config(conf)
+      .config("cloudant.protocol", TestUtils.getProtocol)
+      .config("cloudant.host", TestUtils.getHost)
+      .config("cloudant.username", TestUtils.getUsername)
+      .config("cloudant.password", TestUtils.getPassword.concat("a"))
+      .config("cloudant.endpoint", "_changes")
+      .getOrCreate()
+
+    val thrown = intercept[CloudantException] {
+      spark.read.format("org.apache.bahir.cloudant").load("n_flight")
+    }
+    assert(thrown.getMessage === s"Error retrieving _changes feed data" +
+      s" from database 'n_flight': HTTP/1.1 401 Unauthorized")
+  }
 }
