@@ -14,86 +14,71 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.spark.examples.sql.cloudant
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.streaming.{ Seconds, StreamingContext, Time }
-import org.apache.spark.streaming.scheduler.{ StreamingListener, StreamingListenerReceiverError}
+import org.apache.spark.streaming.{Seconds, StreamingContext, Time}
 
 import org.apache.bahir.cloudant.CloudantReceiver
 
 object CloudantStreaming {
   def main(args: Array[String]) {
-    val sparkConf = new SparkConf().setAppName("Cloudant Spark SQL External Datasource in Scala")
-    // Create the context with a 10 seconds batch size
-    val ssc = new StreamingContext(sparkConf, Seconds(10))
+    val spark = SparkSession.builder()
+      .appName("Cloudant Spark SQL External Datasource in Scala")
+      .master("local[*]")
+      .getOrCreate()
 
-    val changes = ssc.receiverStream(new CloudantReceiver(sparkConf, Map(
-      "cloudant.host" -> "ACCOUNT.cloudant.com",
-      "cloudant.username" -> "USERNAME",
-      "cloudant.password" -> "PASSWORD",
-      "database" -> "n_airportcodemapping")))
+    // Create the context with a 10 seconds batch size
+    val ssc = new StreamingContext(spark.sparkContext, Seconds(10))
+    import spark.implicits._
+
+    val changes = ssc.receiverStream(new CloudantReceiver(spark.sparkContext.getConf, Map(
+      "cloudant.host" -> "examples.cloudant.com",
+      "database" -> "sales")))
 
     changes.foreachRDD((rdd: RDD[String], time: Time) => {
       // Get the singleton instance of SparkSession
-      val spark = SparkSessionSingleton.getInstance(rdd.sparkContext.getConf)
+
 
       println(s"========= $time =========")// scalastyle:ignore
-      // Convert RDD[String] to DataFrame
-      val changesDataFrame = spark.read.json(rdd)
-      if (!changesDataFrame.schema.isEmpty) {
+      // Convert RDD[String] to Dataset[String]
+      val changesDataFrame = spark.read.json(rdd.toDS())
+      if (changesDataFrame.schema.nonEmpty) {
         changesDataFrame.printSchema()
-        changesDataFrame.select("*").show()
 
         var hasDelRecord = false
-        var hasAirportNameField = false
+        var hasMonth = false
         for (field <- changesDataFrame.schema.fieldNames) {
           if ("_deleted".equals(field)) {
             hasDelRecord = true
           }
-          if ("airportName".equals(field)) {
-            hasAirportNameField = true
+          if ("month".equals(field)) {
+            hasMonth = true
           }
         }
         if (hasDelRecord) {
           changesDataFrame.filter(changesDataFrame("_deleted")).select("*").show()
         }
 
-        if (hasAirportNameField) {
-          changesDataFrame.filter(changesDataFrame("airportName") >= "Paris").select("*").show()
-          changesDataFrame.registerTempTable("airportcodemapping")
-          val airportCountsDataFrame =
+        if (hasMonth) {
+          changesDataFrame.filter(changesDataFrame("month") === "May").select("*").show(5)
+          changesDataFrame.createOrReplaceTempView("sales")
+          val salesInMayCountsDataFrame =
             spark.sql(
-                s"""
-                |select airportName, count(*) as total
-                |from airportcodemapping
-                |group by airportName
+              s"""
+                 |select rep, amount
+                 |from sales
+                 |where month = "May"
                 """.stripMargin)
-          airportCountsDataFrame.show()
+          salesInMayCountsDataFrame.show(5)
         }
       }
 
     })
     ssc.start()
-    // run streaming for 120 secs
-    Thread.sleep(120000L)
+    // run streaming for 60 secs
+    Thread.sleep(60000L)
     ssc.stop(true)
-  }
-}
-
-/** Lazily instantiated singleton instance of SparkSession */
-object SparkSessionSingleton {
-  @transient  private var instance: SparkSession = _
-  def getInstance(sparkConf: SparkConf): SparkSession = {
-    if (instance == null) {
-      instance = SparkSession
-        .builder
-        .config(sparkConf)
-        .getOrCreate()
-    }
-    instance
   }
 }
