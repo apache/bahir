@@ -40,11 +40,12 @@ object CloudantStreaming {
     changes.foreachRDD((rdd: RDD[String], time: Time) => {
       // Get the singleton instance of SparkSession
       val spark = SparkSessionSingleton.getInstance(rdd.sparkContext.getConf)
+      import spark.implicits._
 
       println(s"========= $time =========")// scalastyle:ignore
-      // Convert RDD[String] to DataFrame
-      val changesDataFrame = spark.read.json(rdd)
-      if (!changesDataFrame.schema.isEmpty) {
+      // Convert RDD[String] to Dataset[String]
+      val changesDataFrame = spark.read.json(rdd.toDS())
+      if (changesDataFrame.schema.nonEmpty) {
         changesDataFrame.printSchema()
         changesDataFrame.select("*").show()
 
@@ -64,7 +65,7 @@ object CloudantStreaming {
 
         if (hasAirportNameField) {
           changesDataFrame.filter(changesDataFrame("airportName") >= "Paris").select("*").show()
-          changesDataFrame.registerTempTable("airportcodemapping")
+          changesDataFrame.createOrReplaceTempView("airportcodemapping")
           val airportCountsDataFrame =
             spark.sql(
                 s"""

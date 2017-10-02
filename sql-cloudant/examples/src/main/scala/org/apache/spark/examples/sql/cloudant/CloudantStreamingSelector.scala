@@ -46,9 +46,11 @@ object CloudantStreamingSelector {
     changes.foreachRDD((rdd: RDD[String], time: Time) => {
       // Get the singleton instance of SQLContext
       val spark = SparkSessionSingleton.getInstance(rdd.sparkContext.getConf)
+      import spark.implicits._
+
       println(s"========= $time =========") // scalastyle:ignore
-      val changesDataFrame = spark.read.json(rdd)
-      if (!changesDataFrame.schema.isEmpty) {
+      val changesDataFrame = spark.read.json(rdd.toDS())
+      if (changesDataFrame.schema.nonEmpty) {
         changesDataFrame.select("*").show()
         batchAmount = changesDataFrame.groupBy().sum("amount").collect()(0).getLong(0)
         curSalesCount.getAndAdd(changesDataFrame.count())
