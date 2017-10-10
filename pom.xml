@@ -480,7 +480,7 @@
         <plugin>
           <groupId>net.alchim31.maven</groupId>
           <artifactId>scala-maven-plugin</artifactId>
-          <version>3.2.2</version>
+          <version>3.3.1</version>
           <executions>
             <execution>
               <id>eclipse-add-source</id>
@@ -501,11 +501,6 @@
               <goals>
                 <goal>testCompile</goal>
               </goals>
-              <configuration>
-                <source>${java.version}</source>
-                <target>${java.version}</target>
-                <encoding>UTF-8</encoding>
-              </configuration>
             </execution>
             <execution>
               <id>attach-scaladocs</id>
@@ -529,6 +524,8 @@
               <jvmArg>-Xmx1024m</jvmArg>
               <jvmArg>-XX:ReservedCodeCacheSize=${CodeCacheSize}</jvmArg>
             </jvmArgs>
+            <source>${java.version}</source>
+            <target>${java.version}</target>
             <javacArgs>
               <javacArg>-source</javacArg>
               <javacArg>${java.version}</javacArg>
