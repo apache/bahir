@@ -125,6 +125,19 @@ class JsonStoreDataAccess (config: CloudantConfig)  {
     val clRequest: HttpRequest = getClRequest(url, postData)
 
     val clResponse: HttpResponse[String] = clRequest.execute()
+          
+    //BAHIR-130 start
+    //In cloudant Lite number of requests pre second are limited.
+    //Just wait and try again
+    clResponse.code match {
+        case 429 => {
+            Thread sleep 1000
+            return getQueryResult(url,postProcessor)
+        }
+        case _ => Nil
+    }
+    // BAHIR-130 stop
+          
     if (! clResponse.isSuccess) {
       throw new CloudantException("Database " + config.getDbname +
         " request error: " + clResponse.body)
