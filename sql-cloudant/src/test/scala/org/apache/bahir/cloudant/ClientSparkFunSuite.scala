@@ -53,7 +53,7 @@ class ClientSparkFunSuite extends SparkFunSuite with BeforeAndAfter {
     TestUtils.deleteRecursively(tempDir)
     deleteTestDbs()
     teardownClient()
-    spark.stop()
+    spark.close()
   }
 
   def setupClient() {

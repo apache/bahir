@@ -68,6 +68,15 @@ class SparkGCPCredentialsBuilderSuite
     assert(credential.refreshToken, "Failed to retrive a new access token.")
   }
 
+  test("should provide json file array byte") {
+    jsonAssumption
+    val fileArrayOfBytes = Files.readAllBytes(Paths.get(jsonFilePath match {
+      case Some(filePath) => filePath}))
+    val jsonCreds = ServiceAccountCredentials(None, None, None, Option(fileArrayOfBytes))
+    val credential = jsonCreds.provider
+    assert(credential.refreshToken, "Failed to retrive a new access token.")
+  }
+
   test("should build p12 service account") {
     p12Assumption
 
@@ -95,28 +104,28 @@ class SparkGCPCredentialsBuilderSuite
   }
 
   test("SparkGCPCredentials classes should be serializable") {
-    jsonAssumption
-    p12Assumption
+  jsonAssumption
+  p12Assumption
 
-    val jsonCreds = ServiceAccountCredentials(jsonFilePath = jsonFilePath)
-    val p12Creds = ServiceAccountCredentials(
-      p12FilePath = p12FilePath, emailAccount = emailAccount)
-    val metadataCreds = ServiceAccountCredentials()
-    assertResult(jsonCreds) {
-      Utils.deserialize[ServiceAccountCredentials](Utils.serialize(jsonCreds))
-    }
-
-    assertResult(p12Creds) {
-      Utils.deserialize[ServiceAccountCredentials](Utils.serialize(p12Creds))
-    }
-
-    assertResult(metadataCreds) {
-      Utils.deserialize[ServiceAccountCredentials](Utils.serialize(metadataCreds))
-    }
-
-    assertResult(ApplicationDefaultCredentials) {
-      Utils.deserialize[ServiceAccountCredentials](Utils.serialize(ApplicationDefaultCredentials))
-    }
+  val jsonCreds = ServiceAccountCredentials(jsonFilePath = jsonFilePath)
+  val p12Creds = ServiceAccountCredentials(
+    p12FilePath = p12FilePath, emailAccount = emailAccount)
+  val metadataCreds = ServiceAccountCredentials()
+  assertResult(jsonCreds) {
+    Utils.deserialize[ServiceAccountCredentials](Utils.serialize(jsonCreds))
   }
+
+  assertResult(p12Creds) {
+    Utils.deserialize[ServiceAccountCredentials](Utils.serialize(p12Creds))
+  }
+
+  assertResult(metadataCreds) {
+    Utils.deserialize[ServiceAccountCredentials](Utils.serialize(metadataCreds))
+  }
+
+  assertResult(ApplicationDefaultCredentials) {
+    Utils.deserialize[ServiceAccountCredentials](Utils.serialize(ApplicationDefaultCredentials))
+  }
+}
 
 }
