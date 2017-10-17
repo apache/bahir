@@ -26,7 +26,7 @@ import org.apache.bahir.cloudant.common.CloudantException
 class CloudantOptionSuite extends ClientSparkFunSuite with BeforeAndAfter {
 
   after {
-    spark.close()
+    spark.stop()
   }
 
   testIfEnabled("invalid api receiver option throws an error message") {

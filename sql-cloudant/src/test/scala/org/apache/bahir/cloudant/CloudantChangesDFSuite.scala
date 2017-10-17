@@ -38,7 +38,7 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
   }
 
   after {
-    spark.close()
+    spark.stop()
   }
 
   testIfEnabled("load and save data from Cloudant database") {

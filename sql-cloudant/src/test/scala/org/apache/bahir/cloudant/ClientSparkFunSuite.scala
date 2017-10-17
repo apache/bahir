@@ -45,13 +45,15 @@ class ClientSparkFunSuite extends SparkFunSuite with BeforeAndAfter {
       setupClient()
       createTestDbs()
     }
-}
-
+  }
+  /*
+  * Changed this for spark 2.0.2 as spark.close was not supported in sprk 2.2.0
+  * */
   override def afterAll() {
     TestUtils.deleteRecursively(tempDir)
     deleteTestDbs()
     teardownClient()
-    spark.close()
+    spark.stop()
   }
 
   def setupClient() {
@@ -107,7 +109,7 @@ class ClientSparkFunSuite extends SparkFunSuite with BeforeAndAfter {
 
   def deleteTestDbs() {
     for (db: String <- TestUtils.testDatabasesList) {
-      deleteTestDb(db)
+      client.deleteDB(db)
     }
   }
 
