@@ -72,3 +72,18 @@ this actor can be configured to handle failures, etc.
     JavaReceiverInputDStream<Tuple2<String, String>> lines = MQTTUtils.createPairedByteArrayStream(jssc, brokerUrl, topics);
 
 See end-to-end examples at [MQTT Examples](https://github.com/apache/bahir/tree/master/streaming-mqtt/examples)
+
+
+### Python API
+
+Create a DStream from a single topic.
+
+```Python
+	MQTTUtils.createStream(ssc, broker_url, topic)
+```
+
+Create a DStream from a list of topics.
+
+```Python
+	MQTTUtils.createPairedStream(ssc, broker_url, topics)
+```

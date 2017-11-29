@@ -18,7 +18,7 @@
 from py4j.protocol import Py4JJavaError
 
 from pyspark.storagelevel import StorageLevel
-from pyspark.serializers import UTF8Deserializer
+from pyspark.serializers import UTF8Deserializer, PairDeserializer
 from pyspark.streaming import DStream
 
 __all__ = ['MQTTUtils']
@@ -57,8 +57,17 @@ class MQTTUtils(object):
         """
         jlevel = ssc._sc._getJavaStorageLevel(storageLevel)
         helper = MQTTUtils._get_helper(ssc._sc)
-        jstream = helper.createStream(ssc._jssc, brokerUrl, topics, jlevel)
-        return DStream(jstream, ssc, UTF8Deserializer())
+        topics_array = MQTTUtils._list_to_java_string_array(ssc._sc, topics)
+        jstream = helper.createPairedStream(ssc._jssc, brokerUrl, topics_array, jlevel)
+        return DStream(jstream, ssc, PairDeserializer(UTF8Deserializer(), UTF8Deserializer()))
+
+    @staticmethod
+    def _list_to_java_string_array(sc, list_):
+        len_arr = len(list_)
+        arr = sc._gateway.new_array(sc._jvm.String, len_arr)
+        for i in range(len_arr):
+            arr[i] = list_[i]
+        return arr
 
     @staticmethod
     def _get_helper(sc):
