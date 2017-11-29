@@ -83,6 +83,35 @@ class MQTTStreamTests(PySparkStreamingTestCase):
         # Retry it because we don't know when the receiver will start.
         self._retry_or_timeout(retry)
 
+    def _start_context_with_paired_stream(self, topics):
+        stream = MQTTUtils.createPairedStream(self.ssc, "tcp://" + self._MQTTTestUtils.brokerUri(), topics)
+        # Keep a set because records can potentially be repeated.
+        result = set()
+
+        def getOutput(_, rdd):
+            for data in rdd.collect():
+                result.add(data)
+
+        stream.foreachRDD(getOutput)
+        self.ssc.start()
+        return result
+
+    def test_mqtt_pair_stream(self):
+        """Test the Python MQTT stream API with multiple topics."""
+        data_records = ["random string 1", "random string 2", "random string 3"]
+        topics = [self._randomTopic(), self._randomTopic(), self._randomTopic()]
+        topics_and_records = zip(topics, data_records)
+        result = self._start_context_with_paired_stream(topics)
+
+        def retry():
+            for topic, data_record in topics_and_records:
+                self._MQTTTestUtils.publishData(topic, data_record)
+            # Sort the received records as they might be out of order.
+            self.assertEqual(topics_and_records, sorted(result, key=lambda x: x[1]))
+
+        # Retry it because we don't know when the receiver will start.
+        self._retry_or_timeout(retry)
+
     def _retry_or_timeout(self, test_func):
         start_time = time.time()
         while True:
