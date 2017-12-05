@@ -61,7 +61,7 @@
     <dependency>
       <groupId>org.eclipse.paho</groupId>
       <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
-      <version>1.1.0</version>
+      <version>${mqtt.paho.client}</version>
     </dependency>
     <dependency>
       <groupId>org.scalacheck</groupId>

@@ -109,7 +109,7 @@
     <dependency>
       <groupId>com.cloudant</groupId>
       <artifactId>cloudant-client</artifactId>
-      <version>2.9.0</version>
+      <version>2.11.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -118,7 +118,7 @@
 	     <resource>
     	   <directory>src/main/resources</directory>
      	</resource>
-    </resources>    
+    </resources>
     <outputDirectory>target/scala-${scala.binary.version}/classes</outputDirectory>
     <testOutputDirectory>target/scala-${scala.binary.version}/test-classes</testOutputDirectory>
   </build>
