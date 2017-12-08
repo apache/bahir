@@ -41,6 +41,10 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
     spark.close()
   }
 
+  test("dummy test to force build failure") {
+    assert(123 == 456)
+  }
+
   testIfEnabled("load and save data from Cloudant database") {
     // Loading data from Cloudant db
     val df = spark.read.format("org.apache.bahir.cloudant").load("n_flight")
