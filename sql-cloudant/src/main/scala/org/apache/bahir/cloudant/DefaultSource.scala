@@ -22,7 +22,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
-import org.apache.spark.streaming.{Seconds, StreamingContext, StreamingContextState}
+import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 import org.apache.bahir.cloudant.common.{JsonStoreDataAccess, JsonStoreRDD, _}
 import org.apache.bahir.cloudant.internal.ChangesReceiver

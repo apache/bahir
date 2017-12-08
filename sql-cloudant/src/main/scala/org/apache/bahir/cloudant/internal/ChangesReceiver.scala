@@ -16,11 +16,9 @@
  */
 package org.apache.bahir.cloudant.internal
 
-import org.slf4j.{Logger, LoggerFactory}
 import play.api.libs.json.Json
 import scalaj.http._
 
-import org.apache.spark.SparkConf
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.receiver.Receiver
 
