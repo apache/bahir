@@ -52,13 +52,11 @@ class ChangesReceiver(config: CloudantChangesConfig)
       case null =>
         Http(url)
           .postData(selector)
-          .timeout(connTimeoutMs = 1000, readTimeoutMs = 0)
           .header("Content-Type", "application/json")
           .header("User-Agent", "spark-cloudant")
       case _ =>
         Http(url)
           .postData(selector)
-          .timeout(connTimeoutMs = 1000, readTimeoutMs = 0)
           .header("Content-Type", "application/json")
           .header("User-Agent", "spark-cloudant")
           .auth(config.username, config.password)
