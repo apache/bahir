@@ -111,7 +111,6 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
     Try {
       client.deleteDB(saveDfToDb)
     }
-
     // Saving dataframe to Cloudant db
     // to create a Cloudant db during save set the option createDBOnSave=true
     val df2 = df.filter(df("_id") >= "CAA")
@@ -124,6 +123,11 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
       .load(saveDfToDb)
 
     assert(dfAirport.count() == 13)
+
+    // delete 'airportcodemapping_df' database
+    Try {
+      client.deleteDB(saveDfToDb)
+    }
   }
 
   // view option tests
