@@ -16,7 +16,8 @@
  */
 package org.apache.bahir.cloudant.internal
 
-import play.api.libs.json.Json
+import java.io.{BufferedReader, InputStreamReader}
+
 import scalaj.http._
 
 import org.apache.spark.storage.StorageLevel
@@ -24,7 +25,6 @@ import org.apache.spark.streaming.receiver.Receiver
 
 import org.apache.bahir.cloudant.CloudantChangesConfig
 import org.apache.bahir.cloudant.common._
-
 
 class ChangesReceiver(config: CloudantChangesConfig)
   extends Receiver[String](StorageLevel.MEMORY_AND_DISK) {
@@ -64,28 +64,17 @@ class ChangesReceiver(config: CloudantChangesConfig)
 
     clRequest.exec((code, headers, is) => {
       if (code == 200) {
-        scala.io.Source.fromInputStream(is, "utf-8").getLines().foreach(line => {
-          if (count < limit) {
-            if (line.length() > 0) {
-              val json = Json.parse(line)
-              val jsonDoc = (json \ "doc").getOrElse(null)
-              var doc = ""
-              if (jsonDoc != null) {
-                doc = Json.stringify(jsonDoc)
-                // Verify that doc is not empty and is not deleted
-                val deleted = (jsonDoc \ "_deleted").getOrElse(null)
-                if (!isStopped() && !doc.isEmpty && deleted == null) {
-                  store(doc)
-                  count += 1
-                }
-              }
+        var json = new ChangesRow()
+        if (is != null) {
+          val bufferedReader = new BufferedReader(new InputStreamReader(is))
+          while (count < limit) {
+            json = ChangesRowScanner.readRowFromReader(bufferedReader)
+            if (!isStopped() && json != null && !json.getDoc.has("_deleted")) {
+              store(json.getDoc.toString)
+              count += 1
             }
-          } else {
-            stop("Cloudant _changes feed finished.")
-            // exit loop once limit is reached
-            return
           }
-        })
+        }
       } else {
         val status = headers.getOrElse("Status", IndexedSeq.empty)
         val errorMsg = "Error retrieving _changes feed " + config.getDbname + ": " + status(0)
