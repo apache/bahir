@@ -52,6 +52,12 @@
       <property name="file" value="dev/checkstyle-suppressions.xml"/>
     </module>
 
+    <!-- Checks for license header -->
+    <module name="Header">
+        <property name="headerFile" value="dev/checkstyle-license-header.txt"/>
+        <property name="fileExtensions" value="java"/>
+    </module>
+
     <!-- Checks for whitespace                               -->
     <!-- See http://checkstyle.sf.net/config_whitespace.html -->
     <module name="FileTabCharacter">
