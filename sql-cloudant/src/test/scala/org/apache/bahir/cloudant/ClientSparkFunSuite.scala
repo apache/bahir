@@ -36,6 +36,7 @@ class ClientSparkFunSuite extends SparkFunSuite with BeforeAndAfter {
 
   var client: CloudantClient = _
   val conf: SparkConf = new SparkConf().setMaster("local[4]")
+  var deletedDoc = new JsonObject()
   var spark: SparkSession = _
 
   override def beforeAll() {
@@ -99,6 +100,10 @@ class ClientSparkFunSuite extends SparkFunSuite with BeforeAndAfter {
         while (i < responses.size()) {
           assert(responses.get(i).getStatusCode == 200 || responses.get(i).getStatusCode == 201)
           i += 1
+        }
+        if (dbName == "n_flight") {
+          deletedDoc.addProperty("_id", responses.get(0).getId)
+          deletedDoc.addProperty("_rev", responses.get(0).getRev)
         }
 
       }
