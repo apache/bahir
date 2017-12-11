@@ -14,8 +14,6 @@
 package org.apache.bahir.cloudant.common;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import java.io.BufferedReader;
 import java.io.IOException;
 
@@ -43,9 +41,8 @@ public class ChangesRowScanner {
         String line;
 
         // Read the next line (empty = heartbeat, ignore; null = end of stream)
-        while (true) {
-            line = changesReader.readLine();
-            if (line != null && line.isEmpty()) {
+        while ((line = changesReader.readLine()) != null) {
+            if (line.isEmpty()) {
                 continue;
             }
             if (line.startsWith("{\"results\":")) {
@@ -58,35 +55,20 @@ public class ChangesRowScanner {
             break;
         }
 
-        if (line.startsWith("\"last_seq\":")) {
-            return null; // End of feed
-        } else if (line.startsWith("{\"last_seq\":")) {
-            return null; // End of feed
-        } else {
-            if (line.endsWith(",")) {
-                line = line.substring(0, line.length() - 1);
+        if(line != null) {
+            if (line.startsWith("\"last_seq\":")) {
+                return null; // End of feed
+            } else if (line.startsWith("{\"last_seq\":")) {
+                return null; // End of feed
+            } else {
+                if (line.endsWith(",")) {
+                    line = line.substring(0, line.length() - 1);
+                }
+                ChangesRow r = gson.fromJson(line, ChangesRow.class);
+                return r; // not end of feed
             }
-            ChangesRow r = gson.fromJson(line, ChangesRow.class);
-            return r; // not end of feed
+        } else {
+            return null;
         }
     }
-
-
-
-    /**
-     * Extract a seq value from a JSON line of the form
-     * {..., "last_seq": "...", ...}
-     */
-    private static String extractSeq(String line) {
-        JsonObject lastSeq = gson.fromJson(line, JsonObject.class);
-        JsonPrimitive primitive = lastSeq.getAsJsonPrimitive("last_seq");
-        String lastSeqValue = null;
-        if (primitive.isString()) {
-            lastSeqValue = primitive.getAsString();
-        } else if (primitive.isNumber()) {
-            lastSeqValue = String.valueOf(primitive.getAsLong());
-        }
-        return lastSeqValue;
-    }
-
 }

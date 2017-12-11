@@ -37,17 +37,13 @@ class ChangesReceiver(config: CloudantChangesConfig)
   }
 
   private def receive(): Unit = {
-    // Get total number of docs in database using _all_docs endpoint
-    val limit = new JsonStoreDataAccess(config)
-      .getTotalRows(config.getTotalUrl, queryUsed = false)
-
-    // Get continuous _changes url
+    // Get normal _changes url
     val url = config.getChangesReceiverUrl.toString
     val selector: String = {
       "{\"selector\":" + config.getSelector + "}"
     }
 
-    var count = 0
+    // var count = 0
     val clRequest: HttpRequest = config.username match {
       case null =>
         Http(url)
@@ -67,11 +63,9 @@ class ChangesReceiver(config: CloudantChangesConfig)
         var json = new ChangesRow()
         if (is != null) {
           val bufferedReader = new BufferedReader(new InputStreamReader(is))
-          while (count < limit) {
-            json = ChangesRowScanner.readRowFromReader(bufferedReader)
+          while ((json = ChangesRowScanner.readRowFromReader(bufferedReader)) != null) {
             if (!isStopped() && json != null && !json.getDoc.has("_deleted")) {
               store(json.getDoc.toString)
-              count += 1
             }
           }
         }
