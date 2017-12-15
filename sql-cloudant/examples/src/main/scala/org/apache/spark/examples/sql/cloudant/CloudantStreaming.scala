@@ -35,7 +35,7 @@ object CloudantStreaming {
     val changes = ssc.receiverStream(new CloudantReceiver(sparkConf, Map(
       "cloudant.host" -> "examples.cloudant.com",
       "database" -> "sales")))
-
+    
     changes.foreachRDD((rdd: RDD[String], time: Time) => {
       // Get the singleton instance of SparkSession
       val spark = SparkSessionSingleton.getInstance(rdd.sparkContext.getConf)
@@ -62,16 +62,16 @@ object CloudantStreaming {
         }
 
         if (hasMonth) {
-          changesDataFrame.filter(changesDataFrame("month") >= "May").select("*").show()
-          changesDataFrame.createOrReplaceTempView("sales-in-may")
-          val airportCountsDataFrame =
+          changesDataFrame.filter(changesDataFrame("month") === "May").select("*").show(5)
+          changesDataFrame.createOrReplaceTempView("sales")
+          val salesInMayCountsDataFrame =
             spark.sql(
                 s"""
-                |select _id, rep, count(*) as total
-                |from sales-in-may
-                |group by month
+                |select rep, amount
+                |from sales
+                |where month = "May"
                 """.stripMargin)
-          airportCountsDataFrame.show()
+          salesInMayCountsDataFrame.show(5)
         }
       }
 
