@@ -74,7 +74,9 @@ class CloudantReceiver(sparkConf: SparkConf, cloudantParams: Map[String, String]
             var doc = ""
             if(jsonDoc != null) {
               doc = Json.stringify(jsonDoc)
-              store(doc)
+              if(!isStopped() && doc.nonEmpty) {
+                store(doc)
+              }
             }
           }
         })

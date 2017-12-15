@@ -28,7 +28,8 @@ import org.apache.bahir.cloudant.CloudantReceiver
 
 object CloudantStreamingSelector {
   def main(args: Array[String]) {
-    val sparkConf = new SparkConf().setAppName("Cloudant Spark SQL External Datasource in Scala")
+    val sparkConf = new SparkConf().setMaster("local[*]")
+      .setAppName("Cloudant Spark SQL External Datasource in Scala")
 
     // Create the context with a 10 seconds batch size
     val ssc = new StreamingContext(sparkConf, Seconds(10))
@@ -37,9 +38,7 @@ object CloudantStreamingSelector {
     var batchAmount = 0L
 
     val changes = ssc.receiverStream(new CloudantReceiver(sparkConf, Map(
-      "cloudant.host" -> "ACCOUNT.cloudant.com",
-      "cloudant.username" -> "USERNAME",
-      "cloudant.password" -> "PASSWORD",
+      "cloudant.host" -> "examples.cloudant.com",
       "database" -> "sales",
       "selector" -> "{\"month\":\"May\", \"rep\":\"John\"}")))
 
@@ -57,7 +56,9 @@ object CloudantStreamingSelector {
         curTotalAmount.getAndAdd(batchAmount)
         println("Current sales count:" + curSalesCount)// scalastyle:ignore
         println("Current total amount:" + curTotalAmount)// scalastyle:ignore
-        }
+      } else {
+        ssc.stop()
+      }
     })
 
     ssc.start()

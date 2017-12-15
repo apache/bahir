@@ -27,15 +27,14 @@ import org.apache.bahir.cloudant.CloudantReceiver
 
 object CloudantStreaming {
   def main(args: Array[String]) {
-    val sparkConf = new SparkConf().setAppName("Cloudant Spark SQL External Datasource in Scala")
+    val sparkConf = new SparkConf().setMaster("local[*]")
+      .setAppName("Cloudant Spark SQL External Datasource in Scala")
     // Create the context with a 10 seconds batch size
     val ssc = new StreamingContext(sparkConf, Seconds(10))
 
     val changes = ssc.receiverStream(new CloudantReceiver(sparkConf, Map(
-      "cloudant.host" -> "ACCOUNT.cloudant.com",
-      "cloudant.username" -> "USERNAME",
-      "cloudant.password" -> "PASSWORD",
-      "database" -> "n_airportcodemapping")))
+      "cloudant.host" -> "examples.cloudant.com",
+      "database" -> "sales")))
 
     changes.foreachRDD((rdd: RDD[String], time: Time) => {
       // Get the singleton instance of SparkSession
@@ -47,31 +46,30 @@ object CloudantStreaming {
       val changesDataFrame = spark.read.json(rdd.toDS())
       if (changesDataFrame.schema.nonEmpty) {
         changesDataFrame.printSchema()
-        changesDataFrame.select("*").show()
 
         var hasDelRecord = false
-        var hasAirportNameField = false
+        var hasMonth = false
         for (field <- changesDataFrame.schema.fieldNames) {
           if ("_deleted".equals(field)) {
             hasDelRecord = true
           }
-          if ("airportName".equals(field)) {
-            hasAirportNameField = true
+          if ("month".equals(field)) {
+            hasMonth = true
           }
         }
         if (hasDelRecord) {
           changesDataFrame.filter(changesDataFrame("_deleted")).select("*").show()
         }
 
-        if (hasAirportNameField) {
-          changesDataFrame.filter(changesDataFrame("airportName") >= "Paris").select("*").show()
-          changesDataFrame.createOrReplaceTempView("airportcodemapping")
+        if (hasMonth) {
+          changesDataFrame.filter(changesDataFrame("month") >= "May").select("*").show()
+          changesDataFrame.createOrReplaceTempView("sales-in-may")
           val airportCountsDataFrame =
             spark.sql(
                 s"""
-                |select airportName, count(*) as total
-                |from airportcodemapping
-                |group by airportName
+                |select _id, rep, count(*) as total
+                |from sales-in-may
+                |group by month
                 """.stripMargin)
           airportCountsDataFrame.show()
         }
@@ -79,8 +77,8 @@ object CloudantStreaming {
 
     })
     ssc.start()
-    // run streaming for 120 secs
-    Thread.sleep(120000L)
+    // run streaming for 60 secs
+    Thread.sleep(60000L)
     ssc.stop(true)
   }
 }
