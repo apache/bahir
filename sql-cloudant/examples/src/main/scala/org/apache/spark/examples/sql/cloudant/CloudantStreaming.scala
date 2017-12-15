@@ -35,7 +35,6 @@ object CloudantStreaming {
     val changes = ssc.receiverStream(new CloudantReceiver(sparkConf, Map(
       "cloudant.host" -> "examples.cloudant.com",
       "database" -> "sales")))
-    
     changes.foreachRDD((rdd: RDD[String], time: Time) => {
       // Get the singleton instance of SparkSession
       val spark = SparkSessionSingleton.getInstance(rdd.sparkContext.getConf)
