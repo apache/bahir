@@ -162,22 +162,23 @@ object JsonStoreConfigManager {
 
   def getConfig (sparkConf: SparkConf, parameters: Map[String, String]): CloudantConfig = {
 
-    implicit val total = getInt(sparkConf, parameters, PARTITION_CONFIG)
-    implicit val max = getInt(sparkConf, parameters, MAX_IN_PARTITION_CONFIG)
-    implicit val min = getInt(sparkConf, parameters, MIN_IN_PARTITION_CONFIG)
-    implicit val requestTimeout = getLong(sparkConf, parameters, REQUEST_TIMEOUT_CONFIG)
-    implicit val bulkSize = getInt(sparkConf, parameters, BULK_SIZE_CONFIG)
-    implicit val schemaSampleSize = getInt(sparkConf, parameters, SCHEMA_SAMPLE_SIZE_CONFIG)
-    implicit val createDBOnSave = getBool(sparkConf, parameters, CREATE_DB_ON_SAVE_CONFIG)
-    implicit val endpoint = getString(sparkConf, parameters, CLOUDANT_API_ENDPOINT)
-    implicit val selector = getString(sparkConf, parameters, FILTER_SELECTOR)
-    implicit val storageLevel = getStorageLevel(
+    implicit val total: Int = getInt(sparkConf, parameters, PARTITION_CONFIG)
+    implicit val max: Int = getInt(sparkConf, parameters, MAX_IN_PARTITION_CONFIG)
+    implicit val min: Int = getInt(sparkConf, parameters, MIN_IN_PARTITION_CONFIG)
+    implicit val requestTimeout: Long = getLong(sparkConf, parameters, REQUEST_TIMEOUT_CONFIG)
+    implicit val bulkSize: Int = getInt(sparkConf, parameters, BULK_SIZE_CONFIG)
+    implicit val schemaSampleSize: Int = getInt(sparkConf, parameters, SCHEMA_SAMPLE_SIZE_CONFIG)
+    implicit val createDBOnSave: Boolean = getBool(sparkConf, parameters, CREATE_DB_ON_SAVE_CONFIG)
+    implicit val endpoint: String = getString(sparkConf, parameters, CLOUDANT_API_ENDPOINT)
+    implicit val selector: String = getString(sparkConf, parameters, FILTER_SELECTOR)
+    implicit val storageLevel: StorageLevel = getStorageLevel(
       sparkConf, parameters, STORAGE_LEVEL_FOR_CHANGES_INDEX)
-    implicit val timeout = getInt(sparkConf, parameters, CLOUDANT_CHANGES_TIMEOUT)
-    implicit val batchInterval = getInt(sparkConf, parameters, CLOUDANT_STREAMING_BATCH_INTERVAL)
+    implicit val timeout: Int = getInt(sparkConf, parameters, CLOUDANT_CHANGES_TIMEOUT)
+    implicit val batchInterval: Int = getInt(
+      sparkConf, parameters, CLOUDANT_STREAMING_BATCH_INTERVAL)
 
-    implicit val useQuery = getBool(sparkConf, parameters, USE_QUERY_CONFIG)
-    implicit val queryLimit = getInt(sparkConf, parameters, QUERY_LIMIT_CONFIG)
+    implicit val useQuery: Boolean = getBool(sparkConf, parameters, USE_QUERY_CONFIG)
+    implicit val queryLimit: Int = getInt(sparkConf, parameters, QUERY_LIMIT_CONFIG)
 
     val dbName = parameters.getOrElse("database", parameters.getOrElse("path",
       throw new CloudantException(s"Cloudant database name is empty. " +

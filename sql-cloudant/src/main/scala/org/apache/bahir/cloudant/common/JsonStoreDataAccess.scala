@@ -26,9 +26,10 @@ import scala.language.implicitConversions
 import scala.util.{Failure, Success}
 
 import ExecutionContext.Implicits.global
+import com.cloudant.client.api.model.Response
 import com.cloudant.http.HttpConnection
+import com.google.gson.{Gson, JsonElement, JsonObject}
 import org.slf4j.{Logger, LoggerFactory}
-import play.api.libs.json._
 
 import org.apache.bahir.cloudant.CloudantConfig
 
@@ -67,7 +68,7 @@ class JsonStoreDataAccess (config: CloudantConfig)  {
       else {
         val totalUrl = config.getTotalUrl(url)
          this.getQueryResult[Int](totalUrl,
-           { result => config.getTotalRows(Json.parse(result))})
+           { result => config.getResultTotalRows(result)})
       }
   }
 
@@ -75,8 +76,7 @@ class JsonStoreDataAccess (config: CloudantConfig)  {
       (implicit columns: Array[String],
       postData: String = null) = {
     logger.debug(s"processAll:$result, columns:$columns")
-    val jsonResult: JsValue = Json.parse(result)
-    var rows = config.getRows(jsonResult, postData != null )
+    var rows = config.getRows(result, postData != null )
     if (config.viewName == null && postData == null) {
       // filter design docs
       rows = rows.filter(r => FilterDDocs.filter(r))
@@ -90,16 +90,19 @@ class JsonStoreDataAccess (config: CloudantConfig)  {
     processAll(result).iterator
   }
 
-  private def convert(rec: JsValue)(implicit columns: Array[String]): String = {
-    if (columns == null) return Json.stringify(Json.toJson(rec))
-    val m = new mutable.HashMap[String, JsValue]()
-    for ( x <- columns) {
-        val field = JsonUtil.getField(rec, x).getOrElse(JsNull)
-        m.put(x, field)
+  private def convert(rec: JsonElement)(implicit columns: Array[String]): String = {
+    if (columns == null) {
+      rec.getAsJsonObject.toString
+    } else {
+      val jsonObject = new JsonObject
+      for (x <- columns) {
+        val field = JsonUtil.getField(rec, x).orNull
+        jsonObject.add(x, field)
+      }
+      val result = jsonObject.toString
+      logger.debug(s"converted: $result")
+      result
     }
-    val result = Json.stringify(Json.toJson(m.toMap))
-    logger.debug(s"converted: $result")
-    result
   }
 
   private def getQueryResult[T]
@@ -132,31 +135,29 @@ class JsonStoreDataAccess (config: CloudantConfig)  {
     logger.debug(s"total records:${rows.size}=bulkSize:$bulkSize * totalBulks:$totalBulks")
 
     val futures = bulks.map( bulk => {
-      val data = config.getBulkRows(bulk)
-      val url = config.getBulkPostUrl.toString
-      val clRequest: HttpRequest = getClRequest(url, data)
-      Future {
-        clRequest.execute()
+      val jsonData = config.getBulkRows(bulk)
+        Future {
+          config.getDatabase.bulk(jsonData.asJava)
+        }
       }
-    }
     )
     // remaining - number of requests remained to succeed
     val remaining = new AtomicInteger(futures.length)
-    val p = Promise[HttpResponse[String]]
+    val p = Promise[java.util.List[Response]]
     futures foreach {
       _ onComplete {
-        case Success(clResponse: HttpResponse[String]) =>
-          // find if there was error in saving at least one of docs
-          val resBody: String = clResponse.body
-          val isErr = (resBody contains config.getConflictErrStr) ||
-            (resBody contains config.getForbiddenErrStr)
-          if (!clResponse.isSuccess || isErr) {
+        case Success(clResponses) =>
+          if (clResponses contains config.getConflictErrStr) {
             val e = new CloudantException("Save to database:" + config.getDbname +
-              " failed with reason: " + clResponse.body)
+              " failed with reason: " + config.getConflictErrStr)
+            p.tryFailure(e)
+          } else if (clResponses contains config.getForbiddenErrStr) {
+            val e = new CloudantException("Save to database:" + config.getDbname +
+              " failed with reason: " + config.getForbiddenErrStr)
             p.tryFailure(e)
           } else if (remaining.decrementAndGet() == 0) {
             // succeed the whole save operation if all requests success
-            p.trySuccess(clResponse)
+            p.trySuccess(clResponses)
           }
         // if a least one save request fails - fail the whole save operation
         case Failure(e) =>

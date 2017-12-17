@@ -42,7 +42,6 @@ class ChangesReceiver(config: CloudantChangesConfig)
         .connectTimeout(5, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .build
-    // Get normal _changes url
     val url = config.getChangesReceiverUrl.toString
 
     val builder = new Request.Builder().url(url)

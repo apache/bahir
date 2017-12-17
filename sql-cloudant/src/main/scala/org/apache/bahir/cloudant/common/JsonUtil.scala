@@ -16,27 +16,38 @@
  */
 package org.apache.bahir.cloudant.common
 
-import play.api.libs.json.JsValue
 import scala.util.control.Breaks._
 
+import com.google.gson.{JsonElement, JsonParser}
+
 object JsonUtil {
-  def getField(row: JsValue, field: String) : Option[JsValue] = {
+  def getField(row: JsonElement, field: String) : Option[JsonElement] = {
     var path = field.split('.')
     var currentValue = row
-    var finalValue: Option[JsValue] = None
+    var finalValue: Option[JsonElement] = None
     breakable {
       for (i <- path.indices) {
-        val f: Option[JsValue] = (currentValue \ path(i)).toOption
-        f match {
-          case Some(f2) => currentValue = f2
-          case None => break
-        }
-        if (i == path.length -1) {
-          // The leaf node
-          finalValue = Some(currentValue)
+        if (currentValue != null && currentValue.isJsonObject) {
+          val f: Option[JsonElement] =
+            Option(currentValue.getAsJsonObject.get(path(i)))
+          f match {
+            case Some(f2) => currentValue = f2
+            case None => break
+          }
+          if (i == path.length - 1) {
+            // The leaf node
+            finalValue = Some(currentValue)
+          }
         }
       }
     }
     finalValue
+  }
+
+  object JsonConverter {
+    val parser = new JsonParser
+    def toJson(value: Any): JsonElement = {
+      parser.parse(value.toString)
+    }
   }
 }

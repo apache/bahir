@@ -16,8 +16,8 @@
  */
 package org.apache.bahir.cloudant.common
 
+import com.google.gson._
 import org.slf4j.LoggerFactory
-import play.api.libs.json.{Json, JsValue}
 
 import org.apache.spark.Partition
 import org.apache.spark.SparkContext
@@ -26,6 +26,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.sources._
 
 import org.apache.bahir.cloudant.CloudantConfig
+import org.apache.bahir.cloudant.common.JsonUtil.JsonConverter
 
 /**
  * JsonStoreRDDPartition defines each partition as a subset of a query result:
@@ -33,8 +34,9 @@ import org.apache.bahir.cloudant.CloudantConfig
  */
 
 private[cloudant] class JsonStoreRDDPartition(val url: String, val skip: Int, val limit: Int,
-    val idx: Int, val config: CloudantConfig, val selector: JsValue, val fields: JsValue,
-    val queryUsed: Boolean)
+                                              val idx: Int, val config: CloudantConfig,
+                                              val selector: JsonElement, val fields: JsonElement,
+                                              val queryUsed: Boolean)
     extends Partition with Serializable{
   val index: Int = idx
 }
@@ -92,7 +94,9 @@ class JsonStoreRDD(sc: SparkContext, config: CloudantConfig)
     }
   }
 
-  private def convertToMangoJson(f: Filter): (String, JsValue) = {
+  private def convertToMangoJson(f: Filter): (String, JsonElement) = {
+    val gson = new Gson
+    val parser = new JsonParser()
     val (op, value): (String, Any) = f match {
       case EqualTo(attr, v) => ("$eq", v)
       case GreaterThan(attr, v) => ("$gt", v)
@@ -101,16 +105,16 @@ class JsonStoreRDD(sc: SparkContext, config: CloudantConfig)
       case LessThanOrEqual(attr, v) => ("$lte", v)
       case _ => (null, null)
     }
-    val convertedV: JsValue = {
+    val convertedV: JsonElement = {
       // TODO Better handing of other types
       if (value != null) {
         value match {
-          case s: String => Json.toJson(s)
-          case l: Long => Json.toJson(l)
-          case d: Double => Json.toJson(d)
-          case i: Int => Json.toJson(i)
-          case b: Boolean => Json.toJson(b)
-          case t: java.sql.Timestamp => Json.toJson(t)
+          case s: String => parser.parse(s)// Json.toJson(s)
+          case l: Long => parser.parse(l.toString) // Json.toJson(l)
+          case d: Double => parser.parse(d.toString)
+          case i: Int => parser.parse(i.toString)
+          case b: Boolean => parser.parse(b.toString)
+          case t: java.sql.Timestamp => parser.parse(t.toString)
           case a: Any => logger.debug(s"Ignore field:$name, cannot handle its datatype: $a"); null
         }
       } else null
@@ -118,7 +122,7 @@ class JsonStoreRDD(sc: SparkContext, config: CloudantConfig)
     (op, convertedV)
   }
 
-  private def convertAttrToMangoJson(filters: Array[Filter]): Map[String, JsValue] = {
+  private def convertAttrToMangoJson(filters: Array[Filter]): Map[String, JsonElement] = {
     filters.map(af => convertToMangoJson(af))
             .filter(x => x._2 != null)
             .toMap
@@ -137,10 +141,10 @@ class JsonStoreRDD(sc: SparkContext, config: CloudantConfig)
       }
     }
 
-    val (selector, fields) : (JsValue, JsValue) = {
+    val (selector, fields) : (JsonElement, JsonElement) = {
       if (!config.queryEnabled || origAttrToFilters == null) (null, null)
       else {
-        val selectors: Map[String, Map[String, JsValue]] =
+        val selectors: Map[String, Map[String, JsonElement]] =
           origAttrToFilters.transform( (name, attrFilters) => convertAttrToMangoJson(attrFilters))
         val filteredSelectors = selectors.filter((t) => t._2.nonEmpty)
 
@@ -149,10 +153,10 @@ class JsonStoreRDD(sc: SparkContext, config: CloudantConfig)
               if (requiredcolumns == null || requiredcolumns.length == 0) {
                 null
               } else {
-                Json.toJson(requiredcolumns)
+                JsonConverter.toJson(requiredcolumns)
               }
           }
-          (Json.toJson(filteredSelectors), queryColumns)
+          (JsonConverter.toJson(filteredSelectors), queryColumns)
         } else (null, null)
       }
     }
@@ -174,7 +178,11 @@ class JsonStoreRDD(sc: SparkContext, config: CloudantConfig)
 
     implicit val postData : String = {
       if (queryUsed) {
-        Json.stringify(Json.obj("selector" -> selector, "limit" -> 1))
+        val jsonSelector = new JsonObject
+        jsonSelector.addProperty("selector", selector.toString)
+        jsonSelector.addProperty("limit", 1)
+        jsonSelector.toString
+        // Json.stringify(Json.obj("selector" -> selector, "limit" -> 1))
       } else {
         null
       }
@@ -191,7 +199,8 @@ class JsonStoreRDD(sc: SparkContext, config: CloudantConfig)
    (0 until totalPartition).map(i => {
       val skip = i * limitPerPartition
       new JsonStoreRDDPartition(url, skip, limitPerPartition, i,
-          config, selector, fields, queryUsed).asInstanceOf[Partition]
+          config, selector, fields, queryUsed)
+        .asInstanceOf[Partition]
     }).toArray
   }
 
@@ -199,12 +208,21 @@ class JsonStoreRDD(sc: SparkContext, config: CloudantConfig)
       Iterator[String] = {
     val myPartition = splitIn.asInstanceOf[JsonStoreRDDPartition]
     implicit val postData : String = {
+      val jsonObject = new JsonObject
       if (myPartition.queryUsed && myPartition.fields != null) {
-        Json.stringify(Json.obj("selector" -> myPartition.selector, "fields" -> myPartition.fields,
-            "limit" -> myPartition.limit, "skip" -> myPartition.skip))
+        // Json.stringify(Json.obj("selector" -> myPartition.selector, "fields" ->
+        // myPartition.fields, "limit" -> myPartition.limit, "skip" -> myPartition.skip))
+        jsonObject.add("selector", myPartition.selector)
+        jsonObject.add("fields", myPartition.fields)
+        jsonObject.addProperty("skip", myPartition.skip)
+        jsonObject.toString
       } else if (myPartition.queryUsed) {
-        Json.stringify(Json.obj("selector" -> myPartition.selector, "limit" -> myPartition.limit,
-            "skip" -> myPartition.skip))
+        // Json.stringify(Json.obj("selector" -> myPartition.selector,
+        // "limit" -> myPartition.limit, "skip" -> myPartition.skip))
+        jsonObject.add("selector", myPartition.selector)
+        jsonObject.addProperty("limit", myPartition.limit)
+        jsonObject.addProperty("skip", myPartition.skip)
+        jsonObject.toString
       } else {
         null
       }

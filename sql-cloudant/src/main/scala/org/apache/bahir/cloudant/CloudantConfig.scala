@@ -27,10 +27,10 @@ import com.cloudant.client.api.model.SearchResult
 import com.cloudant.client.api.views._
 import com.cloudant.http.{Http, HttpConnection}
 import com.cloudant.http.interceptors.Replay429Interceptor
-import com.google.gson.{Gson, JsonObject}
-import play.api.libs.json.{JsArray, JsObject, JsValue}
+import com.google.gson.{JsonObject, JsonParser}
 
 import org.apache.bahir.cloudant.common._
+import org.apache.bahir.cloudant.common.JsonUtil.JsonConverter
 
 /*
 * Only allow one field pushdown now
@@ -72,7 +72,6 @@ class CloudantConfig(val protocol: String, val host: String,
     }
   }
   lazy val viewName: String = {
-    // verify that the index path matches '_design/ddoc/_view/searchname'
     if (viewPath != null && viewPath.nonEmpty) {
       val splitViewPath = viewPath.split(File.separator)
       if(splitViewPath(3).contains("?")) {
@@ -152,7 +151,7 @@ class CloudantConfig(val protocol: String, val host: String,
     new URL(protocol + "://" + host)
   }
 
-  def getLastNum(result: JsValue): JsValue = (result \ "last_seq").get
+  def getLastNum(result: JsonObject): JsonObject = result.get("last_seq").getAsJsonObject
 
   /* Url containing limit for docs in a Cloudant database.
   * If a view is not defined, use the _all_docs endpoint.
@@ -199,10 +198,9 @@ class CloudantConfig(val protocol: String, val host: String,
       // /_all_docs?limit=1
       // Note: java-cloudant's AllDocsRequest doesn't have a getTotalRowCount method
       // buildAllDocsRequest(1, includeDocs = false).build().getResponse.getTotalRowCount.toInt
-      val gson = new Gson()
       val response = client.executeRequest(Http.GET(
         new URL(database.getDBUri + File.separator + endpoint + "?limit=" + limit)))
-      getResultTotalRows(gson.fromJson(response.responseAsString, classOf[JsonObject]))
+      getResultTotalRows(response.responseAsString)
     }
   }
 
@@ -348,49 +346,41 @@ class CloudantConfig(val protocol: String, val host: String,
     }
   }
 
-  def getTotalRows(result: JsValue): Int = {
-    val resultKeys = result.as[JsObject].keys
-    if(resultKeys.contains("total_rows")) {
-      (result \ "total_rows").as[Int]
-    } else if (resultKeys.contains("pending")) {
-      (result \ "pending").as[Int] + 1
+  def getResultTotalRows(result: String): Int = {
+    val jsonResult: JsonObject = new JsonParser().parse(result).getAsJsonObject
+    if (jsonResult.has("total_rows")) {
+      jsonResult.get("total_rows").getAsInt
+    } else if (jsonResult.has("pending")) {
+      jsonResult.get("pending").getAsInt + 1
     } else {
       1
     }
   }
 
-  def getResultTotalRows(result: JsonObject): Int = {
-    if (result.has("total_rows")) {
-      result.get("total_rows").getAsInt
-    } else if (result.has("pending")) {
-      result.get("pending").getAsInt + 1
-    } else {
-      1
-    }
-  }
-
-  def getRows(result: JsValue, queryUsed: Boolean): Seq[JsValue] = {
-    if ( queryUsed ) {
-      (result \ "docs").as[JsArray].value.map(row => row)
-    } else {
-      val containsResultsKey: Boolean = result.as[JsObject].keys.contains("results")
-      if (containsResultsKey) {
-        (result \ "results").as[JsArray].value.map(row => (row \ "doc").get)
-      } else if (viewName == null) {
-        (result \ "rows").as[JsArray].value.map(row => (row \ "doc").get)
+  def getRows(result: String, queryUsed: Boolean): Seq[JsonObject] = {
+    val jsonResult: JsonObject = new JsonParser().parse(result).getAsJsonObject
+    if (queryUsed) {
+      if (jsonResult.has("docs")) {
+        jsonResult.get("docs").getAsJsonArray.asScala
+          .map(row => row.getAsJsonObject).toSeq
       } else {
-        (result \ "rows").as[JsArray].value.map(row => row)
+        Seq()
+      }
+    } else {
+      if (jsonResult.has("results")) {
+        jsonResult.get("result").getAsJsonArray.asScala.map(row => row.getAsJsonObject
+          .get("doc").getAsJsonObject).toSeq
+      } else if (viewName == null) {
+        jsonResult.get("rows").getAsJsonArray.asScala.map(row => row.getAsJsonObject
+          .get("doc").getAsJsonObject).toSeq
+      } else {
+        jsonResult.get("rows").getAsJsonArray.asScala.map(row => row.getAsJsonObject).toSeq
       }
     }
   }
 
-  def getBulkPostUrl: String = {
-    dbUrl + "/_bulk_docs"
-  }
-
   def getBulkRows(rows: List[String]): List[JsonObject] = {
-    val gson = new Gson()
-    rows.map { x => gson.fromJson(x, classOf[JsonObject]) }
+    rows.map { x => JsonConverter.toJson(x).getAsJsonObject }
   }
 
   def getConflictErrStr: String = {

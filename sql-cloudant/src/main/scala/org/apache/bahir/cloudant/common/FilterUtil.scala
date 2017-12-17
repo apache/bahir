@@ -16,11 +16,10 @@
  */
 package org.apache.bahir.cloudant.common
 
+import com.google.gson.JsonObject
 import org.slf4j.LoggerFactory
-import play.api.libs.json.{JsObject, JsString, JsValue}
 
 import org.apache.spark.sql.sources._
-
 
 /**
  * Only handles the following filter condition
@@ -118,11 +117,11 @@ class FilterInterpreter(origFilters: Array[Filter]) {
  */
 class FilterUtil(filters: Map[String, Array[Filter]]) {
   private val logger = LoggerFactory.getLogger(getClass)
-  def apply(implicit r: JsValue = null): Boolean = {
+  def apply(implicit r: JsonObject = null): Boolean = {
     if (r == null) return true
     val satisfied = filters.forall({
       case (attr, filters) =>
-        val field = JsonUtil.getField(r, attr).getOrElse(null)
+        val field = JsonUtil.getField(r, attr).orNull
         if (field == null) {
           logger.debug(s"field $attr not exisit:$r")
           false
@@ -136,12 +135,10 @@ class FilterUtil(filters: Map[String, Array[Filter]]) {
 
 
 object FilterDDocs {
-  def filter(row: JsValue): Boolean = {
+  def filter(row: JsonObject): Boolean = {
     if (row == null) return true
-    val id : String = if (row.as[JsObject].keys.contains("_id")) {
-      JsonUtil.getField(row, "_id").orNull.as[JsString].value
-    } else if (row.as[JsObject].keys.contains("id")) {
-      JsonUtil.getField(row, "id").orNull.as[JsString].value
+    val id : String = if (row.has("_id")) {
+      row.get("_id").getAsString
     } else {
       null
     }
