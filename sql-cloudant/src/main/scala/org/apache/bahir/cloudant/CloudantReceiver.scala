@@ -16,8 +16,10 @@
  */
 package org.apache.bahir.cloudant
 
-import play.api.libs.json.Json
-import scalaj.http._
+import java.io.{BufferedReader, InputStreamReader}
+import java.util.concurrent.TimeUnit
+
+import okhttp3._
 
 import org.apache.spark.SparkConf
 import org.apache.spark.storage.StorageLevel
@@ -42,50 +44,43 @@ class CloudantReceiver(sparkConf: SparkConf, cloudantParams: Map[String, String]
   }
 
   private def receive(): Unit = {
-    val url = config.getContinuousChangesUrl.toString
-    val selector: String = if (config.getSelector != null) {
-      "{\"selector\":" + config.getSelector + "}"
-    } else {
-      "{}"
+    val okHttpClient: OkHttpClient = new OkHttpClient.Builder()
+      .connectTimeout(5, TimeUnit.SECONDS)
+      .readTimeout(60, TimeUnit.SECONDS)
+      .build
+    val url = config.getChangesReceiverUrl.toString
+
+    val builder = new Request.Builder().url(url)
+    if (config.username != null) {
+      val credential = Credentials.basic(config.username, config.password)
+      builder.header("Authorization", credential)
+    }
+    if(config.getSelector != null) {
+      val jsonType = MediaType.parse("application/json; charset=utf-8")
+      val selector = "{\"selector\":" + config.getSelector + "}"
+      val selectorBody = RequestBody.create(jsonType, selector)
+      builder.post(selectorBody)
     }
 
-    val clRequest: HttpRequest = config.username match {
-      case null =>
-        Http(url)
-          .postData(selector)
-          .timeout(connTimeoutMs = 1000, readTimeoutMs = 0)
-          .header("Content-Type", "application/json")
-          .header("User-Agent", "spark-cloudant")
-      case _ =>
-        Http(url)
-          .postData(selector)
-          .timeout(connTimeoutMs = 1000, readTimeoutMs = 0)
-          .header("Content-Type", "application/json")
-          .header("User-Agent", "spark-cloudant")
-          .auth(config.username, config.password)
-    }
+    val request = builder.build
+    val response = okHttpClient.newCall(request).execute
+    val status_code = response.code
 
-    clRequest.exec((code, headers, is) => {
-      if (code == 200) {
-        scala.io.Source.fromInputStream(is, "utf-8").getLines().foreach(line => {
-          if (line.length() > 0) {
-            val json = Json.parse(line)
-            val jsonDoc = (json \ "doc").getOrElse(null)
-            var doc = ""
-            if(jsonDoc != null) {
-              doc = Json.stringify(jsonDoc)
-              if(!isStopped() && doc.nonEmpty) {
-                store(doc)
-              }
-            }
+    if (status_code == 200) {
+      val changesInputStream = response.body.byteStream
+      var json = new ChangesRow()
+      if (changesInputStream != null) {
+        val bufferedReader = new BufferedReader(new InputStreamReader(changesInputStream))
+        while ((json = ChangesRowScanner.readRowFromReader(bufferedReader)) != null) {
+          if (!isStopped() && json != null && !json.getDoc.has("_deleted")) {
+            store(json.getDoc.toString)
           }
-        })
-      } else {
-        val status = headers.getOrElse("Status", IndexedSeq.empty)
-        val errorMsg = "Error retrieving _changes feed " + config.getDbname + ": " + status(0)
-        reportError(errorMsg, new CloudantException(errorMsg))
+        }
       }
-    })
+    } else {
+      val errorMsg = "Error retrieving _changes feed " + config.getDbname + ": " + status_code
+      reportError(errorMsg, new CloudantException(errorMsg))
+    }
   }
 
   def onStop(): Unit = {
