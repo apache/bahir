@@ -37,6 +37,8 @@ case class CloudantReadWriteRelation (config: CloudantConfig,
 
     implicit lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
+    import sqlContext.implicits._
+
     def buildScan(requiredColumns: Array[String],
                 filters: Array[Filter]): RDD[Row] = {
       val colsLength = requiredColumns.length
@@ -56,7 +58,7 @@ case class CloudantReadWriteRelation (config: CloudantConfig,
 
         logger.info("buildScan:" + columns + "," + origFilters)
         val cloudantRDD = new JsonStoreRDD(sqlContext.sparkContext, config)
-        val df = sqlContext.read.json(cloudantRDD)
+        val df = sqlContext.read.json(cloudantRDD.toDS())
         if (colsLength > 1) {
           val colsExceptCol0 = for (i <- 1 until colsLength) yield requiredColumns(i)
           df.select(requiredColumns(0), colsExceptCol0: _*).rdd
@@ -98,6 +100,8 @@ class DefaultSource extends RelationProvider
                        parameters: Map[String, String],
                        inSchema: StructType) = {
 
+      import sqlContext.implicits._
+
       val config: CloudantConfig = JsonStoreConfigManager.getConfig(sqlContext, parameters)
 
       var dataFrame: DataFrame = null
@@ -112,24 +116,23 @@ class DefaultSource extends RelationProvider
             config.viewName == null
             && config.indexName == null) {
             val cloudantRDD = new JsonStoreRDD(sqlContext.sparkContext, config)
-            dataFrame = sqlContext.read.json(cloudantRDD)
+            dataFrame = sqlContext.read.json(cloudantRDD.toDS())
             dataFrame
           } else {
             val dataAccess = new JsonStoreDataAccess(config)
             val aRDD = sqlContext.sparkContext.parallelize(
                 dataAccess.getMany(config.getSchemaSampleSize))
-            sqlContext.read.json(aRDD)
+            sqlContext.read.json(aRDD.toDS())
           }
           df.schema
         } else {
           /* Create a streaming context to handle transforming docs in
           * larger databases into Spark datasets
           */
+          val changesConfig = config.asInstanceOf[CloudantChangesConfig]
           val ssc = new StreamingContext(sqlContext.sparkContext, Seconds(10))
 
-          val changesConfig = config.asInstanceOf[CloudantChangesConfig]
-          val changes = ssc.receiverStream(
-            new ChangesReceiver(changesConfig))
+          val changes = ssc.receiverStream(new ChangesReceiver(changesConfig))
           changes.persist(changesConfig.getStorageLevelForStreaming)
 
           // Global RDD that's created from union of all RDDs
@@ -149,7 +152,7 @@ class DefaultSource extends RelationProvider
               }
             } else {
               // Convert final global RDD[String] to DataFrame
-              dataFrame = sqlContext.sparkSession.read.json(globalRDD)
+              dataFrame = sqlContext.sparkSession.read.json(globalRDD.toDS())
               ssc.stop(stopSparkContext = false, stopGracefully = false)
             }
           })
