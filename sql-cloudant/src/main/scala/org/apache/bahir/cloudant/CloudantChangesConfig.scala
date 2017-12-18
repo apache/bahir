@@ -68,7 +68,7 @@ class CloudantChangesConfig(protocol: String, host: String, dbName: String,
 
   def getChangesReceiverUrl: String = {
     var url = dbUrl + "/" + defaultIndex + "?include_docs=true&feed=normal" +
-      "&seq_interval=10000&timeout=" + timeout
+      "&seq_interval=" + bulkSize + "&timeout=" + timeout
     if (getSelector != null) {
       url = url + "&filter=_selector"
     }

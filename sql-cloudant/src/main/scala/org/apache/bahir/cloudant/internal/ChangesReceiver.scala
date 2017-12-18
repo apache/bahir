@@ -43,7 +43,6 @@ class ChangesReceiver(config: CloudantChangesConfig)
       "{\"selector\":" + config.getSelector + "}"
     }
 
-    // var count = 0
     val clRequest: HttpRequest = config.username match {
       case null =>
         Http(url)
