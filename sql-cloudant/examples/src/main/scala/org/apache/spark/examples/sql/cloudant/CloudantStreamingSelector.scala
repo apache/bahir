@@ -20,7 +20,6 @@ package org.apache.spark.examples.sql.cloudant
 import java.util.concurrent.atomic.AtomicLong
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.streaming.{ Seconds, StreamingContext, Time }
 
@@ -28,24 +27,26 @@ import org.apache.bahir.cloudant.CloudantReceiver
 
 object CloudantStreamingSelector {
   def main(args: Array[String]) {
-    val sparkConf = new SparkConf().setMaster("local[*]")
-      .setAppName("Cloudant Spark SQL External Datasource in Scala")
+    val spark = SparkSession.builder()
+      .appName("Cloudant Spark SQL External Datasource in Scala")
+      .master("local[*]")
+      .getOrCreate()
+
+    import spark.implicits._
 
     // Create the context with a 10 seconds batch size
-    val ssc = new StreamingContext(sparkConf, Seconds(10))
+    val ssc = new StreamingContext(spark.sparkContext, Seconds(10))
     val curTotalAmount = new AtomicLong(0)
     val curSalesCount = new AtomicLong(0)
     var batchAmount = 0L
 
-    val changes = ssc.receiverStream(new CloudantReceiver(sparkConf, Map(
+    val changes = ssc.receiverStream(new CloudantReceiver(spark.sparkContext.getConf, Map(
       "cloudant.host" -> "examples.cloudant.com",
       "database" -> "sales",
       "selector" -> "{\"month\":\"May\", \"rep\":\"John\"}")))
 
     changes.foreachRDD((rdd: RDD[String], time: Time) => {
       // Get the singleton instance of SQLContext
-      val spark = SparkSessionSingleton.getInstance(rdd.sparkContext.getConf)
-      import spark.implicits._
 
       println(s"========= $time =========") // scalastyle:ignore
       val changesDataFrame = spark.read.json(rdd.toDS())

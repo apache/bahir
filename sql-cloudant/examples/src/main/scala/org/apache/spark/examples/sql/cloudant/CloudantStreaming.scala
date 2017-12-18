@@ -14,31 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.spark.examples.sql.cloudant
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.streaming.{ Seconds, StreamingContext, Time }
-import org.apache.spark.streaming.scheduler.{ StreamingListener, StreamingListenerReceiverError}
+import org.apache.spark.streaming.{Seconds, StreamingContext, Time}
 
 import org.apache.bahir.cloudant.CloudantReceiver
 
 object CloudantStreaming {
   def main(args: Array[String]) {
-    val sparkConf = new SparkConf().setMaster("local[*]")
-      .setAppName("Cloudant Spark SQL External Datasource in Scala")
-    // Create the context with a 10 seconds batch size
-    val ssc = new StreamingContext(sparkConf, Seconds(10))
+    val spark = SparkSession.builder()
+      .appName("Cloudant Spark SQL External Datasource in Scala")
+      .master("local[*]")
+      .getOrCreate()
 
-    val changes = ssc.receiverStream(new CloudantReceiver(sparkConf, Map(
+    // Create the context with a 10 seconds batch size
+    val ssc = new StreamingContext(spark.sparkContext, Seconds(10))
+    import spark.implicits._
+
+    val changes = ssc.receiverStream(new CloudantReceiver(spark.sparkContext.getConf, Map(
       "cloudant.host" -> "examples.cloudant.com",
       "database" -> "sales")))
+
     changes.foreachRDD((rdd: RDD[String], time: Time) => {
       // Get the singleton instance of SparkSession
-      val spark = SparkSessionSingleton.getInstance(rdd.sparkContext.getConf)
-      import spark.implicits._
+
 
       println(s"========= $time =========")// scalastyle:ignore
       // Convert RDD[String] to Dataset[String]
@@ -65,10 +66,10 @@ object CloudantStreaming {
           changesDataFrame.createOrReplaceTempView("sales")
           val salesInMayCountsDataFrame =
             spark.sql(
-                s"""
-                |select rep, amount
-                |from sales
-                |where month = "May"
+              s"""
+                 |select rep, amount
+                 |from sales
+                 |where month = "May"
                 """.stripMargin)
           salesInMayCountsDataFrame.show(5)
         }
@@ -79,19 +80,5 @@ object CloudantStreaming {
     // run streaming for 60 secs
     Thread.sleep(60000L)
     ssc.stop(true)
-  }
-}
-
-/** Lazily instantiated singleton instance of SparkSession */
-object SparkSessionSingleton {
-  @transient  private var instance: SparkSession = _
-  def getInstance(sparkConf: SparkConf): SparkSession = {
-    if (instance == null) {
-      instance = SparkSession
-        .builder
-        .config(sparkConf)
-        .getOrCreate()
-    }
-    instance
   }
 }
