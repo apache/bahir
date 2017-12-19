@@ -42,9 +42,14 @@ class CloudantChangesConfig(protocol: String, host: String, dbName: String,
     if (selector != null && !selector.isEmpty) {
       selector
     } else {
-      // Exclude design docs and deleted=true docs
-      "{ \"_id\": { \"$regex\": \"^(?!_design/)\" }, " +
-        "\"_deleted\": { \"$exists\": false } }"
+      val version = getClient.serverVersion
+      if (version.matches("1.*")) {
+        null
+      } else {
+        // Exclude design docs and deleted=true docs
+        "{ \"_id\": { \"$regex\": \"^(?!_design/)\" }, " +
+          "\"_deleted\": { \"$exists\": false } }"
+      }
     }
   }
 
