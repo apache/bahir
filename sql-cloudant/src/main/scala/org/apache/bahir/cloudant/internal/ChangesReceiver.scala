@@ -72,6 +72,7 @@ class ChangesReceiver(config: CloudantChangesConfig)
         val status = headers.getOrElse("Status", IndexedSeq.empty)
         val errorMsg = "Error retrieving _changes feed " + config.getDbname + ": " + status(0)
         reportError(errorMsg, new CloudantException(errorMsg))
+        stop(errorMsg)
       }
     })
   }
