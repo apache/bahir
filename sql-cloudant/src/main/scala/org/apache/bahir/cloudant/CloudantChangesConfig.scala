@@ -84,3 +84,8 @@ class CloudantChangesConfig(protocol: String, host: String, dbName: String,
     dbUrl + "/" + JsonStoreConfigManager.ALL_DOCS_INDEX
   }
 }
+
+object CloudantChangesConfig {
+  // Error message from internal _changes receiver
+  var receiverErrorMsg: String = ""
+}

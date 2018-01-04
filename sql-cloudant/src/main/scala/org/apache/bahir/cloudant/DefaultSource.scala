@@ -162,9 +162,7 @@ class DefaultSource extends RelationProvider
           if(dataFrame.schema.nonEmpty) {
             dataFrame.schema
           } else {
-            throw new CloudantException("Final schema for _changes feed is empty. " +
-              "This may be due to the streaming batch size. Please increase the " +
-              "cloudant.batchInterval option and try again.")
+            throw new CloudantException(CloudantChangesConfig.receiverErrorMsg)
           }
         }
       }
