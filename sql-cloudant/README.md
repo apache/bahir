@@ -57,6 +57,7 @@ Default values are defined in [here](src/main/resources/application.conf).
 
 Name | Default | Meaning
 --- |:---:| ---
+cloudant.batchInterval|8|number of seconds to set for streaming all documents from `_changes` endpoint into Spark dataframe.  See [Setting the right batch interval](https://spark.apache.org/docs/latest/streaming-programming-guide.html#setting-the-right-batch-interval) for tuning this value.
 cloudant.endpoint|`_all_docs`|endpoint for RelationProvider when loading data from Cloudant to DataFrames or SQL temporary tables. Select between the Cloudant `_all_docs` or `_changes` API endpoint.  See **Note** below for differences between endpoints.
 cloudant.protocol|https|protocol to use to transfer data: http or https
 cloudant.host| |cloudant host url
