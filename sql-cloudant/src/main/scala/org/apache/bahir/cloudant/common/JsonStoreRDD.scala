@@ -109,8 +109,8 @@ class JsonStoreRDD(sc: SparkContext, config: CloudantConfig)
       // TODO Better handing of other types
       if (value != null) {
         value match {
-          case s: String => parser.parse(s)// Json.toJson(s)
-          case l: Long => parser.parse(l.toString) // Json.toJson(l)
+          case s: String => parser.parse(s)
+          case l: Long => parser.parse(l.toString)
           case d: Double => parser.parse(d.toString)
           case i: Int => parser.parse(i.toString)
           case b: Boolean => parser.parse(b.toString)
@@ -182,7 +182,6 @@ class JsonStoreRDD(sc: SparkContext, config: CloudantConfig)
         jsonSelector.addProperty("selector", selector.toString)
         jsonSelector.addProperty("limit", 1)
         jsonSelector.toString
-        // Json.stringify(Json.obj("selector" -> selector, "limit" -> 1))
       } else {
         null
       }
@@ -209,19 +208,13 @@ class JsonStoreRDD(sc: SparkContext, config: CloudantConfig)
     val myPartition = splitIn.asInstanceOf[JsonStoreRDDPartition]
     implicit val postData : String = {
       val jsonObject = new JsonObject
+      jsonObject.add("selector", myPartition.selector)
+      jsonObject.addProperty("skip", myPartition.skip)
       if (myPartition.queryUsed && myPartition.fields != null) {
-        // Json.stringify(Json.obj("selector" -> myPartition.selector, "fields" ->
-        // myPartition.fields, "limit" -> myPartition.limit, "skip" -> myPartition.skip))
-        jsonObject.add("selector", myPartition.selector)
         jsonObject.add("fields", myPartition.fields)
-        jsonObject.addProperty("skip", myPartition.skip)
         jsonObject.toString
       } else if (myPartition.queryUsed) {
-        // Json.stringify(Json.obj("selector" -> myPartition.selector,
-        // "limit" -> myPartition.limit, "skip" -> myPartition.skip))
-        jsonObject.add("selector", myPartition.selector)
         jsonObject.addProperty("limit", myPartition.limit)
-        jsonObject.addProperty("skip", myPartition.skip)
         jsonObject.toString
       } else {
         null

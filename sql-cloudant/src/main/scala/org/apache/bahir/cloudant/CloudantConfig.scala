@@ -19,7 +19,7 @@ package org.apache.bahir.cloudant
 import java.net.{URL, URLEncoder}
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.reflect.io.File
 
 import com.cloudant.client.api.{ClientBuilder, CloudantClient, Database}
@@ -62,23 +62,27 @@ class CloudantConfig(val protocol: String, val host: String,
     }
   }
   lazy val searchName: String = {
-    // verify that the index path matches '_design/ddoc/_search/searchname'
-    if (indexPath != null && indexPath.nonEmpty && indexPath.matches("\\w+\\/\\w+\\/\\w+\\/\\w+")) {
-      val splitPath = indexPath.split(File.separator)
-      // return 'design-doc/search-name'
-      splitPath(1) + File.separator + splitPath(3)
+    if (indexPath != null && indexPath.nonEmpty) {
+      val pattern = """_design\/([^\/]+)\/_search\/([^\/?]+)""".r
+      var ddocName, search = ""
+      pattern.findAllIn(viewPath).matchData foreach {
+        m =>
+          ddocName = m.group(1)
+          search = m.group(2)
+      }
+      ddocName + File.separator + search
     } else {
       null
     }
   }
   lazy val viewName: String = {
     if (viewPath != null && viewPath.nonEmpty) {
-      val splitViewPath = viewPath.split(File.separator)
-      if(splitViewPath(3).contains("?")) {
-        splitViewPath(3).substring(0, splitViewPath(3).indexOf("?"))
-      } else {
-        splitViewPath(3)
+      val pattern = """_design\/([^\/]+)\/_view\/([^\/?]+)""".r
+      var view = ""
+      pattern.findAllIn(viewPath).matchData foreach {
+        m => view = m.group(2)
       }
+      view
     } else {
       null
     }
@@ -120,12 +124,10 @@ class CloudantConfig(val protocol: String, val host: String,
     if(postData != null) {
       val conn = Http.POST(url, "application/json")
       conn.setRequestBody(postData)
-      conn.requestProperties.put("Accept", "application/json")
       conn.requestProperties.put("User-Agent", "spark-cloudant")
       client.executeRequest(conn)
     } else {
       val conn = Http.GET(url)
-      conn.requestProperties.put("Accept", "application/json")
       conn.requestProperties.put("User-Agent", "spark-cloudant")
       client.executeRequest(conn)
     }
@@ -192,33 +194,23 @@ class CloudantConfig(val protocol: String, val host: String,
   def getTotalDocCount: Int = {
     val limit = 1
     if (viewPath != null) {
-      // "limit=" + limit + "&skip=" + skip
       buildViewRequest(limit, includeDocs = false).build().getResponse.getTotalRowCount.toInt
     } else {
-      // /_all_docs?limit=1
-      // Note: java-cloudant's AllDocsRequest doesn't have a getTotalRowCount method
-      // buildAllDocsRequest(1, includeDocs = false).build().getResponse.getTotalRowCount.toInt
-      val response = client.executeRequest(Http.GET(
-        new URL(database.getDBUri + File.separator + endpoint + "?limit=" + limit)))
-      getResultTotalRows(response.responseAsString)
+      database.info().getDocCount.toInt
     }
   }
 
   def getDocs(limit: Int): List[JsonObject] = {
     if (viewPath != null) {
-      // "limit=" + limit + "&skip=" + skip
       buildViewRequest(limit).build().getResponse.getDocsAs(classOf[JsonObject]).asScala.toList
     } else if (indexPath != null) {
-      var searchDocs = mutable.ListBuffer[JsonObject]()
+      var searchDocs = ListBuffer[JsonObject]()
       for (result: SearchResult[JsonObject]#SearchResultRow <-
-           buildSearchRequest(limit).getRows.asScala) {
+             buildSearchRequest(limit).getRows.asScala) {
         searchDocs += result.getDoc
       }
       searchDocs.toList
     } else {
-      // /_all_docs?limit=1
-      // val response = client.executeRequest(Http.GET(
-      //   new URL(database.getDBUri + File.separator + endpoint + "?limit=1")))
       buildAllDocsRequest(limit).build().getResponse.getDocsAs(classOf[JsonObject]).asScala.toList
     }
   }
