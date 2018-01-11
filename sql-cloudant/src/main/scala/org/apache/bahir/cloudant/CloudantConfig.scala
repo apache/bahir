@@ -54,70 +54,11 @@ class CloudantConfig(val protocol: String, val host: String,
     .build
   @transient private lazy val database: Database = client.database(dbName, false)
   lazy val dbUrl: String = {protocol + "://" + host + "/" + dbName}
-  lazy val designDoc: String = {
-    if (viewPath != null && viewPath.nonEmpty) {
-      viewPath.split("/")(1)
-    } else {
-    null
-    }
-  }
-  lazy val searchName: String = {
-    if (indexPath != null && indexPath.nonEmpty) {
-      val pattern = """_design\/([^\/]+)\/_search\/([^\/?]+)""".r
-      var ddocName, search = ""
-      pattern.findAllIn(viewPath).matchData foreach {
-        m =>
-          ddocName = m.group(1)
-          search = m.group(2)
-      }
-      ddocName + File.separator + search
-    } else {
-      null
-    }
-  }
-  lazy val viewName: String = {
-    if (viewPath != null && viewPath.nonEmpty) {
-      val pattern = """_design\/([^\/]+)\/_view\/([^\/?]+)""".r
-      var view = ""
-      pattern.findAllIn(viewPath).matchData foreach {
-        m => view = m.group(2)
-      }
-      view
-    } else {
-      null
-    }
-  }
 
   val pkField = "_id"
   val defaultIndex: String = endpoint
   val default_filter: String = "*:*"
 
-  def buildAllDocsRequest(limit: Int, includeDocs: Boolean = true): AllDocsRequestBuilder = {
-    var allDocsReq = database.getAllDocsRequestBuilder.includeDocs(includeDocs)
-    if (limit != JsonStoreConfigManager.ALLDOCS_OR_CHANGES_LIMIT) {
-      allDocsReq = allDocsReq.limit(limit)
-    }
-    allDocsReq
-  }
-
-  def buildViewRequest(limit: Int, includeDocs: Boolean = true):
-  UnpaginatedRequestBuilder[String, String] = {
-    val viewReq = database.getViewRequestBuilder(designDoc, viewName)
-      .newRequest(Key.Type.STRING, classOf[String])
-      .includeDocs(includeDocs)
-    if (limit != JsonStoreConfigManager.ALLDOCS_OR_CHANGES_LIMIT) {
-      viewReq.limit(limit)
-    }
-    viewReq
-  }
-
-  def buildSearchRequest(limit: Int): SearchResult[JsonObject] = {
-    val searchReq = database.search(searchName)
-    if (limit != JsonStoreConfigManager.ALLDOCS_OR_CHANGES_LIMIT) {
-      searchReq.limit(limit)
-    }
-    searchReq.querySearchResult(default_filter, classOf[JsonObject])
-  }
 
   def executeRequest(stringUrl: String, postData: String = null): HttpConnection = {
     val url = new URL(stringUrl)
@@ -162,7 +103,6 @@ class CloudantConfig(val protocol: String, val host: String,
   def getUrl(limit: Int, excludeDDoc: Boolean = false): String = {
     if (viewPath == null) {
       val baseUrl = {
-        // Note: Handle removal of ddocs during load
         dbUrl + "/_all_docs?include_docs=true"
       }
       if (limit == JsonStoreConfigManager.ALLDOCS_OR_CHANGES_LIMIT) {
@@ -191,36 +131,12 @@ class CloudantConfig(val protocol: String, val host: String,
     }
   }
 
-  def getTotalDocCount: Int = {
-    val limit = 1
-    if (viewPath != null) {
-      buildViewRequest(limit, includeDocs = false).build().getResponse.getTotalRowCount.toInt
-    } else {
-      database.info().getDocCount.toInt
-    }
-  }
-
-  def getDocs(limit: Int): List[JsonObject] = {
-    if (viewPath != null) {
-      buildViewRequest(limit).build().getResponse.getDocsAs(classOf[JsonObject]).asScala.toList
-    } else if (indexPath != null) {
-      var searchDocs = ListBuffer[JsonObject]()
-      for (result: SearchResult[JsonObject]#SearchResultRow <-
-             buildSearchRequest(limit).getRows.asScala) {
-        searchDocs += result.getDoc
-      }
-      searchDocs.toList
-    } else {
-      buildAllDocsRequest(limit).build().getResponse.getDocsAs(classOf[JsonObject]).asScala.toList
-    }
-  }
-
   def getDbname: String = {
     dbName
   }
 
   def queryEnabled: Boolean = {
-    useQuery && indexPath == null && viewName == null
+    useQuery && indexPath == null && viewPath == null
   }
 
   def allowPartition(queryUsed: Boolean): Boolean = {indexPath == null && !queryUsed}
@@ -248,7 +164,7 @@ class CloudantConfig(val protocol: String, val host: String,
     val suffix = {
       if (url.indexOf(JsonStoreConfigManager.ALL_DOCS_INDEX) > 0) {
         "include_docs=true&limit=" + limit + "&skip=" + skip
-      } else if (viewName != null) {
+      } else if (viewPath != null) {
         "limit=" + limit + "&skip=" + skip
       } else if (queryUsed) {
         ""
@@ -338,7 +254,7 @@ class CloudantConfig(val protocol: String, val host: String,
     }
   }
 
-  def getResultTotalRows(result: String): Int = {
+  def getResultCount(result: String): Int = {
     val jsonResult: JsonObject = new JsonParser().parse(result).getAsJsonObject
     if (jsonResult.has("total_rows")) {
       jsonResult.get("total_rows").getAsInt
@@ -362,7 +278,7 @@ class CloudantConfig(val protocol: String, val host: String,
       if (jsonResult.has("results")) {
         jsonResult.get("result").getAsJsonArray.asScala.map(row => row.getAsJsonObject
           .get("doc").getAsJsonObject).toSeq
-      } else if (viewName == null) {
+      } else if (viewPath == null) {
         jsonResult.get("rows").getAsJsonArray.asScala.map(row => row.getAsJsonObject
           .get("doc").getAsJsonObject).toSeq
       } else {

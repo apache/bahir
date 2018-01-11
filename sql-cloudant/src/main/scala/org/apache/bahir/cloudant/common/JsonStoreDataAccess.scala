@@ -63,21 +63,21 @@ class JsonStoreDataAccess (config: CloudantConfig)  {
   }
 
   def getTotalRows(url: String, queryUsed: Boolean)
-      (implicit postData: String = null): Int = {
-      if (queryUsed) config.queryLimit // Query can not retrieve total row now.
-      else {
-        val totalUrl = config.getTotalUrl(url)
-         this.getQueryResult[Int](totalUrl,
-           { result => config.getResultTotalRows(result)})
-      }
+                  (implicit postData: String = null): Int = {
+    if (queryUsed) config.queryLimit // Query can not retrieve total row now.
+    else {
+      val totalUrl = config.getTotalUrl(url)
+      this.getQueryResult[Int](totalUrl,
+        { result => config.getResultCount(result)})
+    }
   }
 
-  private def processAll (result: String)
+  private def processAll(result: String)
       (implicit columns: Array[String],
       postData: String = null) = {
     logger.debug(s"processAll:$result, columns:$columns")
-    var rows = config.getRows(result, postData != null )
-    if (config.viewName == null && postData == null) {
+    var rows = config.getRows(result, postData != null)
+    if (config.viewPath == null && postData == null) {
       // filter design docs
       rows = rows.filter(r => FilterDDocs.filter(r))
     }
