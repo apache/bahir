@@ -27,10 +27,10 @@ class CloudantChangesConfig(protocol: String, host: String, dbName: String,
                             bulkSize: Int, schemaSampleSize: Int,
                             createDBOnSave: Boolean, endpoint: String, selector: String,
                             timeout: Int, storageLevel: StorageLevel, useQuery: Boolean,
-                            queryLimit: Int, batchInterval: Int)
+                            queryLimit: Int, batchInterval: Int, numberOfRetries: Int)
   extends CloudantConfig(protocol, host, dbName, indexName, viewName)(username, password,
     partitions, maxInPartition, minInPartition, requestTimeout, bulkSize, schemaSampleSize,
-    createDBOnSave, endpoint, useQuery, queryLimit) {
+    createDBOnSave, endpoint, useQuery, queryLimit, numberOfRetries) {
 
   override val defaultIndex: String = endpoint
 

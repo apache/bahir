@@ -63,6 +63,7 @@ cloudant.protocol|https|protocol to use to transfer data: http or https
 cloudant.host| |cloudant host url
 cloudant.username| |cloudant userid
 cloudant.password| |cloudant password
+cloudant.numberOfRetries|3| number of times to replay a request that received a 429 `Too Many Requests` response
 cloudant.useQuery|false|by default, `_all_docs` endpoint is used if configuration 'view' and 'index' (see below) are not set. When useQuery is enabled, `_find` endpoint will be used in place of `_all_docs` when query condition is not on primary key field (_id), so that query predicates may be driven into datastore. 
 cloudant.queryLimit|25|the maximum number of results returned when querying the `_find` endpoint.
 cloudant.storageLevel|MEMORY_ONLY|the storage level for persisting Spark RDDs during load when `cloudant.endpoint` is set to `_changes`.  See [RDD Persistence section](https://spark.apache.org/docs/latest/programming-guide.html#rdd-persistence) in Spark's Progamming Guide for all available storage level options.

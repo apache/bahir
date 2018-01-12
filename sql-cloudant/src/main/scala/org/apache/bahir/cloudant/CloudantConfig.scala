@@ -43,14 +43,15 @@ class CloudantConfig(val protocol: String, val host: String,
                      val partitions: Int, val maxInPartition: Int, val minInPartition: Int,
                      val requestTimeout: Long, val bulkSize: Int, val schemaSampleSize: Int,
                      val createDBOnSave: Boolean, val endpoint: String,
-                     val useQuery: Boolean = false, val queryLimit: Int)
+                     val useQuery: Boolean = false, val queryLimit: Int,
+                     val numberOfRetries: Int)
   extends Serializable {
 
   @transient private lazy val client: CloudantClient = ClientBuilder
     .url(getClientUrl)
     .username(username)
     .password(password)
-    .interceptors(Replay429Interceptor.WITH_DEFAULTS)
+    .interceptors(new Replay429Interceptor(numberOfRetries, 250L))
     .build
   @transient private lazy val database: Database = client.database(dbName, false)
   lazy val dbUrl: String = {protocol + "://" + host + "/" + dbName}
@@ -58,7 +59,6 @@ class CloudantConfig(val protocol: String, val host: String,
   val pkField = "_id"
   val defaultIndex: String = endpoint
   val default_filter: String = "*:*"
-
 
   def executeRequest(stringUrl: String, postData: String = null): HttpConnection = {
     val url = new URL(stringUrl)

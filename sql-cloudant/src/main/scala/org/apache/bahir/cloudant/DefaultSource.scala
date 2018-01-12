@@ -103,25 +103,20 @@ class DefaultSource extends RelationProvider
 
     val config: CloudantConfig = JsonStoreConfigManager.getConfig(sqlContext, parameters)
 
-      val schema: StructType = {
-        if (inSchema != null) {
-          inSchema
-        } else if (!config.isInstanceOf[CloudantChangesConfig]
-          || config.viewPath != null || config.indexPath != null) {
-          val df = if (config.getSchemaSampleSize ==
-            JsonStoreConfigManager.ALLDOCS_OR_CHANGES_LIMIT &&
-            config.viewPath == null
-            && config.indexPath == null) {
-            val cloudantRDD = new JsonStoreRDD(sqlContext.sparkContext, config)
-            dataFrame = sqlContext.read.json(cloudantRDD.toDS())
-            dataFrame
-          } else {
-            val dataAccess = new JsonStoreDataAccess(config)
-            val aRDD = sqlContext.sparkContext.parallelize(
-                dataAccess.getMany(config.getSchemaSampleSize))
-            sqlContext.read.json(aRDD.toDS())
-          }
-          df.schema
+    var dataFrame: DataFrame = null
+
+    val schema: StructType = {
+      if (inSchema != null) {
+        inSchema
+      } else if (!config.isInstanceOf[CloudantChangesConfig]
+        || config.viewPath != null || config.indexPath != null) {
+        val df = if (config.getSchemaSampleSize ==
+          JsonStoreConfigManager.ALLDOCS_OR_CHANGES_LIMIT &&
+          config.viewPath == null
+          && config.indexPath == null) {
+          val cloudantRDD = new JsonStoreRDD(sqlContext.sparkContext, config)
+          dataFrame = sqlContext.read.json(cloudantRDD.toDS())
+          dataFrame
         } else {
           val dataAccess = new JsonStoreDataAccess(config)
           val aRDD = sqlContext.sparkContext.parallelize(
@@ -146,13 +141,10 @@ class DefaultSource extends RelationProvider
         logger.info("Loading data from Cloudant using "
           + changesConfig.getChangesReceiverUrl)
 
-          // Collect and union each RDD to convert all RDDs to a DataFrame
-          changes.foreachRDD((rdd: RDD[String]) => {
-            if (!rdd.isEmpty()) {
-              globalRDD = rdd ++ globalRDD
-            } else {
-              globalRDD = rdd
-            }
+        // Collect and union each RDD to convert all RDDs to a DataFrame
+        changes.foreachRDD((rdd: RDD[String]) => {
+          if (!rdd.isEmpty()) {
+            globalRDD = rdd ++ globalRDD
           } else {
             // Convert final global RDD[String] to DataFrame
             dataFrame = sqlContext.sparkSession.read.json(globalRDD.toDS())
