@@ -19,6 +19,7 @@ package org.apache.bahir.cloudant.internal
 import java.io.{BufferedReader, InputStreamReader}
 import java.util.concurrent.TimeUnit
 
+import com.google.gson.JsonParser
 import okhttp3._
 
 import org.apache.spark.storage.StorageLevel
@@ -72,8 +73,11 @@ class ChangesReceiver(config: CloudantChangesConfig)
         }
       }
     } else {
-      val errorMsg = "Error retrieving _changes feed " + config.getDbname + ": " + status_code
+      val responseAsJson = new JsonParser().parse(response.body.string)
+      val errorMsg = "Error retrieving _changes feed data from database " + "'" +
+        config.getDbname + "' with response code " + status_code + ": " + responseAsJson.toString
       reportError(errorMsg, new CloudantException(errorMsg))
+      CloudantChangesConfig.receiverErrorMsg = errorMsg
     }
   }
 

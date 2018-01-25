@@ -98,8 +98,9 @@ class CloudantOptionSuite extends ClientSparkFunSuite with BeforeAndAfter {
     val thrown = intercept[CloudantException] {
       spark.read.format("org.apache.bahir.cloudant").load("n_flight")
     }
-    assert(thrown.getMessage === s"Error retrieving _changes feed data" +
-      s" from database 'n_flight': HTTP/1.1 401 Unauthorized")
+    assert(thrown.getMessage === "Error retrieving _changes feed data" +
+      " from database 'n_flight' with response code 401: {\"error\":\"unauthorized\"," +
+      "\"reason\":\"Name or password is incorrect.\"}")
   }
 
   testIfEnabled("string with valid value for cloudant.numberOfRetries option") {
