@@ -16,11 +16,21 @@
  */
 package org.apache.bahir.cloudant
 
-import java.net.URLEncoder
+import java.net.{URL, URLEncoder}
 
-import play.api.libs.json.{JsArray, JsObject, Json, JsValue}
+import scala.collection.JavaConverters._
+import scala.collection.mutable.ListBuffer
+import scala.reflect.io.File
+
+import com.cloudant.client.api.{ClientBuilder, CloudantClient, Database}
+import com.cloudant.client.api.model.SearchResult
+import com.cloudant.client.api.views._
+import com.cloudant.http.{Http, HttpConnection}
+import com.cloudant.http.interceptors.Replay429Interceptor
+import com.google.gson.{JsonObject, JsonParser}
 
 import org.apache.bahir.cloudant.common._
+import org.apache.bahir.cloudant.common.JsonUtil.JsonConverter
 
 /*
 * Only allow one field pushdown now
@@ -28,22 +38,48 @@ import org.apache.bahir.cloudant.common._
 */
 
 class CloudantConfig(val protocol: String, val host: String,
-                     val dbName: String, val indexName: String, val viewName: String)
+                     val dbName: String, val indexPath: String, val viewPath: String)
                     (implicit val username: String, val password: String,
                      val partitions: Int, val maxInPartition: Int, val minInPartition: Int,
                      val requestTimeout: Long, val bulkSize: Int, val schemaSampleSize: Int,
                      val createDBOnSave: Boolean, val endpoint: String,
-                     val useQuery: Boolean = false, val queryLimit: Int)
+                     val useQuery: Boolean = false, val queryLimit: Int,
+                     val numberOfRetries: Int)
   extends Serializable {
 
+  @transient private lazy val client: CloudantClient = ClientBuilder
+    .url(getClientUrl)
+    .username(username)
+    .password(password)
+    .interceptors(new Replay429Interceptor(numberOfRetries, 250L))
+    .build
+  @transient private lazy val database: Database = client.database(dbName, false)
   lazy val dbUrl: String = {protocol + "://" + host + "/" + dbName}
 
   val pkField = "_id"
   val defaultIndex: String = endpoint
   val default_filter: String = "*:*"
 
-  def getDbUrl: String = {
-    dbUrl
+  def executeRequest(stringUrl: String, postData: String = null): HttpConnection = {
+    val url = new URL(stringUrl)
+    if(postData != null) {
+      val conn = Http.POST(url, "application/json")
+      conn.setRequestBody(postData)
+      conn.requestProperties.put("User-Agent", "spark-cloudant")
+      client.executeRequest(conn)
+    } else {
+      val conn = Http.GET(url)
+      conn.requestProperties.put("User-Agent", "spark-cloudant")
+      client.executeRequest(conn)
+    }
+  }
+
+  def getClient: CloudantClient = {
+    client
+  }
+
+  def getDatabase: Database = {
+    database
   }
 
   def getSchemaSampleSize: Int = {
@@ -54,20 +90,20 @@ class CloudantConfig(val protocol: String, val host: String,
     createDBOnSave
   }
 
-  def getLastNum(result: JsValue): JsValue = (result \ "last_seq").get
+  def getClientUrl: URL = {
+    new URL(protocol + "://" + host)
+  }
+
+  def getLastNum(result: JsonObject): JsonObject = result.get("last_seq").getAsJsonObject
 
   /* Url containing limit for docs in a Cloudant database.
   * If a view is not defined, use the _all_docs endpoint.
   * @return url with one doc limit for retrieving total doc count
   */
   def getUrl(limit: Int, excludeDDoc: Boolean = false): String = {
-    if (viewName == null) {
+    if (viewPath == null) {
       val baseUrl = {
-        if (excludeDDoc) {
-          dbUrl + "/_all_docs?startkey=%22_design0/%22&include_docs=true"
-        } else {
-          dbUrl + "/_all_docs?include_docs=true"
-        }
+        dbUrl + "/_all_docs?include_docs=true"
       }
       if (limit == JsonStoreConfigManager.ALLDOCS_OR_CHANGES_LIMIT) {
         baseUrl
@@ -76,16 +112,16 @@ class CloudantConfig(val protocol: String, val host: String,
       }
     } else {
       if (limit == JsonStoreConfigManager.ALLDOCS_OR_CHANGES_LIMIT) {
-        dbUrl + "/" + viewName
+        dbUrl + "/" + viewPath
       } else {
-        dbUrl + "/" + viewName + "?limit=" + limit
+        dbUrl + "/" + viewPath + "?limit=" + limit
       }
     }
   }
 
-  /* Url containing limit to count total docs in a Cloudant database.
+  /* Total count of documents in a Cloudant database.
   *
-  * @return url with one doc limit for retrieving total doc count
+  * @return total doc count number
   */
   def getTotalUrl(url: String): String = {
     if (url.contains('?')) {
@@ -100,10 +136,10 @@ class CloudantConfig(val protocol: String, val host: String,
   }
 
   def queryEnabled: Boolean = {
-    useQuery && indexName == null && viewName == null
+    useQuery && indexPath == null && viewPath == null
   }
 
-  def allowPartition(queryUsed: Boolean): Boolean = {indexName==null && !queryUsed}
+  def allowPartition(queryUsed: Boolean): Boolean = {indexPath == null && !queryUsed}
 
   def getRangeUrl(field: String = null, start: Any = null,
                   startInclusive: Boolean = false, end: Any = null,
@@ -112,7 +148,7 @@ class CloudantConfig(val protocol: String, val host: String,
                   allowQuery: Boolean = false): (String, Boolean, Boolean) = {
     val (url: String, pusheddown: Boolean, queryUsed: Boolean) =
       calculate(field, start, startInclusive, end, endInclusive, allowQuery)
-    if (includeDoc && !queryUsed ) {
+    if (includeDoc && !queryUsed) {
       if (url.indexOf('?') > 0) {
         (url + "&include_docs=true", pusheddown, queryUsed)
       } else {
@@ -123,14 +159,12 @@ class CloudantConfig(val protocol: String, val host: String,
     }
   }
 
-  /*
-  * Url for paging using skip and limit options when loading docs with partitions.
-  */
+
   def getSubSetUrl(url: String, skip: Int, limit: Int, queryUsed: Boolean): String = {
     val suffix = {
       if (url.indexOf(JsonStoreConfigManager.ALL_DOCS_INDEX) > 0) {
         "include_docs=true&limit=" + limit + "&skip=" + skip
-      } else if (viewName != null) {
+      } else if (viewPath != null) {
         "limit=" + limit + "&skip=" + skip
       } else if (queryUsed) {
         ""
@@ -170,13 +204,13 @@ class CloudantConfig(val protocol: String, val host: String,
         }
       }
       (dbUrl + "/" + defaultIndex + condition, true, false)
-    } else if (indexName != null) {
+    } else if (indexPath != null) {
       //  push down to indexName
       val condition = calculateCondition(field, start, startInclusive,
         end, endInclusive)
-      (dbUrl + "/" + indexName + "?q=" + condition, true, false)
-    } else if (viewName != null) {
-      (dbUrl + "/" + viewName, false, false)
+      (dbUrl + "/" + indexPath + "?q=" + condition, true, false)
+    } else if (viewPath != null) {
+      (dbUrl + "/" + viewPath, false, false)
     } else if (allowQuery && useQuery) {
       (s"$dbUrl/_find", false, true)
     } else {
@@ -220,39 +254,41 @@ class CloudantConfig(val protocol: String, val host: String,
     }
   }
 
-  def getTotalRows(result: JsValue): Int = {
-    val resultKeys = result.as[JsObject].keys
-    if(resultKeys.contains("total_rows")) {
-      (result \ "total_rows").as[Int]
-    } else if (resultKeys.contains("pending")) {
-      (result \ "pending").as[Int] + 1
+  def getResultCount(result: String): Int = {
+    val jsonResult: JsonObject = new JsonParser().parse(result).getAsJsonObject
+    if (jsonResult.has("total_rows")) {
+      jsonResult.get("total_rows").getAsInt
+    } else if (jsonResult.has("pending")) {
+      jsonResult.get("pending").getAsInt + 1
     } else {
       1
     }
   }
 
-  def getRows(result: JsValue, queryUsed: Boolean): Seq[JsValue] = {
-    if ( queryUsed ) {
-      (result \ "docs").as[JsArray].value.map(row => row)
-    } else {
-      val containsResultsKey: Boolean = result.as[JsObject].keys.contains("results")
-      if (containsResultsKey) {
-        (result \ "results").as[JsArray].value.map(row => (row \ "doc").get)
-      } else if (viewName == null) {
-        (result \ "rows").as[JsArray].value.map(row => (row \ "doc").get)
+  def getRows(result: String, queryUsed: Boolean): Seq[JsonObject] = {
+    val jsonResult: JsonObject = new JsonParser().parse(result).getAsJsonObject
+    if (queryUsed) {
+      if (jsonResult.has("docs")) {
+        jsonResult.get("docs").getAsJsonArray.asScala
+          .map(row => row.getAsJsonObject).toSeq
       } else {
-        (result \ "rows").as[JsArray].value.map(row => row)
+        Seq()
+      }
+    } else {
+      if (jsonResult.has("results")) {
+        jsonResult.get("result").getAsJsonArray.asScala.map(row => row.getAsJsonObject
+          .get("doc").getAsJsonObject).toSeq
+      } else if (viewPath == null) {
+        jsonResult.get("rows").getAsJsonArray.asScala.map(row => row.getAsJsonObject
+          .get("doc").getAsJsonObject).toSeq
+      } else {
+        jsonResult.get("rows").getAsJsonArray.asScala.map(row => row.getAsJsonObject).toSeq
       }
     }
   }
 
-  def getBulkPostUrl: String = {
-    dbUrl + "/_bulk_docs"
-  }
-
-  def getBulkRows(rows: List[String]): String = {
-    val docs = rows.map { x => Json.parse(x) }
-    Json.stringify(Json.obj("docs" -> Json.toJson(docs.toSeq)))
+  def getBulkRows(rows: List[String]): List[JsonObject] = {
+    rows.map { x => JsonConverter.toJson(x).getAsJsonObject }
   }
 
   def getConflictErrStr: String = {

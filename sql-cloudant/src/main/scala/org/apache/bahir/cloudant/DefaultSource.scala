@@ -109,11 +109,11 @@ class DefaultSource extends RelationProvider
       if (inSchema != null) {
         inSchema
       } else if (!config.isInstanceOf[CloudantChangesConfig]
-        || config.viewName != null || config.indexName != null) {
+        || config.viewPath != null || config.indexPath != null) {
         val df = if (config.getSchemaSampleSize ==
           JsonStoreConfigManager.ALLDOCS_OR_CHANGES_LIMIT &&
-          config.viewName == null
-          && config.indexName == null) {
+          config.viewPath == null
+          && config.indexPath == null) {
           val cloudantRDD = new JsonStoreRDD(sqlContext.sparkContext, config)
           dataFrame = sqlContext.read.json(cloudantRDD.toDS())
           dataFrame
@@ -144,12 +144,7 @@ class DefaultSource extends RelationProvider
         // Collect and union each RDD to convert all RDDs to a DataFrame
         changes.foreachRDD((rdd: RDD[String]) => {
           if (!rdd.isEmpty()) {
-            if (globalRDD != null) {
-              // Union RDDs in foreach loop
-              globalRDD = globalRDD.union(rdd)
-            } else {
-              globalRDD = rdd
-            }
+            globalRDD = rdd ++ globalRDD
           } else {
             // Convert final global RDD[String] to DataFrame
             dataFrame = sqlContext.sparkSession.read.json(globalRDD.toDS())

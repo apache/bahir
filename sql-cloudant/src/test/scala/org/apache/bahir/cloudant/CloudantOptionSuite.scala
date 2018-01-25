@@ -42,7 +42,6 @@ class CloudantOptionSuite extends ClientSparkFunSuite with BeforeAndAfter {
     }
     assert(thrown.getMessage === s"spark.cloudant.endpoint parameter " +
       s"is invalid. Please supply the valid option '_all_docs' or '_changes'.")
-
   }
 
   testIfEnabled("empty username option throws an error message") {
@@ -99,7 +98,35 @@ class CloudantOptionSuite extends ClientSparkFunSuite with BeforeAndAfter {
     val thrown = intercept[CloudantException] {
       spark.read.format("org.apache.bahir.cloudant").load("n_flight")
     }
-    assert(thrown.getMessage === s"Error retrieving _changes feed data" +
-      s" from database 'n_flight': HTTP/1.1 401 Unauthorized")
+    assert(thrown.getMessage === "Error retrieving _changes feed data" +
+      " from database 'n_flight' with response code 401: {\"error\":\"unauthorized\"," +
+      "\"reason\":\"Name or password is incorrect.\"}")
+  }
+
+  testIfEnabled("string with valid value for cloudant.numberOfRetries option") {
+    spark = SparkSession.builder().config(conf)
+      .config("cloudant.host", TestUtils.getHost)
+      .config("cloudant.username", TestUtils.getUsername)
+      .config("cloudant.password", TestUtils.getPassword)
+      .config("cloudant.numberOfRetries", "5")
+      .getOrCreate()
+
+    val df = spark.read.format("org.apache.bahir.cloudant").load("n_booking")
+    assert(df.count() === 2)
+  }
+
+  testIfEnabled("invalid value for cloudant.numberOfRetries option throws an error message") {
+    spark = SparkSession.builder().config(conf)
+      .config("cloudant.host", TestUtils.getHost)
+      .config("cloudant.username", TestUtils.getUsername)
+      .config("cloudant.password", TestUtils.getPassword)
+      .config("cloudant.numberOfRetries", "five")
+      .getOrCreate()
+
+    val thrown = intercept[CloudantException] {
+      spark.read.format("org.apache.bahir.cloudant").load("db")
+    }
+    assert(thrown.getMessage === s"Option \'cloudant.numberOfRetries\' failed with exception " +
+      s"""java.lang.NumberFormatException: For input string: "five"""")
   }
 }
