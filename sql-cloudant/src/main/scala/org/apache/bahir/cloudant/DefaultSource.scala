@@ -161,7 +161,11 @@ class DefaultSource extends RelationProvider
         // run streaming until all docs from continuous feed are received
         ssc.awaitTermination
 
-        dataFrame.schema
+        if(dataFrame.schema.nonEmpty) {
+          dataFrame.schema
+        } else {
+          throw new CloudantException(CloudantChangesConfig.receiverErrorMsg)
+        }
       }
     }
     CloudantReadWriteRelation(config, schema, dataFrame)(sqlContext)
