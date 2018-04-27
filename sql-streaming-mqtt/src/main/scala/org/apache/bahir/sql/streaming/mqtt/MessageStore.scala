@@ -18,15 +18,11 @@
 
 package org.apache.bahir.sql.streaming.mqtt
 
-import java.nio.ByteBuffer
+import java.io._
 import java.util
 
-import scala.reflect.ClassTag
-
 import org.eclipse.paho.client.mqttv3.{MqttClientPersistence, MqttPersistable, MqttPersistenceException}
-
-import org.apache.spark.SparkConf
-import org.apache.spark.serializer.{JavaSerializer, Serializer, SerializerInstance}
+import scala.util.Try
 
 import org.apache.bahir.utils.Logging
 
@@ -35,16 +31,13 @@ import org.apache.bahir.utils.Logging
 trait MessageStore {
 
   /** Store a single id and corresponding serialized message */
-  def store[T: ClassTag](id: Int, message: T): Boolean
-
-  /** Retrieve messages corresponding to certain offset range */
-  def retrieve[T: ClassTag](start: Int, end: Int): Seq[T]
+  def store[T](id: Long, message: T): Boolean
 
   /** Retrieve message corresponding to a given id. */
-  def retrieve[T: ClassTag](id: Int): T
+  def retrieve[T](id: Long): T
 
   /** Highest offset we have stored */
-  def maxProcessedOffset: Int
+  def maxProcessedOffset: Long
 
 }
 
@@ -63,6 +56,52 @@ private[mqtt] class MqttPersistableData(bytes: Array[Byte]) extends MqttPersista
   override def getPayloadLength: Int = 0
 }
 
+trait Serializer {
+
+  def deserialize[T](x: Array[Byte]): T
+
+  def serialize[T](x: T): Array[Byte]
+}
+
+class JavaSerializer extends Serializer with Logging {
+
+  override def deserialize[T](x: Array[Byte]): T = {
+    val bis = new ByteArrayInputStream(x)
+    val in = new ObjectInputStream(bis)
+    val obj = if (in != null) {
+      val o = in.readObject()
+      Try(in.close()).recover { case t: Throwable => log.warn("failed to close stream", t) }
+      o
+    } else {
+      null
+    }
+    obj.asInstanceOf[T]
+  }
+
+  override def serialize[T](x: T): Array[Byte] = {
+    val bos = new ByteArrayOutputStream()
+    val out = new ObjectOutputStream(bos)
+    out.writeObject(x)
+    out.flush()
+    if (bos != null) {
+      val bytes: Array[Byte] = bos.toByteArray
+      Try(bos.close()).recover { case t: Throwable => log.warn("failed to close stream", t) }
+      bytes
+    } else {
+      null
+    }
+  }
+}
+
+object JavaSerializer {
+
+  private lazy val instance = new JavaSerializer()
+
+  def getInstance(): JavaSerializer = instance
+
+}
+
+
 /**
  * A message store to persist messages received. This is not intended to be thread safe.
  * It uses `MqttDefaultFilePersistence` for storing messages on disk locally on the client.
@@ -70,44 +109,35 @@ private[mqtt] class MqttPersistableData(bytes: Array[Byte]) extends MqttPersista
 private[mqtt] class LocalMessageStore(val persistentStore: MqttClientPersistence,
     val serializer: Serializer) extends MessageStore with Logging {
 
-  val classLoader = Thread.currentThread.getContextClassLoader
+  def this(persistentStore: MqttClientPersistence) =
+    this(persistentStore, JavaSerializer.getInstance())
 
-  def this(persistentStore: MqttClientPersistence, conf: SparkConf) =
-    this(persistentStore, new JavaSerializer(conf))
-
-  val serializerInstance: SerializerInstance = serializer.newInstance()
-
-  private def get(id: Int) = {
+  private def get(id: Long) = {
     persistentStore.get(id.toString).getHeaderBytes
   }
 
   import scala.collection.JavaConverters._
 
-  def maxProcessedOffset: Int = {
+  def maxProcessedOffset: Long = {
     val keys: util.Enumeration[_] = persistentStore.keys()
     keys.asScala.map(x => x.toString.toInt).max
   }
 
   /** Store a single id and corresponding serialized message */
-  override def store[T: ClassTag](id: Int, message: T): Boolean = {
-    val bytes: Array[Byte] = serializerInstance.serialize(message).array()
+  override def store[T](id: Long, message: T): Boolean = {
+    val bytes: Array[Byte] = serializer.serialize(message)
     try {
       persistentStore.put(id.toString, new MqttPersistableData(bytes))
       true
     } catch {
       case e: MqttPersistenceException => log.warn(s"Failed to store message Id: $id", e)
-      false
+        false
     }
   }
 
-  /** Retrieve messages corresponding to certain offset range */
-  override def retrieve[T: ClassTag](start: Int, end: Int): Seq[T] = {
-    (start until end).map(x => retrieve(x))
-  }
-
   /** Retrieve message corresponding to a given id. */
-  override def retrieve[T: ClassTag](id: Int): T = {
-    serializerInstance.deserialize(ByteBuffer.wrap(get(id)), classLoader)
+  override def retrieve[T](id: Long): T = {
+    serializer.deserialize(get(id))
   }
 
 }

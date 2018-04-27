@@ -59,7 +59,9 @@ This source uses [Eclipse Paho Java Client](https://eclipse.org/paho/clients/jav
  * `connectionTimeout` Sets the connection timeout, a value of 0 is interpretted as wait until client connects. See `MqttConnectOptions.setConnectionTimeout` for more information.
  * `keepAlive` Same as `MqttConnectOptions.setKeepAliveInterval`.
  * `mqttVersion` Same as `MqttConnectOptions.setMqttVersion`.
-
+ * `maxInflight` Same as `MqttConnectOptions.setMaxInflight`
+ * `autoReconnect` Same as `MqttConnectOptions.setAutomaticReconnect`
+ 
 ### Scala API
 
 An example, for scala API to count words from incoming message stream. 
@@ -68,7 +70,7 @@ An example, for scala API to count words from incoming message stream.
     val lines = spark.readStream
       .format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider")
       .option("topic", topic)
-      .load(brokerUrl).as[(String, Timestamp)]
+      .load(brokerUrl).selectExpr("CAST(payload AS STRING)").as[String]
 
     // Split the lines into words
     val words = lines.map(_._1).flatMap(_.split(" "))
@@ -95,7 +97,8 @@ An example, for Java API to count words from incoming message stream.
             .readStream()
             .format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider")
             .option("topic", topic)
-            .load(brokerUrl).select("value").as(Encoders.STRING());
+            .load(brokerUrl)
+            .selectExpr("CAST(payload AS STRING)").as(Encoders.STRING());
 
     // Split the lines into words
     Dataset<String> words = lines.flatMap(new FlatMapFunction<String, String>() {
@@ -117,4 +120,53 @@ An example, for Java API to count words from incoming message stream.
     query.awaitTermination();
 
 Please see `JavaMQTTStreamWordCount.java` for full example.
+
+## Best Practices.
+
+1. Turn Mqtt into a more reliable messaging service. 
+
+> *MQTT is a machine-to-machine (M2M)/"Internet of Things" connectivity protocol. It was designed as an extremely lightweight publish/subscribe messaging transport.*
+
+The design of Mqtt and the purpose it serves goes well together, but often in an application it is of utmost value to have reliability. Since mqtt is not a distributed message queue and thus does not offer the highest level of reliability features. It should be redirected via a kafka message queue to take advantage of a distributed message queue. In fact, using a kafka message queue offers a lot of possibilities including a single kafka topic subscribed to several mqtt sources and even a single mqtt stream publishing to multiple kafka topics. Kafka is a reliable and scalable message queue.
+
+2. Often the message payload is not of the default character encoding or contains binary that needs to be parsed using a particular parser. In such cases, spark mqtt payload should be processed using the external parser. For example:
+
+ * Scala API example:
+```scala
+    // Create DataFrame representing the stream of binary messages
+    val lines = spark.readStream
+      .format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider")
+      .option("topic", topic)
+      .load(brokerUrl).select("payload").as[Array[Byte]].map(externalParser(_))
+```
+
+ * Java API example
+```java
+        // Create DataFrame representing the stream of binary messages
+        Dataset<byte[]> lines = spark
+                .readStream()
+                .format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider")
+                .option("topic", topic)
+                .load(brokerUrl).selectExpr("CAST(payload AS BINARY)").as(Encoders.BINARY());
+
+        // Split the lines into words
+        Dataset<String> words = lines.map(new MapFunction<byte[], String>() {
+            @Override
+            public String call(byte[] bytes) throws Exception {
+                return new String(bytes); // Plug in external parser here.
+            }
+        }, Encoders.STRING()).flatMap(new FlatMapFunction<String, String>() {
+            @Override
+            public Iterator<String> call(String x) {
+                return Arrays.asList(x.split(" ")).iterator();
+            }
+        }, Encoders.STRING());
+
+```
+
+3. What is the solution for a situation when there are a large number of varied mqtt sources, each with different schema and throughput characteristics.
+
+Generally, one would create a lot of streaming pipelines to solve this problem. This would either require a very sophisticated scheduling setup or will waste a lot of resources, as it is not certain which stream is using more amount of data.
+
+The general solution is both less optimum and is more cumbersome to operate, with multiple moving parts incurs a high maintenance overall. As an alternative, in this situation, one can setup a single topic kafka-spark stream, where message from each of the varied stream contains a unique tag separating one from other streams. This way at the processing end, one can distinguish the message from one another and apply the right kind of decoding and processing. Similarly while storing, each message can be distinguished from others by a tag that distinguishes.
 

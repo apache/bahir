@@ -52,11 +52,11 @@ object MQTTStreamWordCount  {
     // Create DataFrame representing the stream of input lines from connection to mqtt server
     val lines = spark.readStream
       .format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider")
-      .option("topic", topic)
-      .load(brokerUrl).as[(String, Timestamp)]
+      .option("topic", topic).option("persistence", "memory")
+      .load(brokerUrl).selectExpr("CAST(payload AS STRING)").as[String]
 
     // Split the lines into words
-    val words = lines.map(_._1).flatMap(_.split(" "))
+    val words = lines.flatMap(_.split(" "))
 
     // Generate running word count
     val wordCounts = words.groupBy("value").count()

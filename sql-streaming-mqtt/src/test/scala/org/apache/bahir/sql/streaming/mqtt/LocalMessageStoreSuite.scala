@@ -22,8 +22,7 @@ import java.io.File
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence
 import org.scalatest.BeforeAndAfter
 
-import org.apache.spark.{SparkConf, SparkFunSuite}
-import org.apache.spark.serializer.JavaSerializer
+import org.apache.spark.SparkFunSuite
 
 import org.apache.bahir.utils.BahirUtils
 
@@ -31,9 +30,9 @@ import org.apache.bahir.utils.BahirUtils
 class LocalMessageStoreSuite extends SparkFunSuite with BeforeAndAfter {
 
   private val testData = Seq(1, 2, 3, 4, 5, 6)
-  private val javaSerializer: JavaSerializer = new JavaSerializer(new SparkConf())
+  private val javaSerializer: JavaSerializer = new JavaSerializer()
 
-  private val serializerInstance = javaSerializer.newInstance()
+  private val serializerInstance = javaSerializer
   private val tempDir: File = new File(System.getProperty("java.io.tmpdir") + "/mqtt-test2/")
   private val persistence: MqttDefaultFilePersistence =
     new MqttDefaultFilePersistence(tempDir.getAbsolutePath)
@@ -68,7 +67,7 @@ class LocalMessageStoreSuite extends SparkFunSuite with BeforeAndAfter {
   test("Max offset stored") {
     store.store(1, testData)
     store.store(10, testData)
-    val offset: Int = store.maxProcessedOffset
+    val offset = store.maxProcessedOffset
     assert(offset == 10)
   }
 
