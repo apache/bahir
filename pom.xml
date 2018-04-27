@@ -407,7 +407,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>1.4.1</version>
+          <version>3.0.0-M1</version>
           <executions>
             <execution>
               <id>enforce-versions</id>
@@ -433,6 +433,7 @@
                       -->
                       <exclude>org.jboss.netty</exclude>
                       <exclude>org.codehaus.groovy</exclude>
+                      <exclude>*:*_2.10</exclude>
                     </excludes>
                     <searchTransitive>true</searchTransitive>
                   </bannedDependencies>
@@ -482,7 +483,8 @@
         <plugin>
           <groupId>net.alchim31.maven</groupId>
           <artifactId>scala-maven-plugin</artifactId>
-          <version>3.3.1</version>
+          <!-- 3.3.1 won't work with zinc; fails to find javac from java.home -->
+          <version>3.2.2</version>
           <executions>
             <execution>
               <id>eclipse-add-source</id>
