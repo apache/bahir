@@ -155,7 +155,7 @@ class StressTestAkkaSource extends AkkaStreamSourceSuite {
 
   // Run with -Xmx1024m
   // Default allowed payload size sent to an akka actor is 128000 bytes.
-  test("Send & Receive messages of size 128000 bytes.") {
+  ignore("Send & Receive messages of size 128000 bytes.") {
 
     val freeMemory: Long = Runtime.getRuntime.freeMemory()
 

@@ -19,6 +19,7 @@ package org.apache.bahir.sql.streaming.mqtt
 
 import java.io.File
 import java.sql.Timestamp
+import java.util.Optional
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -28,8 +29,8 @@ import org.eclipse.paho.client.mqttv3.MqttException
 import org.scalatest.BeforeAndAfter
 
 import org.apache.spark.{SharedSparkContext, SparkFunSuite}
-import org.apache.spark.sql.{DataFrame, SQLContext}
-import org.apache.spark.sql.execution.streaming.LongOffset
+import org.apache.spark.sql._
+import org.apache.spark.sql.sources.v2.DataSourceOptions
 
 import org.apache.bahir.utils.BahirUtils
 
@@ -40,9 +41,13 @@ class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with B
   protected val tempDir: File = new File(System.getProperty("java.io.tmpdir") + "/mqtt-test/")
 
   before {
+    tempDir.mkdirs()
+    if (!tempDir.exists()) {
+      throw new IllegalStateException("Unable to create temp directories.")
+    }
+    tempDir.deleteOnExit()
     mqttTestUtils = new MQTTTestUtils(tempDir)
     mqttTestUtils.setup()
-    tempDir.mkdirs()
   }
 
   after {
@@ -60,7 +65,7 @@ class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with B
 
     val dataFrame: DataFrame =
       sqlContext.readStream.format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider")
-        .option("topic", "test").option("localStorage", dir).option("clientId", "clientId")
+        .option("topic", "test").option("persistence", "memory").option("clientId", "clientId")
         .option("QoS", "2").load("tcp://" + mqttTestUtils.brokerUri)
     (sqlContext, dataFrame)
   }
@@ -102,7 +107,7 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
   }
 
   // TODO: reinstate this test after fixing BAHIR-83
-  ignore("Send and receive 100 messages.") {
+  ignore("Send and receive 50 messages.") {
 
     val sendMessage = "MQTT is a message queue."
 
@@ -111,38 +116,37 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
     val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataframe()
 
     Future {
-      Thread.sleep(2000)
-      mqttTestUtils.publishData("test", sendMessage, 100)
+      Thread.sleep(4000)
+      mqttTestUtils.publishData("test", sendMessage, 50)
     }
 
-    writeStreamResults(sqlContext, dataFrame, 10000)
+    // writeStreamResults(sqlContext, dataFrame, 22000)
 
     val resultBuffer: mutable.Buffer[String] = readBackStreamingResults(sqlContext)
 
-    assert(resultBuffer.size == 100)
+    assert(resultBuffer.size == 50)
     assert(resultBuffer.head == sendMessage)
   }
 
   test("no server up") {
     val provider = new MQTTStreamSourceProvider
     val sqlContext: SQLContext = new SQLContext(sc)
-    val parameters = Map("brokerUrl" -> "tcp://localhost:1883", "topic" -> "test",
-      "localStorage" -> tmpDir)
+    val parameters = new DataSourceOptions(Map("brokerUrl" ->
+      "tcp://localhost:1881", "topic" -> "test", "localStorage" -> tmpDir).asJava)
     intercept[MqttException] {
-      provider.createSource(sqlContext, "", None, "", parameters)
+      provider.createMicroBatchReader(Optional.empty(), tempDir.toString, parameters)
     }
   }
 
   test("params not provided.") {
     val provider = new MQTTStreamSourceProvider
-    val sqlContext: SQLContext = new SQLContext(sc)
-    val parameters = Map("brokerUrl" -> mqttTestUtils.brokerUri,
-      "localStorage" -> tmpDir)
+    val parameters = new DataSourceOptions(Map("brokerUrl" -> mqttTestUtils.brokerUri,
+      "localStorage" -> tmpDir).asJava)
     intercept[IllegalArgumentException] {
-      provider.createSource(sqlContext, "", None, "", parameters)
+      provider.createMicroBatchReader(Optional.empty(), tempDir.toString, parameters)
     }
     intercept[IllegalArgumentException] {
-      provider.createSource(sqlContext, "", None, "", Map())
+      provider.createMicroBatchReader(Optional.empty(), tempDir.toString, DataSourceOptions.empty())
     }
   }
 
@@ -160,14 +164,16 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
       mqttTestUtils.publishData("test", sendMessage, 100)
     }
 
-    writeStreamResults(sqlContext, dataFrame, 10000)
+    // writeStreamResults(sqlContext, dataFrame, 10000)
     // On restarting the source with same params, it should begin from the offset - the
     // previously running stream left off.
-    val provider = new MQTTStreamSourceProvider
-    val parameters = Map("brokerUrl" -> ("tcp://" + mqttTestUtils.brokerUri), "topic" -> "test",
-      "localStorage" -> tmpDir, "clientId" -> "clientId", "QoS" -> "2")
-    val offset: Long = provider.createSource(sqlContext, "", None, "", parameters)
-      .getOffset.get.asInstanceOf[LongOffset].offset
+    val provider: MQTTStreamSourceProvider = new MQTTStreamSourceProvider
+    val parameters = new DataSourceOptions(Map("brokerUrl" -> ("tcp://" + mqttTestUtils.brokerUri),
+      "topic" -> "test", "localStorage" -> tmpDir, "clientId" -> "clientId", "QoS" -> "2").asJava)
+    val source = provider.createMicroBatchReader(Optional.empty(), tempDir.toString,
+      parameters)
+    val offset: Long = source.getEndOffset.asInstanceOf[LongOffset].offset
+    source.stop()
     assert(offset == 100L)
   }
 

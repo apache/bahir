@@ -22,7 +22,7 @@ import java.net.{ServerSocket, URI}
 
 import org.apache.activemq.broker.{BrokerService, TransportConnector}
 import org.eclipse.paho.client.mqttv3._
-import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence
+import org.eclipse.paho.client.mqttv3.persist.{MemoryPersistence, MqttDefaultFilePersistence}
 
 import org.apache.bahir.utils.Logging
 
@@ -30,7 +30,7 @@ import org.apache.bahir.utils.Logging
 class MQTTTestUtils(tempDir: File, port: Int = 0) extends Logging {
 
   private val persistenceDir = tempDir.getAbsolutePath
-  private val brokerHost = "localhost"
+  private val brokerHost = "127.0.0.1"
   private val brokerPort: Int = if (port == 0) findFreePort() else port
 
   private var broker: BrokerService = _
@@ -60,18 +60,21 @@ class MQTTTestUtils(tempDir: File, port: Int = 0) extends Logging {
   def teardown(): Unit = {
     if (broker != null) {
       broker.stop()
-      broker = null
     }
     if (connector != null) {
       connector.stop()
       connector = null
     }
+    while (!broker.isStopped) {
+      Thread.sleep(50)
+    }
+    broker = null
   }
 
   def publishData(topic: String, data: String, N: Int = 1): Unit = {
     var client: MqttClient = null
     try {
-      val persistence = new MqttDefaultFilePersistence(persistenceDir)
+      val persistence = new MemoryPersistence()
       client = new MqttClient("tcp://" + brokerUri, MqttClient.generateClientId(), persistence)
       client.connect()
       if (client.isConnected) {
