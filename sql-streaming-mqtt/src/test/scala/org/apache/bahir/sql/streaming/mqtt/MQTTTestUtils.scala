@@ -29,7 +29,6 @@ import org.apache.bahir.utils.Logging
 
 class MQTTTestUtils(tempDir: File, port: Int = 0) extends Logging {
 
-  private val persistenceDir = tempDir.getAbsolutePath
   private val brokerHost = "127.0.0.1"
   private val brokerPort: Int = if (port == 0) findFreePort() else port
 
@@ -81,10 +80,10 @@ class MQTTTestUtils(tempDir: File, port: Int = 0) extends Logging {
         val msgTopic = client.getTopic(topic)
         for (i <- 0 until N) {
           try {
-            Thread.sleep(20)
+            Thread.sleep(10)
             val message = new MqttMessage(data.getBytes())
             message.setQos(2)
-            message.setRetained(true)
+            // message.setId(i) setting id has no effect.
             msgTopic.publish(message)
           } catch {
             case e: MqttException =>

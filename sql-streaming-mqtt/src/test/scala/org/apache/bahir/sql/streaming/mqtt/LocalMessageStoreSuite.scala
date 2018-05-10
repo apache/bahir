@@ -22,8 +22,7 @@ import java.io.File
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence
 import org.scalatest.BeforeAndAfter
 
-import org.apache.spark.{SparkConf, SparkFunSuite}
-import org.apache.spark.serializer.JavaSerializer
+import org.apache.spark.SparkFunSuite
 
 import org.apache.bahir.utils.BahirUtils
 

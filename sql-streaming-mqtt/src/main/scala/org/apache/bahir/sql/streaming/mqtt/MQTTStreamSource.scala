@@ -20,7 +20,7 @@ package org.apache.bahir.sql.streaming.mqtt
 import java.nio.charset.Charset
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
-import java.util.{Calendar, Optional}
+import java.util.{Calendar, HashSet => JHashSet, Optional}
 import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
@@ -37,7 +37,7 @@ import org.apache.spark.sql.sources.DataSourceRegister
 import org.apache.spark.sql.sources.v2.{DataSourceOptions, DataSourceV2, MicroBatchReadSupport}
 import org.apache.spark.sql.sources.v2.reader.{DataReader, DataReaderFactory}
 import org.apache.spark.sql.sources.v2.reader.streaming.{MicroBatchReader, Offset => OffsetV2}
-import org.apache.spark.sql.types.{StringType, StructField, StructType, TimestampType}
+import org.apache.spark.sql.types._
 
 import org.apache.bahir.utils.Logging
 
@@ -46,15 +46,38 @@ object MQTTStreamConstants {
 
   val DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 
-  val SCHEMA_DEFAULT = StructType(StructField("value", StringType)
-    :: StructField("timestamp", TimestampType) :: Nil)
+  val SCHEMA_DEFAULT = StructType(StructField("id", IntegerType) :: StructField("topic",
+    StringType):: StructField("payload", BinaryType) :: StructField("timestamp", TimestampType) ::
+    Nil)
 }
 
+class MQTTMessage(m: MqttMessage, val topic: String) extends Serializable {
+
+  // TODO: make it configurable.
+  val timestamp: Timestamp = Timestamp.valueOf(
+    MQTTStreamConstants.DATE_FORMAT.format(Calendar.getInstance().getTime))
+  val duplicate = m.isDuplicate
+  val retained = m.isRetained
+  val qos = m.getQos
+  val id: Int = m.getId
+
+  val payload: Array[Byte] = m.getPayload
+
+  override def toString(): String = {
+    s"""MQTTMessage.
+       |Topic: ${this.topic}
+       |MessageID: ${this.id}
+       |QoS: ${this.qos}
+       |Payload: ${this.payload}
+       |Payload as string: ${new String(this.payload, Charset.defaultCharset())}
+       |isRetained: ${this.retained}
+       |isDuplicate: ${this.duplicate}
+       |TimeStamp: ${this.timestamp}
+     """.stripMargin
+  }
+}
 /**
- * A Text based mqtt stream source, it interprets the payload of each incoming message by converting
- * the bytes to String using Charset.defaultCharset as charset. Each value is associated with a
- * timestamp of arrival of the message on the source. It can be used to operate a window on the
- * incoming stream.
+ * A mqtt stream source.
  *
  * @param brokerUrl url MqttClient connects to.
  * @param persistence an instance of MqttClientPersistence. By default it is used for storing
@@ -63,26 +86,31 @@ object MQTTStreamConstants {
  * @param topic topic MqttClient subscribes to.
  * @param clientId clientId, this client is assoicated with. Provide the same value to recover
  *                 a stopped client.
- * @param messageParser parsing logic for processing incoming messages from Mqtt Server.
  * @param mqttConnectOptions an instance of MqttConnectOptions for this Source.
  * @param qos the maximum quality of service to subscribe each topic at.Messages published at
  *            a lower quality of service will be received at the published QoS. Messages
  *            published at a higher quality of service will be received using the QoS specified
  *            on the subscribe.
  */
-class MQTTTextStreamSource(options: DataSourceOptions, brokerUrl: String, persistence:
+class MQTTStreamSource(options: DataSourceOptions, brokerUrl: String, persistence:
     MqttClientPersistence, topic: String, clientId: String,
-    messageParser: Array[Byte] => (String, Timestamp),
     mqttConnectOptions: MqttConnectOptions, qos: Int)
   extends MicroBatchReader with Logging {
 
   private var startOffset: OffsetV2 = _
   private var endOffset: OffsetV2 = _
 
+  /* Older than last N messages, will not be checked for redelivery. */
+  val backLog = options.getInt("autopruning.backlog", 500)
 
   private val store = new LocalMessageStore(persistence)
 
-  private val messages = new TrieMap[Long, (String, Timestamp)]
+  private val messages = new TrieMap[Long, MQTTMessage]
+
+  @GuardedBy("this")
+  private val processedMessageIds = new JHashSet[Int](backLog)
+
+  private var maxIdProcessed = 0
 
   @GuardedBy("this")
   private var currentOffset: LongOffset = LongOffset(-1L)
@@ -90,17 +118,18 @@ class MQTTTextStreamSource(options: DataSourceOptions, brokerUrl: String, persis
   @GuardedBy("this")
   private var lastOffsetCommitted: LongOffset = LongOffset(-1L)
 
-
   private var client: MqttClient = _
 
   private def fetchLastProcessedOffset(): LongOffset = {
     Try(store.maxProcessedOffset) match {
-      case Success(x) =>
-        log.info(s"Recovering from last stored offset $x")
+      case Success(x) => // Data processed so far, is not replayed again.
+        log.info(s"Trying to resume from last processed offset $x")
         LongOffset(x)
       case Failure(e) => LongOffset(-1L)
     }
   }
+
+  private[mqtt] def getCurrentOffset = currentOffset
 
   initialize()
   private def initialize(): Unit = {
@@ -109,10 +138,15 @@ class MQTTTextStreamSource(options: DataSourceOptions, brokerUrl: String, persis
     val callback = new MqttCallbackExtended() {
 
       override def messageArrived(topic_ : String, message: MqttMessage): Unit = synchronized {
-        val offset = currentOffset.offset + 1L
-        messages.put(offset, messageParser(message.getPayload))
-        currentOffset = LongOffset(offset)
-        log.info(s"Message arrived, $topic_ $message")
+        val mqttMessage = new MQTTMessage(message, topic_)
+        if(!processedMessageIds.contains(mqttMessage.id)) {
+          val offset = currentOffset.offset + 1L
+          messages.put(offset, mqttMessage)
+          currentOffset = LongOffset(offset)
+          log.trace(s"Message arrived, $topic_ $mqttMessage")
+        } else {
+          log.debug(s"Ignored redelivery of $mqttMessage")
+        }
       }
 
       override def deliveryComplete(token: IMqttDeliveryToken): Unit = {
@@ -130,6 +164,9 @@ class MQTTTextStreamSource(options: DataSourceOptions, brokerUrl: String, persis
     client.connect(mqttConnectOptions)
     // It is not possible to initialize offset without `client.connect`
     lastOffsetCommitted = fetchLastProcessedOffset()
+    startOffset = lastOffsetCommitted
+    endOffset = lastOffsetCommitted
+    currentOffset = lastOffsetCommitted
     client.subscribe(topic, qos)
   }
 
@@ -156,18 +193,28 @@ class MQTTTextStreamSource(options: DataSourceOptions, brokerUrl: String, persis
   }
 
   override def createDataReaderFactories(): java.util.List[DataReaderFactory[Row]] = {
-    // Internal buffer only holds the batches after lastOffsetCommitted
-    val rawList: IndexedSeq[(String, Timestamp)] = synchronized {
+    val set = new JHashSet[Int]()
+    val rawList: IndexedSeq[Option[MQTTMessage]] = synchronized {
       val sliceStart = LongOffset.convert(startOffset).get.offset + 1
       val sliceEnd = LongOffset.convert(endOffset).get.offset + 1
-      for ( i <- sliceStart until sliceEnd) yield messages(i)
+      for ( i <- sliceStart until sliceEnd) yield {
+        val m = messages(i)
+        // Only process the messages not already processed.
+        if (!processedMessageIds.contains(m.id) && !set.contains(m.id)) {
+          set.add(m.id)
+          if (maxIdProcessed < m.id) {
+            maxIdProcessed = m.id
+          }
+          Some(m)
+        } else None
+      }
     }
-
+    processedMessageIds.addAll(set)
     val spark = SparkSession.getActiveSession.get
     val numPartitions = spark.sparkContext.defaultParallelism
 
-    val slices = Array.fill(numPartitions)(new ListBuffer[(String, Timestamp)])
-    rawList.zipWithIndex.foreach { case (r, idx) =>
+    val slices = Array.fill(numPartitions)(new ListBuffer[MQTTMessage])
+    rawList.flatten.zipWithIndex.foreach { case (r, idx) =>
       slices(idx % numPartitions).append(r)
     }
 
@@ -183,7 +230,8 @@ class MQTTTextStreamSource(options: DataSourceOptions, brokerUrl: String, persis
           }
 
           override def get(): Row = {
-            Row(slice(currentIdx)._1, slice(currentIdx)._2)
+            Row(slice(currentIdx).id, slice(currentIdx).topic,
+              slice(currentIdx).payload, slice(currentIdx).timestamp)
           }
 
           override def close(): Unit = {}
@@ -208,6 +256,12 @@ class MQTTTextStreamSource(options: DataSourceOptions, brokerUrl: String, persis
       messages.remove(x + 1)
     }
     lastOffsetCommitted = newOffset
+    if (processedMessageIds.size() > 2 * backLog) {
+      // Prune extra messages.
+      val toBePruned = processedMessageIds.asScala.filter(_ < (maxIdProcessed - backLog))
+      toBePruned.foreach(processedMessageIds.remove)
+      log.debug(s"Pruned processedMessageIds and removed ${toBePruned.size} entries.")
+    }
   }
 
   /** Stop this source. */
@@ -226,11 +280,10 @@ class MQTTStreamSourceProvider extends DataSourceV2
 
   override def createMicroBatchReader(schema: Optional[StructType],
       checkpointLocation: String, parameters: DataSourceOptions): MicroBatchReader = {
-    if (schema.isPresent) {
-      throw
-        new IllegalArgumentException("The mqtt source does not support a user-specified schema.")
-    }
     def e(s: String) = new IllegalArgumentException(s)
+    if (schema.isPresent) {
+      throw e("The mqtt source does not support a user-specified schema.")
+    }
 
     val brokerUrl = parameters.get("brokerUrl").orElse(parameters.get("path").orElse(null))
 
@@ -242,14 +295,10 @@ class MQTTStreamSourceProvider extends DataSourceV2
       case "memory" => new MemoryPersistence()
       case _ => val localStorage: String = parameters.get("localStorage").orElse("")
         localStorage match {
+          case "" => new MqttDefaultFilePersistence()
           case x => new MqttDefaultFilePersistence(x)
-          case _ => new MqttDefaultFilePersistence()
         }
     }
-
-    val messageParserWithTimeStamp = (x: Array[Byte]) =>
-      (new String(x, Charset.defaultCharset()), Timestamp.valueOf(
-        MQTTStreamConstants.DATE_FORMAT.format(Calendar.getInstance().getTime)))
 
     // if default is subscribe everything, it leads to getting lot unwanted system messages.
     val topic: String = parameters.get("topic").orElse(null)
@@ -287,8 +336,8 @@ class MQTTStreamSourceProvider extends DataSourceV2
       case _ =>
     }
 
-    new  MQTTTextStreamSource(parameters, brokerUrl, persistence, topic, clientId,
-      messageParserWithTimeStamp, mqttConnectOptions, qos)
+    new  MQTTStreamSource(parameters, brokerUrl, persistence, topic, clientId,
+      mqttConnectOptions, qos)
   }
   override def shortName(): String = "mqtt"
 }

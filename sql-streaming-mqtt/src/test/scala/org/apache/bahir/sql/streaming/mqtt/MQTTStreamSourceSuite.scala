@@ -18,12 +18,10 @@
 package org.apache.bahir.sql.streaming.mqtt
 
 import java.io.File
-import java.sql.Timestamp
 import java.util.Optional
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.Future
 
 import org.eclipse.paho.client.mqttv3.MqttException
 import org.scalatest.BeforeAndAfter
@@ -31,9 +29,9 @@ import org.scalatest.BeforeAndAfter
 import org.apache.spark.{SharedSparkContext, SparkFunSuite}
 import org.apache.spark.sql._
 import org.apache.spark.sql.sources.v2.DataSourceOptions
+import org.apache.spark.sql.streaming.{DataStreamReader, StreamingQuery}
 
 import org.apache.bahir.utils.BahirUtils
-
 
 class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with BeforeAndAfter {
 
@@ -57,16 +55,42 @@ class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with B
 
   protected val tmpDir: String = tempDir.getAbsolutePath
 
-  protected def createStreamingDataframe(dir: String = tmpDir): (SQLContext, DataFrame) = {
+  protected def writeStreamResults(sqlContext: SQLContext,
+                                 dataFrame: DataFrame): StreamingQuery = {
+    import sqlContext.implicits._
+    val query: StreamingQuery = dataFrame.selectExpr("CAST(payload AS STRING)").as[String]
+      .writeStream.format("parquet").start(s"$tmpDir/t.parquet")
+    while (!query.isActive) {}
+    query
+  }
+
+  protected def readBackStreamingResults(sqlContext: SQLContext): mutable.Buffer[String] = {
+    import sqlContext.implicits._
+    val asList =
+      sqlContext.read
+        .parquet(s"$tmpDir/t.parquet").as[String]
+        .collectAsList().asScala
+    asList
+  }
+
+  protected def createStreamingDataframe(dir: String = tmpDir,
+      filePersistence: Boolean = false): (SQLContext, DataFrame) = {
 
     val sqlContext: SQLContext = new SQLContext(sc)
 
     sqlContext.setConf("spark.sql.streaming.checkpointLocation", tmpDir)
 
-    val dataFrame: DataFrame =
+    val ds: DataStreamReader =
       sqlContext.readStream.format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider")
-        .option("topic", "test").option("persistence", "memory").option("clientId", "clientId")
-        .option("QoS", "2").load("tcp://" + mqttTestUtils.brokerUri)
+        .option("topic", "test").option("clientId", "clientId")
+        .option("QoS", "2")
+
+    val dataFrame = if (!filePersistence) {
+      ds.option("persistence", "memory").load("tcp://" + mqttTestUtils.brokerUri)
+    } else {
+      ds.option("persistence", "file").option("localStorage", tmpDir)
+        .load("tcp://" + mqttTestUtils.brokerUri)
+    }
     (sqlContext, dataFrame)
   }
 
@@ -74,31 +98,17 @@ class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with B
 
 class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
 
-  private def writeStreamResults(sqlContext: SQLContext,
-      dataFrame: DataFrame, waitDuration: Long): Boolean = {
-    import sqlContext.implicits._
-    dataFrame.as[(String, Timestamp)].writeStream.format("parquet").start(s"$tmpDir/t.parquet")
-      .awaitTermination(waitDuration)
-  }
-
-  private def readBackStreamingResults(sqlContext: SQLContext): mutable.Buffer[String] = {
-    import sqlContext.implicits._
-    val asList =
-      sqlContext.read.schema(MQTTStreamConstants.SCHEMA_DEFAULT)
-        .parquet(s"$tmpDir/t.parquet").as[(String, Timestamp)].map(_._1)
-        .collectAsList().asScala
-    asList
-  }
-
   test("basic usage") {
 
     val sendMessage = "MQTT is a message queue."
 
-    mqttTestUtils.publishData("test", sendMessage)
 
     val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataframe()
 
-    writeStreamResults(sqlContext, dataFrame, 5000)
+    val query = writeStreamResults(sqlContext, dataFrame)
+    mqttTestUtils.publishData("test", sendMessage)
+    query.processAllAvailable()
+    query.awaitTermination(5000)
 
     val resultBuffer: mutable.Buffer[String] = readBackStreamingResults(sqlContext)
 
@@ -106,21 +116,17 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
     assert(resultBuffer.head == sendMessage)
   }
 
-  // TODO: reinstate this test after fixing BAHIR-83
-  ignore("Send and receive 50 messages.") {
+  test("Send and receive 50 messages.") {
 
     val sendMessage = "MQTT is a message queue."
 
-    import scala.concurrent.ExecutionContext.Implicits.global
-
     val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataframe()
 
-    Future {
-      Thread.sleep(4000)
-      mqttTestUtils.publishData("test", sendMessage, 50)
-    }
+    val q = writeStreamResults(sqlContext, dataFrame)
 
-    // writeStreamResults(sqlContext, dataFrame, 22000)
+    mqttTestUtils.publishData("test", sendMessage, 50)
+    q.processAllAvailable()
+    q.awaitTermination(10000)
 
     val resultBuffer: mutable.Buffer[String] = readBackStreamingResults(sqlContext)
 
@@ -150,45 +156,18 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
     }
   }
 
-  // TODO: reinstate this test after fixing BAHIR-83
-  ignore("Recovering offset from the last processed offset.") {
-    val sendMessage = "MQTT is a message queue."
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-
-    val (sqlContext: SQLContext, dataFrame: DataFrame) =
-      createStreamingDataframe()
-
-    Future {
-      Thread.sleep(2000)
-      mqttTestUtils.publishData("test", sendMessage, 100)
-    }
-
-    // writeStreamResults(sqlContext, dataFrame, 10000)
-    // On restarting the source with same params, it should begin from the offset - the
-    // previously running stream left off.
-    val provider: MQTTStreamSourceProvider = new MQTTStreamSourceProvider
-    val parameters = new DataSourceOptions(Map("brokerUrl" -> ("tcp://" + mqttTestUtils.brokerUri),
-      "topic" -> "test", "localStorage" -> tmpDir, "clientId" -> "clientId", "QoS" -> "2").asJava)
-    val source = provider.createMicroBatchReader(Optional.empty(), tempDir.toString,
-      parameters)
-    val offset: Long = source.getEndOffset.asInstanceOf[LongOffset].offset
-    source.stop()
-    assert(offset == 100L)
-  }
-
 }
 
 class StressTestMQTTSource extends MQTTStreamSourceSuite {
 
   // Run with -Xmx1024m
-  ignore("Send and receive messages of size 250MB.") {
+  ignore("Send and receive messages of size 100MB.") {
 
     val freeMemory: Long = Runtime.getRuntime.freeMemory()
 
     log.info(s"Available memory before test run is ${freeMemory / (1024 * 1024)}MB.")
 
-    val noOfMsgs = (250 * 1024 * 1024) / (500 * 1024) // 512
+    val noOfMsgs: Int = (100 * 1024 * 1024) / (500 * 1024) // 204
 
     val messageBuilder = new StringBuilder()
     for (i <- 0 until (500 * 1024)) yield messageBuilder.append(((i % 26) + 65).toChar)
@@ -196,22 +175,15 @@ class StressTestMQTTSource extends MQTTStreamSourceSuite {
 
     val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataframe()
 
-    import scala.concurrent.ExecutionContext.Implicits.global
-    Future {
-      Thread.sleep(2000)
-      mqttTestUtils.publishData("test", sendMessage, noOfMsgs.toInt)
-    }
-
-    import sqlContext.implicits._
-
-    dataFrame.as[(String, Timestamp)].writeStream
-      .format("parquet")
-      .start(s"$tmpDir/t.parquet")
-      .awaitTermination(25000)
+    val query = writeStreamResults(sqlContext, dataFrame)
+    mqttTestUtils.publishData("test", sendMessage, noOfMsgs / 2)
+    mqttTestUtils.publishData("test", sendMessage, noOfMsgs / 2)
+    query.processAllAvailable()
+    query.awaitTermination(25000)
 
     val messageCount =
-      sqlContext.read.schema(MQTTStreamConstants.SCHEMA_DEFAULT)
-        .parquet(s"$tmpDir/t.parquet").as[(String, Timestamp)].map(_._1)
+      sqlContext.read
+        .parquet(s"$tmpDir/t.parquet")
         .count()
     assert(messageCount == noOfMsgs)
   }
