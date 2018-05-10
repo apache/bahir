@@ -20,7 +20,7 @@ package org.apache.bahir.sql.streaming.mqtt
 import java.nio.charset.Charset
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
-import java.util.{Calendar, HashSet => JHashSet, Optional}
+import java.util.{Calendar, Optional}
 import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
@@ -108,26 +108,12 @@ class MQTTStreamSource(options: DataSourceOptions, brokerUrl: String, persistenc
   private val messages = new TrieMap[Long, MQTTMessage]
 
   @GuardedBy("this")
-  private val processedMessageIds = new JHashSet[Int](backLog)
-
-  private var maxIdProcessed = 0
-
-  @GuardedBy("this")
   private var currentOffset: LongOffset = LongOffset(-1L)
 
   @GuardedBy("this")
   private var lastOffsetCommitted: LongOffset = LongOffset(-1L)
 
   private var client: MqttClient = _
-
-  private def fetchLastProcessedOffset(): LongOffset = {
-    Try(store.maxProcessedOffset) match {
-      case Success(x) => // Data processed so far, is not replayed again.
-        log.info(s"Trying to resume from last processed offset $x")
-        LongOffset(x)
-      case Failure(e) => LongOffset(-1L)
-    }
-  }
 
   private[mqtt] def getCurrentOffset = currentOffset
 
@@ -139,14 +125,10 @@ class MQTTStreamSource(options: DataSourceOptions, brokerUrl: String, persistenc
 
       override def messageArrived(topic_ : String, message: MqttMessage): Unit = synchronized {
         val mqttMessage = new MQTTMessage(message, topic_)
-        if(!processedMessageIds.contains(mqttMessage.id)) {
-          val offset = currentOffset.offset + 1L
-          messages.put(offset, mqttMessage)
-          currentOffset = LongOffset(offset)
-          log.trace(s"Message arrived, $topic_ $mqttMessage")
-        } else {
-          log.debug(s"Ignored redelivery of $mqttMessage")
-        }
+        val offset = currentOffset.offset + 1L
+        messages.put(offset, mqttMessage)
+        currentOffset = LongOffset(offset)
+        log.trace(s"Message arrived, $topic_ $mqttMessage")
       }
 
       override def deliveryComplete(token: IMqttDeliveryToken): Unit = {
@@ -163,10 +145,6 @@ class MQTTStreamSource(options: DataSourceOptions, brokerUrl: String, persistenc
     client.setCallback(callback)
     client.connect(mqttConnectOptions)
     // It is not possible to initialize offset without `client.connect`
-    lastOffsetCommitted = fetchLastProcessedOffset()
-    startOffset = lastOffsetCommitted
-    endOffset = lastOffsetCommitted
-    currentOffset = lastOffsetCommitted
     client.subscribe(topic, qos)
   }
 
@@ -193,28 +171,16 @@ class MQTTStreamSource(options: DataSourceOptions, brokerUrl: String, persistenc
   }
 
   override def createDataReaderFactories(): java.util.List[DataReaderFactory[Row]] = {
-    val set = new JHashSet[Int]()
-    val rawList: IndexedSeq[Option[MQTTMessage]] = synchronized {
+    val rawList: IndexedSeq[MQTTMessage] = synchronized {
       val sliceStart = LongOffset.convert(startOffset).get.offset + 1
       val sliceEnd = LongOffset.convert(endOffset).get.offset + 1
-      for ( i <- sliceStart until sliceEnd) yield {
-        val m = messages(i)
-        // Only process the messages not already processed.
-        if (!processedMessageIds.contains(m.id) && !set.contains(m.id)) {
-          set.add(m.id)
-          if (maxIdProcessed < m.id) {
-            maxIdProcessed = m.id
-          }
-          Some(m)
-        } else None
-      }
+      for (i <- sliceStart until sliceEnd) yield messages(i)
     }
-    processedMessageIds.addAll(set)
     val spark = SparkSession.getActiveSession.get
     val numPartitions = spark.sparkContext.defaultParallelism
 
     val slices = Array.fill(numPartitions)(new ListBuffer[MQTTMessage])
-    rawList.flatten.zipWithIndex.foreach { case (r, idx) =>
+    rawList.zipWithIndex.foreach { case (r, idx) =>
       slices(idx % numPartitions).append(r)
     }
 
@@ -256,12 +222,6 @@ class MQTTStreamSource(options: DataSourceOptions, brokerUrl: String, persistenc
       messages.remove(x + 1)
     }
     lastOffsetCommitted = newOffset
-    if (processedMessageIds.size() > 2 * backLog) {
-      // Prune extra messages.
-      val toBePruned = processedMessageIds.asScala.filter(_ < (maxIdProcessed - backLog))
-      toBePruned.foreach(processedMessageIds.remove)
-      log.debug(s"Pruned processedMessageIds and removed ${toBePruned.size} entries.")
-    }
   }
 
   /** Stop this source. */
