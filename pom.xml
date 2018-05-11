@@ -77,7 +77,7 @@
   <modules>
     <module>sql-cloudant</module>
     <module>streaming-akka</module>
-    <module>sql-streaming-akka</module>
+    <!-- <module>sql-streaming-akka</module> Disabling akka sql module, until it is updated to run with datasource v2 API. -->
     <module>streaming-mqtt</module>
     <module>sql-streaming-mqtt</module>
     <module>streaming-twitter</module>

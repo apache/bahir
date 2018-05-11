@@ -176,8 +176,7 @@ class StressTestMQTTSource extends MQTTStreamSourceSuite {
     val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataframe()
 
     val query = writeStreamResults(sqlContext, dataFrame)
-    mqttTestUtils.publishData("test", sendMessage, noOfMsgs / 2)
-    mqttTestUtils.publishData("test", sendMessage, noOfMsgs / 2)
+    mqttTestUtils.publishData("test", sendMessage, noOfMsgs )
     query.processAllAvailable()
     query.awaitTermination(25000)
 
