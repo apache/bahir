@@ -68,7 +68,7 @@ An example, for scala API to count words from incoming message stream.
     val lines = spark.readStream
       .format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider")
       .option("topic", topic)
-      .load(brokerUrl).as[(String, Timestamp)]
+      .load(brokerUrl).selectExpr("CAST(payload AS STRING)").as[String]
 
     // Split the lines into words
     val words = lines.map(_._1).flatMap(_.split(" "))
@@ -95,7 +95,8 @@ An example, for Java API to count words from incoming message stream.
             .readStream()
             .format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider")
             .option("topic", topic)
-            .load(brokerUrl).select("value").as(Encoders.STRING());
+            .load(brokerUrl)
+            .selectExpr("CAST(payload AS STRING)").as(Encoders.STRING());
 
     // Split the lines into words
     Dataset<String> words = lines.flatMap(new FlatMapFunction<String, String>() {
@@ -118,3 +119,43 @@ An example, for Java API to count words from incoming message stream.
 
 Please see `JavaMQTTStreamWordCount.java` for full example.
 
+## Best Practices.
+
+1. > *MQTT is a machine-to-machine (M2M)/"Internet of Things" connectivity protocol. It was designed as an extremely lightweight publish/subscribe messaging transport.*
+
+The design of Mqtt and the purpose it serves goes well together, but often in an application it is of outmost value to have reliablity. Since mqtt is not a distributed message queue and thus does not offer the highest level of reliability features. It should be redirected via a kafka message queue to take advantage of a distributed message queue. Infact, using a kafka message queue offers a lot of possiblities including a single kafka topic subscribed to several mqtt sources and even a single mqtt stream publishing to multiple kafka topics. Kafka is a reliable and scalable message queue.
+
+2. Often the message payload is not of the default character encoding or contains binary that needs to be parsed using a particular parser. In such cases, spark mqtt payload should be processed using the external parser. For example:
+
+ * Scala API example:
+```scala
+    // Create DataFrame representing the stream of input lines from connection to mqtt server
+    val lines = spark.readStream
+      .format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider")
+      .option("topic", topic)
+      .load(brokerUrl).select("payload").as[Array[Byte]].map(externalParser(_))
+```
+
+ * Java API example
+```java
+        // Create DataFrame representing the stream of input lines from connection to mqtt server
+        Dataset<byte[]> lines = spark
+                .readStream()
+                .format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider")
+                .option("topic", topic)
+                .load(brokerUrl).selectExpr("CAST(payload AS BINARY)").as(Encoders.BINARY());
+
+        // Split the lines into words
+        Dataset<String> words = lines.map(new MapFunction<byte[], String>() {
+            @Override
+            public String call(byte[] bytes) throws Exception {
+                return new String(bytes); // Plug in external parser here.
+            }
+        }, Encoders.STRING()).flatMap(new FlatMapFunction<String, String>() {
+            @Override
+            public Iterator<String> call(String x) {
+                return Arrays.asList(x.split(" ")).iterator();
+            }
+        }, Encoders.STRING());
+
+```

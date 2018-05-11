@@ -71,7 +71,7 @@ public final class JavaMQTTStreamWordCount {
                 .readStream()
                 .format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider")
                 .option("topic", topic)
-                .load(brokerUrl).select("value").as(Encoders.STRING());
+                .load(brokerUrl).selectExpr("CAST(payload AS STRING)").as(Encoders.STRING());
 
         // Split the lines into words
         Dataset<String> words = lines.flatMap(new FlatMapFunction<String, String>() {

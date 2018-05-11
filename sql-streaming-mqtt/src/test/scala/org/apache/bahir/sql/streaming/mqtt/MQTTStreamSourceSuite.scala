@@ -55,8 +55,7 @@ class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with B
 
   protected val tmpDir: String = tempDir.getAbsolutePath
 
-  protected def writeStreamResults(sqlContext: SQLContext,
-                                 dataFrame: DataFrame): StreamingQuery = {
+  protected def writeStreamResults(sqlContext: SQLContext, dataFrame: DataFrame): StreamingQuery = {
     import sqlContext.implicits._
     val query: StreamingQuery = dataFrame.selectExpr("CAST(payload AS STRING)").as[String]
       .writeStream.format("parquet").start(s"$tmpDir/t.parquet")
