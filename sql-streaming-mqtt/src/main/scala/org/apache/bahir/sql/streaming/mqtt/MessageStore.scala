@@ -63,14 +63,14 @@ trait Serializer {
   def serialize[T](x: T): Array[Byte]
 }
 
-class JavaSerializer extends Serializer {
+class JavaSerializer extends Serializer with Logging {
 
   override def deserialize[T](x: Array[Byte]): T = {
     val bis = new ByteArrayInputStream(x)
     val in = new ObjectInputStream(bis)
     val obj = if (in != null) {
       val o = in.readObject()
-      Try(in.close())
+      Try(in.close()).recover { case t: Throwable => log.warn("failed to close stream", t) }
       o
     } else {
       null
@@ -85,7 +85,7 @@ class JavaSerializer extends Serializer {
     out.flush()
     if (bos != null) {
       val bytes: Array[Byte] = bos.toByteArray
-      Try(bos.close())
+      Try(bos.close()).recover { case t: Throwable => log.warn("failed to close stream", t) }
       bytes
     } else {
       null
