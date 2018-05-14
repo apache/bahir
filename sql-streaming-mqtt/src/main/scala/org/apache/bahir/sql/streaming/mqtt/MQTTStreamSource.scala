@@ -27,7 +27,6 @@ import scala.collection.JavaConverters._
 import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.IndexedSeq
 import scala.collection.mutable.ListBuffer
-import scala.util.{Failure, Success, Try}
 
 import org.eclipse.paho.client.mqttv3._
 import org.eclipse.paho.client.mqttv3.persist.{MemoryPersistence, MqttDefaultFilePersistence}
@@ -280,15 +279,17 @@ class MQTTStreamSourceProvider extends DataSourceV2
       .KEEP_ALIVE_INTERVAL_DEFAULT.toString).toInt
     val mqttVersion: Int = parameters.get("mqttVersion").orElse(MqttConnectOptions
       .MQTT_VERSION_DEFAULT.toString).toInt
-    val cleanSession: Boolean = parameters.get("cleanSession").orElse("false").toBoolean
+    val cleanSession: Boolean = parameters.get("cleanSession").orElse("true").toBoolean
     val qos: Int = parameters.get("QoS").orElse("1").toInt
-
+    val autoReconnect: Boolean = parameters.get("autoReconnect").orElse("false").toBoolean
+    val maxInflight: Int = parameters.get("maxInflight").orElse("60").toInt
     val mqttConnectOptions: MqttConnectOptions = new MqttConnectOptions()
-    mqttConnectOptions.setAutomaticReconnect(true)
+    mqttConnectOptions.setAutomaticReconnect(autoReconnect)
     mqttConnectOptions.setCleanSession(cleanSession)
     mqttConnectOptions.setConnectionTimeout(connectionTimeout)
     mqttConnectOptions.setKeepAliveInterval(keepAlive)
     mqttConnectOptions.setMqttVersion(mqttVersion)
+    mqttConnectOptions.setMaxInflight(maxInflight)
     (username, password) match {
       case (u: String, p: String) if u != null && p != null =>
         mqttConnectOptions.setUserName(u)

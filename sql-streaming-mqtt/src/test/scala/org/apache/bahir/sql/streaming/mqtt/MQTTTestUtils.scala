@@ -80,7 +80,7 @@ class MQTTTestUtils(tempDir: File, port: Int = 0) extends Logging {
         val msgTopic = client.getTopic(topic)
         for (i <- 0 until N) {
           try {
-            Thread.sleep(10)
+            Thread.sleep(20)
             val message = new MqttMessage(data.getBytes())
             message.setQos(2)
             // message.setId(i) setting id has no effect.

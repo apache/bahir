@@ -59,7 +59,9 @@ This source uses [Eclipse Paho Java Client](https://eclipse.org/paho/clients/jav
  * `connectionTimeout` Sets the connection timeout, a value of 0 is interpretted as wait until client connects. See `MqttConnectOptions.setConnectionTimeout` for more information.
  * `keepAlive` Same as `MqttConnectOptions.setKeepAliveInterval`.
  * `mqttVersion` Same as `MqttConnectOptions.setMqttVersion`.
-
+ * `maxInflight` Same as `MqttConnectOptions.setMaxInflight`
+ * `autoReconnect` Same as `MqttConnectOptions.setAutomaticReconnect`
+ 
 ### Scala API
 
 An example, for scala API to count words from incoming message stream. 
@@ -164,7 +166,7 @@ The design of Mqtt and the purpose it serves goes well together, but often in an
 
 3. What is the solution for a situation when there are a large number of varied mqtt sources, each with different schema and throughput characteristics.
 
-This is an anti-pattern for spark structured streaming, which is designed to process a single schema, high volume streaming feed. Generally, one would create a lot of streaming pipelines to solve this problem. This would either require a very sophisticated scheduling setup or will waste a lot of resources, as it is not certain which stream is using more amount of data.
+Generally, one would create a lot of streaming pipelines to solve this problem. This would either require a very sophisticated scheduling setup or will waste a lot of resources, as it is not certain which stream is using more amount of data.
 
 The general solution is both less optimum and is more cumbersome to operate, with multiple moving parts incurs a high maintenance overall. As an alternative, in this situation, one can setup a single topic kafka-spark stream, where message from each of the varied stream contains a unique tag separating one from other streams. This way at the processing end, one can distinguish the message from one another and apply the right kind of decoding and processing. Similarly while storing, each message can be distinguished from others by a tag that distinguishes.
 

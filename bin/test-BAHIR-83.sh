@@ -19,7 +19,6 @@
 set -o pipefail
 
 for i in `seq 100` ; do
-  mvn scalatest:test -pl sql-streaming-mqtt -q \
-    -Dsuites='*.BasicMQTTSourceSuite @ Recovering offset from the last processed offset.' | \
+  mvn scalatest:test -pl sql-streaming-mqtt -q -Dsuites='*.BasicMQTTSourceSuite' | \
     grep -q "TEST FAILED" && echo "$i: failed"
 done

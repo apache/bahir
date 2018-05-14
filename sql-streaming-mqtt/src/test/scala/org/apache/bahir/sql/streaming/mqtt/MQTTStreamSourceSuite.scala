@@ -59,7 +59,9 @@ class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with B
     import sqlContext.implicits._
     val query: StreamingQuery = dataFrame.selectExpr("CAST(payload AS STRING)").as[String]
       .writeStream.format("parquet").start(s"$tmpDir/t.parquet")
-    while (!query.isActive) {}
+    while (!query.status.isTriggerActive) {
+      Thread.sleep(20)
+    }
     query
   }
 
@@ -81,8 +83,9 @@ class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with B
 
     val ds: DataStreamReader =
       sqlContext.readStream.format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider")
-        .option("topic", "test").option("clientId", "clientId")
-        .option("QoS", "2")
+        .option("topic", "test").option("clientId", "clientId").option("connectionTimeout", "120")
+        .option("keepAlive", "1200").option("maxInflight", "120").option("autoReconnect", "false")
+        .option("cleanSession", "true").option("QoS", "2")
 
     val dataFrame = if (!filePersistence) {
       ds.option("persistence", "memory").load("tcp://" + mqttTestUtils.brokerUri)
@@ -101,13 +104,12 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
 
     val sendMessage = "MQTT is a message queue."
 
-
     val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataframe()
 
     val query = writeStreamResults(sqlContext, dataFrame)
     mqttTestUtils.publishData("test", sendMessage)
     query.processAllAvailable()
-    query.awaitTermination(5000)
+    query.awaitTermination(10000)
 
     val resultBuffer: mutable.Buffer[String] = readBackStreamingResults(sqlContext)
 
@@ -160,7 +162,7 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
 class StressTestMQTTSource extends MQTTStreamSourceSuite {
 
   // Run with -Xmx1024m
-  ignore("Send and receive messages of size 100MB.") {
+  test("Send and receive messages of size 100MB.") {
 
     val freeMemory: Long = Runtime.getRuntime.freeMemory()
 
