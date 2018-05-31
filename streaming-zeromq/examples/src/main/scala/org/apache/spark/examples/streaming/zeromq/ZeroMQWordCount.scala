@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
-// scalastyle:off println
+// scalastyle:off println awaitresult
 package org.apache.spark.examples.streaming.zeromq
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 import scala.language.implicitConversions
 
 import akka.actor.ActorSystem
@@ -53,7 +55,7 @@ object SimpleZeroMQPublisher {
       Thread.sleep(1000)
       pubSocket ! ZMQMessage(ByteString(topic) :: messages)
     }
-    acs.awaitTermination()
+    Await.result(acs.whenTerminated, Duration.Inf)
   }
 }
 
@@ -114,4 +116,4 @@ object ZeroMQWordCount {
     ssc.awaitTermination()
   }
 }
-// scalastyle:on println
+// scalastyle:on println awaitresult

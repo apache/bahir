@@ -31,13 +31,13 @@ import org.apache.bahir.utils.Logging
 
 trait MessageStore {
 
-  def store[T: ClassTag](id: Int, message: T): Boolean
+  def store[T: ClassTag](id: Long, message: T): Boolean
 
-  def retrieve[T: ClassTag](start: Int, end: Int): Seq[Option[T]]
+  def retrieve[T: ClassTag](start: Long, end: Long): Seq[Option[T]]
 
-  def retrieve[T: ClassTag](id: Int): Option[T]
+  def retrieve[T: ClassTag](id: Long): Option[T]
 
-  def maxProcessedOffset: Int
+  def maxProcessedOffset: Long
 }
 
 private[akka] class LocalMessageStore(val persistentStore: RocksDB,
@@ -51,11 +51,11 @@ private[akka] class LocalMessageStore(val persistentStore: RocksDB,
 
   val serializerInstance: SerializerInstance = serializer.newInstance()
 
-  private def get(id: Int) = persistentStore.get(id.toString.getBytes)
+  private def get(id: Long) = persistentStore.get(id.toString.getBytes)
 
-  override def maxProcessedOffset: Int = persistentStore.getLatestSequenceNumber.toInt
+  override def maxProcessedOffset: Long = persistentStore.getLatestSequenceNumber
 
-  override def store[T: ClassTag](id: Int, message: T): Boolean = {
+  override def store[T: ClassTag](id: Long, message: T): Boolean = {
     val bytes: Array[Byte] = serializerInstance.serialize(message).array()
     try {
       persistentStore.put(id.toString.getBytes(), bytes)
@@ -66,11 +66,11 @@ private[akka] class LocalMessageStore(val persistentStore: RocksDB,
     }
   }
 
-  override def retrieve[T: ClassTag](start: Int, end: Int): Seq[Option[T]] = {
+  override def retrieve[T: ClassTag](start: Long, end: Long): Seq[Option[T]] = {
     (start until end).map(x => retrieve(x))
   }
 
-  override def retrieve[T: ClassTag](id: Int): Option[T] = {
+  override def retrieve[T: ClassTag](id: Long): Option[T] = {
     val bytes = persistentStore.get(id.toString.getBytes)
 
     if (bytes != null) {

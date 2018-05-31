@@ -45,7 +45,7 @@ Setting values for option `persistenceDirPath` helps in recovering in case of a 
                        
 ## Configuration options.
                        
-This source uses [Akka Actor api](http://doc.akka.io/api/akka/2.4/akka/actor/Actor.html).
+This source uses [Akka Actor api](http://doc.akka.io/api/akka/2.5/akka/actor/Actor.html).
                        
 * `urlOfPublisher` The url of Publisher or Feeder actor that the Receiver actor connects to. Set this as the tcp url of the Publisher or Feeder actor.
 * `persistenceDirPath` By default it is used for storing incoming messages on disk.

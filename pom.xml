@@ -79,7 +79,7 @@
     <module>streaming-akka</module>
     <module>sql-streaming-akka</module>
     <module>streaming-mqtt</module>
-    <module>sql-streaming-mqtt</module>
+<!--    <module>sql-streaming-mqtt</module> -->
     <module>streaming-twitter</module>
     <module>streaming-zeromq</module>
     <module>streaming-pubsub</module>
@@ -99,13 +99,13 @@
     <log4j.version>1.2.17</log4j.version>
 
     <!-- Spark version -->
-    <spark.version>2.2.0</spark.version>
+    <spark.version>2.3.0</spark.version>
 
     <!-- MQTT Client -->
     <mqtt.paho.client>1.1.0</mqtt.paho.client>
     <!-- Streaming Akka connector -->
     <akka.group>com.typesafe.akka</akka.group>
-    <akka.version>2.4.20</akka.version>
+    <akka.version>2.5.12</akka.version>
     <akka_zeromq.version>2.3.16</akka_zeromq.version>
 
     <protobuf.version>2.5.0</protobuf.version>
@@ -348,13 +348,13 @@
       <dependency>
         <groupId>org.scalatest</groupId>
         <artifactId>scalatest_${scala.binary.version}</artifactId>
-        <version>2.2.6</version>
+        <version>3.0.3</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.scalacheck</groupId>
         <artifactId>scalacheck_${scala.binary.version}</artifactId>
-        <version>1.12.5</version> <!-- 1.13.0 appears incompatible with scalatest 2.2.6 -->
+        <version>1.13.5</version>
         <scope>test</scope>
       </dependency>
 
@@ -482,7 +482,7 @@
         <plugin>
           <groupId>net.alchim31.maven</groupId>
           <artifactId>scala-maven-plugin</artifactId>
-          <version>3.3.1</version>
+          <version>3.2.2</version>
           <executions>
             <execution>
               <id>eclipse-add-source</id>
@@ -1040,6 +1040,7 @@
       </modules>
     </profile>
 
+    <!--
     <profile>
       <id>scala-2.10</id>
       <activation>
@@ -1122,6 +1123,7 @@
         </plugins>
       </build>
     </profile>
+    -->
 
     <profile>
       <id>test-java-home</id>

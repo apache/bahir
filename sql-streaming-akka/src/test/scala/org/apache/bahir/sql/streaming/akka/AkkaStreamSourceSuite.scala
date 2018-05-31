@@ -18,6 +18,7 @@
 package org.apache.bahir.sql.streaming.akka
 
 import java.io.File
+import java.util.Optional
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -27,7 +28,8 @@ import org.scalatest.BeforeAndAfter
 import org.apache.spark.{SparkConf, SparkFunSuite}
 import org.apache.spark.sql.{DataFrame, SparkSession, SQLContext}
 import org.apache.spark.sql.execution.streaming.FileStreamSource.Timestamp
-import org.apache.spark.sql.execution.streaming.LongOffset
+import org.apache.spark.sql.sources.v2.DataSourceOptions
+import org.apache.spark.sql.types.StructType
 
 import org.apache.bahir.utils.BahirUtils
 
@@ -126,7 +128,8 @@ class BasicAkkaSourceSuite extends AkkaStreamSourceSuite {
     val parameters = Map("persistenceDirPath" -> persistenceDirPath)
 
     intercept[IllegalArgumentException] {
-      provider.createSource(sqlContext, "", None, "", parameters)
+      provider.createMicroBatchReader(
+        Optional.empty[StructType], "", new DataSourceOptions(parameters.asJava))
     }
   }
 
@@ -145,8 +148,10 @@ class BasicAkkaSourceSuite extends AkkaStreamSourceSuite {
     val parameters = Map("urlOfPublisher" -> akkaTestUtils.getFeederActorUri(),
       "persistenceDirPath" -> persistenceDirPath)
 
-    val offset: Long = provider.createSource(sqlContext, "", None, "", parameters)
-      .getOffset.get.asInstanceOf[LongOffset].offset
+    val offset: Long = provider.createMicroBatchReader(
+      Optional.empty[StructType], "", new DataSourceOptions(parameters.asJava))
+          .asInstanceOf[AkkaMicroBatchReader]
+          .getCurrentOffset.offset
     assert(offset === 100L)
   }
 }

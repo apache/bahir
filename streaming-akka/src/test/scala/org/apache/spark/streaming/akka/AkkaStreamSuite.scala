@@ -20,6 +20,7 @@ package org.apache.spark.streaming.akka
 import java.util.concurrent.ConcurrentLinkedQueue
 
 import scala.collection.JavaConverters._
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import akka.actor._
@@ -42,8 +43,7 @@ class AkkaStreamSuite extends SparkFunSuite with Eventually with BeforeAndAfter 
       ssc = null
     }
     if (actorSystem != null) {
-      actorSystem.shutdown()
-      actorSystem.awaitTermination(30.seconds)
+      Await.ready(actorSystem.terminate(), 30.seconds)
       actorSystem = null
     }
   }

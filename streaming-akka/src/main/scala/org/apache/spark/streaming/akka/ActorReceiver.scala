@@ -20,7 +20,7 @@ package org.apache.spark.streaming.akka
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.reflect.ClassTag
@@ -302,7 +302,6 @@ private[akka] class ActorReceiverSupervisor[T: ClassTag](
 
   def onStop(): Unit = {
     actorSupervisor ! PoisonPill
-    actorSystem.shutdown()
-    actorSystem.awaitTermination()
+    Await.ready(actorSystem.terminate(), Duration.Inf)
   }
 }

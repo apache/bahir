@@ -21,6 +21,8 @@ package org.apache.bahir.sql.streaming.akka
 import java.io.File
 
 import scala.collection.mutable
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import scala.util.Random
 
 import akka.actor.{Actor, ActorRef, ActorSystem, ExtendedActorSystem, Props}
@@ -84,8 +86,7 @@ class AkkaTestUtils extends Logging {
   }
 
   def shutdown(): Unit = {
-//    actorSystem.awaitTermination()
-    actorSystem.shutdown()
+    Await.ready(actorSystem.terminate(), 5.seconds)
   }
 
   def setMessage(message: String): Unit = this.message = message
