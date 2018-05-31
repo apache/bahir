@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
-// scalastyle:off println
+// scalastyle:off println awaitresult
 package org.apache.spark.examples.streaming.akka
 
 import scala.collection.mutable
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 import scala.util.Random
 
 import akka.actor.{Props, _}
@@ -118,7 +120,7 @@ object FeederActor {
 
     println("Feeder started as:" + feeder)
 
-    actorSystem.awaitTermination()
+    Await.result(actorSystem.whenTerminated, Duration.Inf)
   }
 }
 
@@ -182,4 +184,4 @@ object ActorWordCount {
     ssc.awaitTermination()
   }
 }
-// scalastyle:on println
+// scalastyle:on println awaitresult

@@ -77,7 +77,7 @@
   <modules>
     <module>sql-cloudant</module>
     <module>streaming-akka</module>
-    <!-- <module>sql-streaming-akka</module> Disabling akka sql module, until it is updated to run with datasource v2 API. -->
+    <module>sql-streaming-akka</module>
     <module>streaming-mqtt</module>
     <module>sql-streaming-mqtt</module>
     <module>streaming-twitter</module>
@@ -105,7 +105,7 @@
     <mqtt.paho.client>1.1.0</mqtt.paho.client>
     <!-- Streaming Akka connector -->
     <akka.group>com.typesafe.akka</akka.group>
-    <akka.version>2.4.20</akka.version>
+    <akka.version>2.5.12</akka.version>
     <akka_zeromq.version>2.3.16</akka_zeromq.version>
 
     <protobuf.version>2.5.0</protobuf.version>
@@ -569,7 +569,7 @@
               <include>**/*Suite.java</include>
             </includes>
             <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-            <argLine>-ea -Xmx3g -Xss4m -XX:ReservedCodeCacheSize=${CodeCacheSize}</argLine>
+            <argLine>-Xmx3g -Xss4096k -XX:ReservedCodeCacheSize=${CodeCacheSize}</argLine>
             <environmentVariables>
               <!--
                 Setting SPARK_DIST_CLASSPATH is a simple way to make sure any child processes
@@ -1042,6 +1042,7 @@
       </modules>
     </profile>
 
+    <!--
     <profile>
       <id>scala-2.10</id>
       <activation>
@@ -1124,6 +1125,7 @@
         </plugins>
       </build>
     </profile>
+    -->
 
     <profile>
       <id>test-java-home</id>
