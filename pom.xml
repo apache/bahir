@@ -79,7 +79,7 @@
     <module>streaming-akka</module>
     <module>sql-streaming-akka</module>
     <module>streaming-mqtt</module>
-<!--    <module>sql-streaming-mqtt</module> -->
+    <module>sql-streaming-mqtt</module>
     <module>streaming-twitter</module>
     <module>streaming-zeromq</module>
     <module>streaming-pubsub</module>
