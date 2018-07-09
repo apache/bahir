@@ -1,4 +1,4 @@
-A library for reading data from MQTT Servers using Spark SQL Streaming ( or Structured streaming.). 
+A library for writing and reading data from MQTT Servers using Spark SQL Streaming (or Structured streaming).
 
 ## Linking
 
@@ -26,16 +26,25 @@ This library is compiled for Scala 2.11 only, and intends to support Spark 2.0 o
 
 ## Examples
 
-A SQL Stream can be created with data streams received through MQTT Server using,
+SQL Stream can be created with data streams received through MQTT Server using:
 
     sqlContext.readStream
         .format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider")
         .option("topic", "mytopic")
         .load("tcp://localhost:1883")
 
-## Enable recovering from failures.
+SQL Stream may be also transferred into MQTT messages using:
 
-Setting values for option `localStorage` and `clientId` helps in recovering in case of a restart, by restoring the state where it left off before the shutdown.
+    sqlContext.writeStream
+        .format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSinkProvider")
+        .option("checkpointLocation", "/path/to/localdir")
+        .outputMode("complete")
+        .option("topic", "mytopic")
+        .load("tcp://localhost:1883")
+
+## Source recovering from failures
+
+Setting values for option `localStorage` and `clientId` helps in recovering in case of source restart, by restoring the state where it left off before the shutdown.
 
     sqlContext.readStream
         .format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider")
@@ -44,14 +53,14 @@ Setting values for option `localStorage` and `clientId` helps in recovering in c
         .option("clientId", "some-client-id")
         .load("tcp://localhost:1883")
 
-## Configuration options.
+## Configuration options
 
-This source uses [Eclipse Paho Java Client](https://eclipse.org/paho/clients/java/). Client API documentation is located [here](http://www.eclipse.org/paho/files/javadoc/index.html).
+This connector uses [Eclipse Paho Java Client](https://eclipse.org/paho/clients/java/). Client API documentation is located [here](http://www.eclipse.org/paho/files/javadoc/index.html).
 
- * `brokerUrl` A url MqttClient connects to. Set this or `path` as the url of the Mqtt Server. e.g. tcp://localhost:1883.
+ * `brokerUrl` An URL MqttClient connects to. Set this or `path` as the URL of the Mqtt Server. e.g. tcp://localhost:1883.
  * `persistence` By default it is used for storing incoming messages on disk. If `memory` is provided as value for this option, then recovery on restart is not supported.
  * `topic` Topic MqttClient subscribes to.
- * `clientId` clientId, this client is assoicated with. Provide the same value to recover a stopped client.
+ * `clientId` clientId, this client is associated with. Provide the same value to recover a stopped source client. MQTT sink ignores client identifier, because Spark batch can be distributed across multiple workers whereas MQTT broker does not allow simultanous connections with same ID from multiple hosts.
  * `QoS` The maximum quality of service to subscribe each topic at. Messages published at a lower quality of service will be received at the published QoS. Messages published at a higher quality of service will be received using the QoS specified on the subscribe.
  * `username` Sets the user name to use for the connection to Mqtt Server. Do not set it, if server does not need this. Setting it empty will lead to errors.
  * `password` Sets the password to use for the connection.
@@ -61,7 +70,17 @@ This source uses [Eclipse Paho Java Client](https://eclipse.org/paho/clients/jav
  * `mqttVersion` Same as `MqttConnectOptions.setMqttVersion`.
  * `maxInflight` Same as `MqttConnectOptions.setMaxInflight`
  * `autoReconnect` Same as `MqttConnectOptions.setAutomaticReconnect`
- 
+
+## Environment variables
+
+Custom environment variables allowing to manage MQTT connectivity performed by sink connector:
+
+ * `spark.mqtt.client.connect.attempts` Number of attempts sink will try to connect to MQTT broker before failing.
+ * `spark.mqtt.client.connect.backoff` Delay in milliseconds to wait before retrying connection to the server.
+ * `spark.mqtt.connection.cache.timeout` Sink connector caches MQTT connections. Idle connections will be closed after timeout milliseconds.
+ * `spark.mqtt.client.publish.attempts` Number of attempts to publish the message before failing the task.
+ * `spark.mqtt.client.publish.backoff` Delay in milliseconds to wait before retrying send operation.
+
 ### Scala API
 
 An example, for scala API to count words from incoming message stream. 
@@ -86,7 +105,7 @@ An example, for scala API to count words from incoming message stream.
 
     query.awaitTermination()
 
-Please see `MQTTStreamWordCount.scala` for full example.
+Please see `MQTTStreamWordCount.scala` for full example. Review `MQTTSinkWordCount.scala`, if interested in publishing data to MQTT broker.
 
 ### Java API
 
@@ -119,7 +138,7 @@ An example, for Java API to count words from incoming message stream.
 
     query.awaitTermination();
 
-Please see `JavaMQTTStreamWordCount.java` for full example.
+Please see `JavaMQTTStreamWordCount.java` for full example. Review `JavaMQTTSinkWordCount.java`, if interested in publishing data to MQTT broker.
 
 ## Best Practices.
 
