@@ -58,7 +58,7 @@ class LocalMessageStoreSuite extends SparkFunSuite with BeforeAndAfter {
     assert(testData === deserialized)
   }
 
-  test("Store and retreive") {
+  test("Store and retrieve") {
     store.store(1, testData)
     val result: Seq[Int] = store.retrieve(1)
     assert(testData === result)

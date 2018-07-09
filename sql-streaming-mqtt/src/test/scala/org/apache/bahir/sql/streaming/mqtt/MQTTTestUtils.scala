@@ -19,6 +19,9 @@ package org.apache.bahir.sql.streaming.mqtt
 
 import java.io.File
 import java.net.{ServerSocket, URI}
+import java.nio.charset.Charset
+
+import scala.collection.mutable
 
 import org.apache.activemq.broker.{BrokerService, TransportConnector}
 import org.eclipse.paho.client.mqttv3._
@@ -100,6 +103,36 @@ class MQTTTestUtils(tempDir: File, port: Int = 0) extends Logging {
         client.close()
         client = null
       }
+    }
+  }
+
+  def subscribeData(topic: String, messages: mutable.Map[Int, String]): MqttClient = {
+    val client = new MqttClient("tcp://" + brokerUri, MqttClient.generateClientId(), null)
+    val callback = new MqttCallbackExtended() {
+      override def messageArrived(topic_ : String, message: MqttMessage): Unit = synchronized {
+        messages.put(message.getId, new String(message.getPayload, Charset.defaultCharset()))
+      }
+
+      override def deliveryComplete(token: IMqttDeliveryToken): Unit = {
+      }
+
+      override def connectionLost(cause: Throwable): Unit = {
+      }
+
+      override def connectComplete(reconnect: Boolean, serverURI: String): Unit = {
+      }
+    }
+    client.setCallback(callback)
+    client.connect()
+    client.subscribe(topic)
+    client
+  }
+
+  def sleepUntil(predicate: => Boolean, timeout: Long): Unit = {
+    val deadline = System.currentTimeMillis() + timeout
+    while (System.currentTimeMillis() < deadline) {
+      Thread.sleep(1000)
+      if (predicate) return
     }
   }
 

@@ -29,7 +29,6 @@ import scala.collection.immutable.IndexedSeq
 import scala.collection.mutable.ListBuffer
 
 import org.eclipse.paho.client.mqttv3._
-import org.eclipse.paho.client.mqttv3.persist.{MemoryPersistence, MqttDefaultFilePersistence}
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.sources.DataSourceRegister
@@ -83,7 +82,7 @@ class MQTTMessage(m: MqttMessage, val topic: String) extends Serializable {
  *                    incoming messages on disk. If memory is provided as option, then recovery on
  *                    restart is not supported.
  * @param topic topic MqttClient subscribes to.
- * @param clientId clientId, this client is assoicated with. Provide the same value to recover
+ * @param clientId clientId, this client is associated with. Provide the same value to recover
  *                 a stopped client.
  * @param mqttConnectOptions an instance of MqttConnectOptions for this Source.
  * @param qos the maximum quality of service to subscribe each topic at.Messages published at
@@ -244,60 +243,11 @@ class MQTTStreamSourceProvider extends DataSourceV2
       throw e("The mqtt source does not support a user-specified schema.")
     }
 
-    val brokerUrl = parameters.get("brokerUrl").orElse(parameters.get("path").orElse(null))
+    import scala.collection.JavaConverters._
+    val (brokerUrl, clientId, topic, persistence, mqttConnectOptions, qos) =
+      MQTTUtils.parseConfigParams(collection.immutable.HashMap() ++ parameters.asMap().asScala)
 
-    if (brokerUrl == null) {
-      throw e("Please provide a broker url, with option(\"brokerUrl\", ...).")
-    }
-
-    val persistence: MqttClientPersistence = parameters.get("persistence").orElse("") match {
-      case "memory" => new MemoryPersistence()
-      case _ => val localStorage: String = parameters.get("localStorage").orElse("")
-        localStorage match {
-          case "" => new MqttDefaultFilePersistence()
-          case x => new MqttDefaultFilePersistence(x)
-        }
-    }
-
-    // if default is subscribe everything, it leads to getting lot unwanted system messages.
-    val topic: String = parameters.get("topic").orElse(null)
-    if (topic == null) {
-      throw e("Please specify a topic, by .options(\"topic\",...)")
-    }
-
-    val clientId: String = parameters.get("clientId").orElse {
-      log.warn("If `clientId` is not set, a random value is picked up." +
-        " Recovering from failure is not supported in such a case.")
-      MqttClient.generateClientId()}
-
-    val username: String = parameters.get("username").orElse(null)
-    val password: String = parameters.get("password").orElse(null)
-
-    val connectionTimeout: Int = parameters.get("connectionTimeout").orElse(
-      MqttConnectOptions.CONNECTION_TIMEOUT_DEFAULT.toString).toInt
-    val keepAlive: Int = parameters.get("keepAlive").orElse(MqttConnectOptions
-      .KEEP_ALIVE_INTERVAL_DEFAULT.toString).toInt
-    val mqttVersion: Int = parameters.get("mqttVersion").orElse(MqttConnectOptions
-      .MQTT_VERSION_DEFAULT.toString).toInt
-    val cleanSession: Boolean = parameters.get("cleanSession").orElse("true").toBoolean
-    val qos: Int = parameters.get("QoS").orElse("1").toInt
-    val autoReconnect: Boolean = parameters.get("autoReconnect").orElse("false").toBoolean
-    val maxInflight: Int = parameters.get("maxInflight").orElse("60").toInt
-    val mqttConnectOptions: MqttConnectOptions = new MqttConnectOptions()
-    mqttConnectOptions.setAutomaticReconnect(autoReconnect)
-    mqttConnectOptions.setCleanSession(cleanSession)
-    mqttConnectOptions.setConnectionTimeout(connectionTimeout)
-    mqttConnectOptions.setKeepAliveInterval(keepAlive)
-    mqttConnectOptions.setMqttVersion(mqttVersion)
-    mqttConnectOptions.setMaxInflight(maxInflight)
-    (username, password) match {
-      case (u: String, p: String) if u != null && p != null =>
-        mqttConnectOptions.setUserName(u)
-        mqttConnectOptions.setPassword(p.toCharArray)
-      case _ =>
-    }
-
-    new  MQTTStreamSource(parameters, brokerUrl, persistence, topic, clientId,
+    new MQTTStreamSource(parameters, brokerUrl, persistence, topic, clientId,
       mqttConnectOptions, qos)
   }
   override def shortName(): String = "mqtt"

@@ -74,10 +74,11 @@ class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with B
     asList
   }
 
-  protected def createStreamingDataframe(dir: String = tmpDir,
+  protected def createStreamingDataFrame(dir: String = tmpDir,
       filePersistence: Boolean = false): (SQLContext, DataFrame) = {
 
-    val sqlContext: SQLContext = new SQLContext(sc)
+    val sqlContext: SQLContext = SparkSession.builder()
+      .getOrCreate().sqlContext
 
     sqlContext.setConf("spark.sql.streaming.checkpointLocation", tmpDir)
 
@@ -104,7 +105,7 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
 
     val sendMessage = "MQTT is a message queue."
 
-    val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataframe()
+    val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataFrame()
 
     val query = writeStreamResults(sqlContext, dataFrame)
     mqttTestUtils.publishData("test", sendMessage)
@@ -121,7 +122,7 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
 
     val sendMessage = "MQTT is a message queue."
 
-    val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataframe()
+    val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataFrame()
 
     val q = writeStreamResults(sqlContext, dataFrame)
 
@@ -137,7 +138,7 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
 
   test("no server up") {
     val provider = new MQTTStreamSourceProvider
-    val sqlContext: SQLContext = new SQLContext(sc)
+    val sqlContext: SQLContext = SparkSession.builder().getOrCreate().sqlContext
     val parameters = new DataSourceOptions(Map("brokerUrl" ->
       "tcp://localhost:1881", "topic" -> "test", "localStorage" -> tmpDir).asJava)
     intercept[MqttException] {
@@ -174,7 +175,7 @@ class StressTestMQTTSource extends MQTTStreamSourceSuite {
     for (i <- 0 until (500 * 1024)) yield messageBuilder.append(((i % 26) + 65).toChar)
     val sendMessage = messageBuilder.toString() // each message is 50 KB
 
-    val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataframe()
+    val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataFrame()
 
     val query = writeStreamResults(sqlContext, dataFrame)
     mqttTestUtils.publishData("test", sendMessage, noOfMsgs )
