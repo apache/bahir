@@ -44,6 +44,26 @@ class MQTTUtils(object):
         return DStream(jstream, ssc, UTF8Deserializer())
 
     @staticmethod
+    def createStream(ssc, brokerUrl, topic,
+                     username, password,
+                     storageLevel=StorageLevel.MEMORY_AND_DISK_2):
+        """
+        Create an input stream that pulls messages from a Mqtt Broker.
+
+        :param ssc:  StreamingContext object
+        :param brokerUrl:  Url of remote mqtt publisher
+        :param topic:  topic name to subscribe to
+        :param username:  the vitual host name : username or username
+        :param password:  the password of mqtt
+        :param storageLevel:  RDD storage level.
+        :return: A DStream object
+        """
+        jlevel = ssc._sc._getJavaStorageLevel(storageLevel)
+        helper = MQTTUtils._get_helper(ssc._sc)
+        jstream = helper.createStream(ssc._jssc, brokerUrl, topic, jlevel, username, password)
+        return DStream(jstream, ssc, UTF8Deserializer())
+
+    @staticmethod
     def createPairedStream(ssc, brokerUrl, topics,
                      storageLevel=StorageLevel.MEMORY_AND_DISK_2):
         """

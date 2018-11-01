@@ -148,6 +148,28 @@ object MQTTUtils {
    * @param jssc               JavaStreamingContext object
    * @param brokerUrl          Url of remote MQTT publisher
    * @param topic              Topic name to subscribe to
+   * @param storageLevel       RDD storage level.
+   * @param username           Username for authentication to the mqtt publisher
+   * @param password           Password for authentication to the mqtt publisher
+   */
+  def createStream(
+      jssc: JavaStreamingContext,
+      brokerUrl: String,
+      topic: String,
+      storageLevel: StorageLevel,
+      username: String,
+      password: String
+    ): JavaReceiverInputDStream[String] = {
+    implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[String]]
+    createStream(jssc.ssc, brokerUrl, topic, storageLevel, None, Option(username),
+        Option(password), None, None, None, None, None)
+  }
+
+  /**
+   * Create an input stream that receives messages pushed by a MQTT publisher.
+   * @param jssc               JavaStreamingContext object
+   * @param brokerUrl          Url of remote MQTT publisher
+   * @param topic              Topic name to subscribe to
    * @param clientId           ClientId to use for the mqtt connection
    * @param username           Username for authentication to the mqtt publisher
    * @param password           Password for authentication to the mqtt publisher
@@ -597,5 +619,16 @@ private[mqtt] class MQTTUtilsPythonHelper {
       storageLevel: StorageLevel
       ): JavaDStream[(String, Array[Byte])] = {
     MQTTUtils.createPairedByteArrayStream(jssc, brokerUrl, topics, storageLevel)
+  }
+
+  def createStream(
+      jssc: JavaStreamingContext,
+      brokerUrl: String,
+      topic: String,
+      storageLevel: StorageLevel,
+      username: String,
+      password: String
+    ): JavaDStream[String] = {
+     MQTTUtils.createStream(jssc, brokerUrl, topic, storageLevel, username, password)
   }
 }
