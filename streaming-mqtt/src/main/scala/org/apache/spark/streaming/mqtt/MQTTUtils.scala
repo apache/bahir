@@ -164,6 +164,7 @@ object MQTTUtils {
     createStream(jssc.ssc, brokerUrl, topic, storageLevel, None, Option(username),
         Option(password), None, None, None, None, None)
   }
+
   /**
    * Create an input stream that receives messages pushed by a MQTT publisher.
    * @param jssc               JavaStreamingContext object
