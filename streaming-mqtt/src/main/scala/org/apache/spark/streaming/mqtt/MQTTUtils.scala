@@ -628,7 +628,7 @@ private[mqtt] class MQTTUtilsPythonHelper {
       storageLevel: StorageLevel,
       username: String,
       password: String
-    ): JavaDStream[String]= {
+    ): JavaDStream[String] = {
      MQTTUtils.createStream(jssc, brokerUrl, topic, storageLevel, username, password)
   }
 }
