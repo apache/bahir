@@ -58,7 +58,7 @@ case class CloudantReadWriteRelation (config: CloudantConfig,
 
       logger.info("buildScan:" + columns + "," + origFilters)
       val cloudantRDD = new JsonStoreRDD(sqlContext.sparkContext, config)
-      val df = sqlContext.read.json(cloudantRDD)
+      val df = sqlContext.read.json(cloudantRDD.toDS())
       if (colsLength > 1) {
         val colsExceptCol0 = for (i <- 1 until colsLength) yield requiredColumns(i)
         df.select(requiredColumns(0), colsExceptCol0: _*).rdd
@@ -115,13 +115,13 @@ class DefaultSource extends RelationProvider
           config.viewPath == null
           && config.indexPath == null) {
           val cloudantRDD = new JsonStoreRDD(sqlContext.sparkContext, config)
-          dataFrame = sqlContext.read.json(cloudantRDD)
+          dataFrame = sqlContext.read.json(cloudantRDD.toDS())
           dataFrame
         } else {
           val dataAccess = new JsonStoreDataAccess(config)
           val aRDD = sqlContext.sparkContext.parallelize(
             dataAccess.getMany(config.getSchemaSampleSize))
-          sqlContext.read.json(aRDD)
+          sqlContext.read.json(aRDD.toDS())
         }
         df.schema
       } else {
@@ -147,7 +147,7 @@ class DefaultSource extends RelationProvider
             globalRDD = rdd ++ globalRDD
           } else {
             // Convert final global RDD[String] to DataFrame
-            dataFrame = sqlContext.sparkSession.read.json(globalRDD)
+            dataFrame = sqlContext.sparkSession.read.json(globalRDD.toDS())
             ssc.stop(stopSparkContext = false, stopGracefully = false)
           }
         })

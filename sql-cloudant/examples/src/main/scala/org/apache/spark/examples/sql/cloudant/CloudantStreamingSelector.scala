@@ -49,7 +49,7 @@ object CloudantStreamingSelector {
       // Get the singleton instance of SQLContext
 
       println(s"========= $time =========") // scalastyle:ignore
-      val changesDataFrame = spark.read.json(rdd)
+      val changesDataFrame = spark.read.json(rdd.toDS())
       if (changesDataFrame.schema.nonEmpty) {
         changesDataFrame.select("*").show()
         batchAmount = changesDataFrame.groupBy().sum("amount").collect()(0).getLong(0)

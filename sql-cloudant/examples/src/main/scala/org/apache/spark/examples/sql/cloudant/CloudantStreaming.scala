@@ -43,7 +43,7 @@ object CloudantStreaming {
 
       println(s"========= $time =========")// scalastyle:ignore
       // Convert RDD[String] to Dataset[String]
-      val changesDataFrame = spark.read.json(rdd)
+      val changesDataFrame = spark.read.json(rdd.toDS())
       if (changesDataFrame.schema.nonEmpty) {
         changesDataFrame.printSchema()
 
