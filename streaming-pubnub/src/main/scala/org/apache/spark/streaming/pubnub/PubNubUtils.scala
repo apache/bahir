@@ -30,16 +30,16 @@ import org.apache.spark.streaming.dstream.ReceiverInputDStream
 
 object PubNubUtils {
   /**
-    * Create an input stream that returns messages received from PubNub infrastructure.
-    * @param ssc Streaming context
-    * @param configuration PubNub client configuration
-    * @param channels Sequence of channels to subscribe
-    * @param channelGroups Sequence of channel groups to subscribe
-    * @param timeToken Optional point in time to start receiving messages from.
-    *                  Leave undefined to get only latest messages.
-    * @param storageLevel Storage level to use for storing the received objects
-    * @return Input stream
-    */
+   * Create an input stream that returns messages received from PubNub infrastructure.
+   * @param ssc Streaming context
+   * @param configuration PubNub client configuration
+   * @param channels Sequence of channels to subscribe
+   * @param channelGroups Sequence of channel groups to subscribe
+   * @param timeToken Optional point in time to start receiving messages from.
+   *                  Leave undefined to get only latest messages.
+   * @param storageLevel Storage level to use for storing the received objects
+   * @return Input stream
+   */
   def createStream(
       ssc: StreamingContext,
       configuration: PNConfiguration,
@@ -55,16 +55,16 @@ object PubNubUtils {
   }
 
   /**
-    * Create an input stream that returns messages received from PubNub infrastructure.
-    * @param jssc Java streaming context
-    * @param configuration PubNub client configuration
-    * @param channels Set of channels to subscribe
-    * @param channelGroups Set of channel groups to subscribe
-    * @param timeToken Optional point in time to start receiving messages from.
-    *                  Specify <code>null</code> to get only latest messages.
-    * @param storageLevel Storage level to use for storing the received objects
-    * @return Input stream
-    */
+   * Create an input stream that returns messages received from PubNub infrastructure.
+   * @param jssc Java streaming context
+   * @param configuration PubNub client configuration
+   * @param channels Set of channels to subscribe
+   * @param channelGroups Set of channel groups to subscribe
+   * @param timeToken Optional point in time to start receiving messages from.
+   *                  Specify <code>null</code> to get only latest messages.
+   * @param storageLevel Storage level to use for storing the received objects
+   * @return Input stream
+   */
   def createStream(
       jssc: JavaStreamingContext,
       configuration: PNConfiguration,
