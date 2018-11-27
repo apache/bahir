@@ -17,47 +17,35 @@
 
 package org.apache.spark.streaming.zeromq;
 
-import akka.actor.ActorSystem;
-import akka.actor.SupervisorStrategy;
-import akka.util.ByteString;
-import akka.zeromq.Subscribe;
 import org.junit.Test;
 
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function0;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.LocalJavaStreamingContext;
 import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
+import zmq.ZMQ;
+
+import java.util.Arrays;
 
 public class JavaZeroMQStreamSuite extends LocalJavaStreamingContext {
+    @Test
+    public void testZeroMQAPICompatibility() {
+        // Test the API, but do not exchange any messages.
+        final String publishUrl = "tcp://localhost:5555";
+        final String topic = "topic1";
+        final Function<byte[][], Iterable<String>> bytesToObjects =
+                new Function<byte[][], Iterable<String>>() {
+                    @Override
+                    public Iterable<String> call(byte[][] bytes) throws Exception {
+                        // Skip topic name and assume that each message contains only one frame.
+                        return Arrays.asList(new String(bytes[1], ZMQ.CHARSET));
+                    }
+                };
 
-  @Test // tests the API, does not actually test data receiving
-  public void testZeroMQStream() {
-    String publishUrl = "abc";
-    Subscribe subscribe = new Subscribe((ByteString)null);
-    Function<byte[][], Iterable<String>> bytesToObjects = new BytesToObjects();
-    Function0<ActorSystem> actorSystemCreator = new ActorSystemCreatorForTest();
-
-    JavaReceiverInputDStream<String> test1 = ZeroMQUtils.<String>createStream(
-      ssc, publishUrl, subscribe, bytesToObjects);
-    JavaReceiverInputDStream<String> test2 = ZeroMQUtils.<String>createStream(
-      ssc, publishUrl, subscribe, bytesToObjects, StorageLevel.MEMORY_AND_DISK_SER_2());
-    JavaReceiverInputDStream<String> test3 = ZeroMQUtils.<String>createStream(
-      ssc, publishUrl, subscribe, bytesToObjects, StorageLevel.MEMORY_AND_DISK_SER_2(),
-      actorSystemCreator, SupervisorStrategy.defaultStrategy());
-  }
+        JavaReceiverInputDStream<String> test1 = ZeroMQUtils.createJavaStream(
+                ssc, publishUrl, true, Arrays.asList(topic.getBytes()), bytesToObjects,
+                StorageLevel.MEMORY_AND_DISK_SER_2()
+        );
+    }
 }
 
-class BytesToObjects implements Function<byte[][], Iterable<String>> {
-  @Override
-  public Iterable<String> call(byte[][] bytes) throws Exception {
-    return null;
-  }
-}
-
-class ActorSystemCreatorForTest implements Function0<ActorSystem> {
-  @Override
-  public ActorSystem call() {
-    return null;
-  }
-}
