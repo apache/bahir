@@ -23,12 +23,11 @@ import org.junit.After;
 import org.junit.Before;
 
 public abstract class LocalJavaStreamingContext {
-
     protected transient JavaStreamingContext ssc;
 
     @Before
     public void setUp() {
-        SparkConf conf = new SparkConf()
+        final SparkConf conf = new SparkConf()
             .setMaster("local[2]")
             .setAppName("test")
             .set("spark.streaming.clock", "org.apache.spark.util.ManualClock");
@@ -42,3 +41,4 @@ public abstract class LocalJavaStreamingContext {
         ssc = null;
     }
 }
+
