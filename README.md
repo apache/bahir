@@ -47,12 +47,15 @@ Each extension currently available in Apache Bahir has an example application lo
 
 Currently, each submodule has its own README.md, with information on example usages and API.
 
+* [SQL Cloudant](https://github.com/apache/bahir/blob/master/sql-cloudant/README.md)
+* [SQL Streaming Akka](https://github.com/apache/bahir/blob/master/sql-streaming-akka/README.md)
 * [SQL Streaming MQTT](https://github.com/apache/bahir/blob/master/sql-streaming-mqtt/README.md)
 * [Streaming Akka](https://github.com/apache/bahir/blob/master/streaming-akka/README.md)
-* [Streaming Mqtt](https://github.com/apache/bahir/blob/master/streaming-mqtt/README.md)
-* [Streaming Zeromq](https://github.com/apache/bahir/blob/master/streaming-zeromq/README.md)
+* [Streaming MQTT](https://github.com/apache/bahir/blob/master/streaming-mqtt/README.md)
+* [Streaming PubNub](https://github.com/apache/bahir/blob/master/streaming-pubnub/README.md)
+* [Streaming Google Pub/Sub](https://github.com/apache/bahir/blob/master/streaming-pubsub/README.md)
 * [Streaming Twitter](https://github.com/apache/bahir/blob/master/streaming-twitter/README.md)
-* [SQL Cloudant](sql-cloudant/README.md)
+* [Streaming ZeroMQ](https://github.com/apache/bahir/blob/master/streaming-zeromq/README.md)
 
 Furthermore, to generate scaladocs for each module:
 
