@@ -33,7 +33,7 @@ public class JavaZeroMQStreamSuite extends LocalJavaStreamingContext {
         // Test the API, but do not exchange any messages.
         final String publishUrl = "tcp://localhost:5555";
         final String topic = "topic1";
-        final Function<byte[][], Iterable<String>> bytesToObjects =
+        final Function<byte[][], Iterable<String>> messageConverter =
                 new Function<byte[][], Iterable<String>>() {
                     @Override
                     public Iterable<String> call(byte[][] bytes) throws Exception {
@@ -43,7 +43,11 @@ public class JavaZeroMQStreamSuite extends LocalJavaStreamingContext {
                 };
 
         JavaReceiverInputDStream<String> test1 = ZeroMQUtils.createJavaStream(
-                ssc, publishUrl, true, Arrays.asList(topic.getBytes()), bytesToObjects,
+                ssc, publishUrl, true, Arrays.asList(topic.getBytes()), messageConverter,
+                StorageLevel.MEMORY_AND_DISK_SER_2()
+        );
+        JavaReceiverInputDStream<String> test2 = ZeroMQUtils.createTextJavaStream(
+                ssc, publishUrl, true, Arrays.asList(topic.getBytes()),
                 StorageLevel.MEMORY_AND_DISK_SER_2()
         );
     }

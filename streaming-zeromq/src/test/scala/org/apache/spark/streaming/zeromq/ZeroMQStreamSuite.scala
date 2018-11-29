@@ -44,7 +44,7 @@ class ZeroMQStreamSuite extends SparkFunSuite with Eventually with BeforeAndAfte
       // Assertions are not serializable.
       Seq()
     } else {
-      Seq(new String(bytes(1), zmq.ZMQ.CHARSET))
+      Seq(new String(bytes(1), ZMQ.CHARSET))
     }
   }
 
@@ -76,6 +76,9 @@ class ZeroMQStreamSuite extends SparkFunSuite with Eventually with BeforeAndAfte
     val test2: ReceiverInputDStream[String] = ZeroMQUtils.createStream(
       ssc, publishUrl, true, Seq(topic1.getBytes), messageConverter,
       StorageLevel.MEMORY_AND_DISK_SER_2
+    )
+    val test3: ReceiverInputDStream[String] = ZeroMQUtils.createTextStream(
+      ssc, publishUrl, true, Seq(topic1.getBytes)
     )
   }
 
@@ -172,6 +175,40 @@ class ZeroMQStreamSuite extends SparkFunSuite with Eventually with BeforeAndAfte
 
       assert(receivedMessages.size == 2)
       assert(Set(payload1, payload2).equals(receivedMessages))
+    }
+  }
+
+  test("Multiple frame message") {
+    zeroContext = new ZContext
+    zeroSocket = zeroContext.createSocket(ZMQ.PUB)
+    zeroSocket.bind(publishUrl)
+
+    val receiveStream = ZeroMQUtils.createTextStream(
+      ssc, publishUrl, true, Seq(topic1.getBytes, topic2.getBytes)
+    )
+
+    @volatile var receivedMessages: Set[String] = Set()
+    receiveStream.foreachRDD { rdd =>
+      for (element <- rdd.collect()) {
+        receivedMessages += element
+      }
+      receivedMessages
+    }
+
+    ssc.start()
+
+    eventually(timeout(Span(5, time.Seconds)), interval(Span(500, time.Millis))) {
+      val part1 = "first line"
+      val part2 = "second line"
+
+      val msg = new ZMsg
+      msg.add(topic1.getBytes)
+      msg.add(part1.getBytes)
+      msg.add(part2.getBytes)
+      msg.send(zeroSocket)
+
+      assert(receivedMessages.size == 2)
+      assert(Set(part1, part2).equals(receivedMessages))
     }
   }
 

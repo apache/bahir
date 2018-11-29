@@ -1,3 +1,4 @@
+# Spark Streaming ZeroMQ Connector
 
 A library for reading data from [ZeroMQ](http://zeromq.org/) using Spark Streaming. 
 
@@ -27,13 +28,23 @@ This library is cross-published for Scala 2.10 and Scala 2.11, so users should r
 
 ## Examples
 
+Review end-to-end examples at [ZeroMQ Examples](https://github.com/apache/bahir/tree/master/streaming-zeromq/examples).
 
 ### Scala API
 
-    val lines = ZeroMQUtils.createStream(ssc, ...)
+    import org.apache.spark.streaming.zeromq.ZeroMQUtils
+
+    val lines = ZeroMQUtils.createTextStream(
+      ssc, "tcp://server:5555", true, Seq("my-topic".getBytes)
+    )
 
 ### Java API
 
-    JavaDStream<String> lines = ZeroMQUtils.createStream(jssc, ...);
+    import org.apache.spark.storage.StorageLevel;
+    import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
+    import org.apache.spark.streaming.zeromq.ZeroMQUtils;
 
-See end-to-end examples at [ZeroMQ Examples](https://github.com/apache/bahir/tree/master/streaming-zeromq/examples)
+    JavaReceiverInputDStream<String> test1 = ZeroMQUtils.createJavaStream(
+        ssc, "tcp://server:5555", true, Arrays.asList("my-topic.getBytes()),
+        StorageLevel.MEMORY_AND_DISK_SER_2()
+    );

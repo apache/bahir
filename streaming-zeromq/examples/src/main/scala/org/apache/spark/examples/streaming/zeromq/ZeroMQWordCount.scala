@@ -17,8 +17,6 @@
 
 package org.apache.spark.examples.streaming.zeromq
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import scala.language.implicitConversions
 import scala.util.Random
 
@@ -57,10 +55,10 @@ object SimpleZeroMQPublisher {
         while (!Thread.currentThread.isInterrupted) {
           try {
             Thread.sleep(random.nextInt(1000))
-            val msg1 = new ZMsg
-            msg1.add(topic.getBytes)
-            msg1.add(messages(random.nextInt(messages.size)).getBytes)
-            msg1.send(socket)
+            val msg = new ZMsg
+            msg.add(topic.getBytes)
+            msg.add(messages(random.nextInt(messages.size)).getBytes)
+            msg.send(socket)
           } catch {
             case e: ZMQException if ZMQ.Error.ETERM.getCode == e.getErrorCode =>
               Thread.currentThread.interrupt()
@@ -118,12 +116,8 @@ object ZeroMQWordCount {
     // Create the context and set the batch size.
     val ssc = new StreamingContext(sparkConf, Seconds(2))
 
-    def bytesToString(bytes: Array[Array[Byte]]) = {
-      Seq(new String(bytes(1), zmq.ZMQ.CHARSET))
-    }
-
-    val lines = ZeroMQUtils.createStream(
-      ssc, url, true, Seq(topic.getBytes), bytesToString
+    val lines = ZeroMQUtils.createTextStream(
+      ssc, url, true, Seq(topic.getBytes)
     )
     val words = lines.flatMap(_.split(" "))
     val wordCounts = words.map(x => (x, 1)).reduceByKey(_ + _)
