@@ -18,6 +18,7 @@
 package org.apache.spark.streaming.zeromq
 
 import scala.collection.mutable
+import scala.language.postfixOps
 
 import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.Eventually

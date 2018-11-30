@@ -19,14 +19,14 @@ package org.apache.spark.streaming.pubsub
 
 import java.nio.file.{Files, Paths}
 
-import org.scalatest.concurrent.Timeouts
+import org.scalatest.concurrent.TimeLimits
 import org.scalatest.BeforeAndAfter
 
 import org.apache.spark.util.Utils
 import org.apache.spark.SparkFunSuite
 
 class SparkGCPCredentialsBuilderSuite
-    extends SparkFunSuite with Timeouts with BeforeAndAfter{
+    extends SparkFunSuite with TimeLimits with BeforeAndAfter{
   private def builder = SparkGCPCredentials.builder
 
   private val jsonFilePath = sys.env.get(PubsubTestUtils.envVarNameForJsonKeyPath)

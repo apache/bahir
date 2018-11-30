@@ -20,14 +20,14 @@ package org.apache.spark.streaming.pubsub
 import java.util.UUID
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.Eventually
 
-import org.apache.spark.streaming.StreamingContext
-import org.apache.spark.SparkFunSuite
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Seconds
+import org.apache.spark.streaming.StreamingContext
 
 class PubsubStreamSuite extends PubsubFunSuite with Eventually with BeforeAndAfter {
 
