@@ -32,15 +32,15 @@ Use maven infrastructure to create a project release package and publish
 to staging release location (https://dist.apache.org/repos/dist/dev/bahir)
 and maven staging release repository.
 
---release-prepare --releaseVersion="2.0.0" --developmentVersion="2.1.0-SNAPSHOT" [--releaseRc="rc1"] [--tag="v2.0.0"] [--gitCommitHash="a874b73"]
+--release-prepare --releaseVersion="2.3.0" --developmentVersion="2.4.0-SNAPSHOT" [--releaseRc="rc1"] [--tag="v2.3.0-rc1"] [--gitCommitHash="a874b73"]
 This form execute maven release:prepare and upload the release candidate distribution
 to the staging release location.
 
---release-publish --gitCommitHash="a874b73"
+--release-publish --tag="v2.3.0-rc1"
 Publish the maven artifacts of a release to the Apache staging maven repository.
 Note that this will publish both Scala 2.10 and 2.11 artifacts.
 
---release-snapshot [--gitCommitHash="a874b73"]
+--release-snapshot
 Publish the maven snapshot artifacts to Apache snapshots maven repository
 Note that this will publish both Scala 2.10 and 2.11 artifacts.
 
@@ -59,15 +59,13 @@ GPG_PASSPHRASE - Passphrase for GPG key used to sign release
 
 EXAMPLES
 
-release-build.sh --release-prepare --releaseVersion="2.0.0" --developmentVersion="2.1.0-SNAPSHOT"
-release-build.sh --release-prepare --releaseVersion="2.0.0" --developmentVersion="2.1.0-SNAPSHOT" --releaseRc="rc1" --tag="v2.0.0"
-release-build.sh --release-prepare --releaseVersion="2.0.0" --developmentVersion="2.1.0-SNAPSHOT" --releaseRc="rc1" --tag="v2.0.0"  --gitCommitHash="a874b73" --dryRun
+release-build.sh --release-prepare --releaseVersion="2.3.0" --developmentVersion="2.4.0-SNAPSHOT"
+release-build.sh --release-prepare --releaseVersion="2.3.0" --developmentVersion="2.4.0-SNAPSHOT" --releaseRc="rc1"
+release-build.sh --release-prepare --releaseVersion="2.3.0" --developmentVersion="2.4.0-SNAPSHOT" --tag="v2.3.0-rc1"  --gitCommitHash="a874b73" --dryRun
 
-release-build.sh --release-publish --gitCommitHash="a874b73"
-release-build.sh --release-publish --gitTag="v2.0.0rc1"
+release-build.sh --release-publish --gitTag="v2.3.0rc1"
 
 release-build.sh --release-snapshot
-release-build.sh --release-snapshot --gitCommitHash="a874b73"
 
 EOF
   exit 1
