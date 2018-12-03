@@ -35,7 +35,7 @@ class CloudantAllDocsDFSuite extends ClientSparkFunSuite {
       .getOrCreate()
   }
 
-  testIfEnabled("load and save data from Cloudant database") {
+  testIf("load and save data from Cloudant database", TestUtils.shouldRunTest) {
     // Loading data from Cloudant db
     val df = spark.read.format("org.apache.bahir.cloudant").load("n_flight")
     // Caching df in memory to speed computations
@@ -45,7 +45,7 @@ class CloudantAllDocsDFSuite extends ClientSparkFunSuite {
     assert(df.count() == 1967)
   }
 
-  testIfEnabled("load and count data from Cloudant search index") {
+  testIf("load and count data from Cloudant search index", TestUtils.shouldRunTest) {
     val df = spark.read.format("org.apache.bahir.cloudant")
       .option("index", "_design/view/_search/n_flights").load("n_flight")
     val total = df.filter(df("flightSegmentId") >"AA9")
@@ -54,7 +54,7 @@ class CloudantAllDocsDFSuite extends ClientSparkFunSuite {
     assert(total == 50)
   }
 
-  testIfEnabled("load data and count rows in filtered dataframe") {
+  testIf("load data and count rows in filtered dataframe", TestUtils.shouldRunTest) {
     // Loading data from Cloudant db
     val df = spark.read.format("org.apache.bahir.cloudant")
       .load("n_airportcodemapping")
@@ -63,7 +63,7 @@ class CloudantAllDocsDFSuite extends ClientSparkFunSuite {
   }
 
   // save data to Cloudant test
-  testIfEnabled("save filtered dataframe to database") {
+  testIf("save filtered dataframe to database", TestUtils.shouldRunTest) {
     val df = spark.read.format("org.apache.bahir.cloudant").load("n_flight")
 
     // Saving data frame with filter to Cloudant db
@@ -80,7 +80,7 @@ class CloudantAllDocsDFSuite extends ClientSparkFunSuite {
   }
 
   // createDBOnSave option test
-  testIfEnabled("save dataframe to database using createDBOnSave=true option") {
+  testIf("save dataframe to database using createDBOnSave=true option", TestUtils.shouldRunTest) {
     val df = spark.read.format("org.apache.bahir.cloudant")
       .load("n_airportcodemapping")
 
@@ -106,13 +106,13 @@ class CloudantAllDocsDFSuite extends ClientSparkFunSuite {
   }
 
   // view option tests
-  testIfEnabled("load and count data from view") {
+  testIf("load and count data from view", TestUtils.shouldRunTest) {
     val df = spark.read.format("org.apache.bahir.cloudant")
       .option("view", "_design/view/_view/AA0").load("n_flight")
     assert(df.count() == 5)
   }
 
-  testIfEnabled("load data from view with MapReduce function") {
+  testIf("load data from view with MapReduce function", TestUtils.shouldRunTest) {
     val df = spark.read.format("org.apache.bahir.cloudant")
       .option("view", "_design/view/_view/AAreduce?reduce=true")
       .load("n_flight")

@@ -17,8 +17,6 @@
 
 package org.apache.bahir.cloudant
 
-import java.io.File
-
 object TestUtils {
   // Set CouchDB/Cloudant host, username and password for local testing
   private val host = System.getenv("CLOUDANT_HOST")
@@ -36,15 +34,6 @@ object TestUtils {
     "n_flight2",
     "n_flightsegment"
   )
-
-  def deleteRecursively(file: File): Unit = {
-    if (file.isDirectory) {
-      file.listFiles.foreach(deleteRecursively)
-    }
-    if (file.exists && !file.delete) {
-      throw new Exception(s"Unable to delete ${file.getAbsolutePath}")
-    }
-  }
 
   // default value is https for cloudant.com accounts
   def getProtocol: String = {
@@ -71,12 +60,11 @@ object TestUtils {
     password
   }
 
-  lazy val shouldRunTests = {
+  def shouldRunTest(): Boolean = {
     val isEnvSet = (username != null && !username.isEmpty) &&
       (password != null && !password.isEmpty)
     if (isEnvSet) {
       // scalastyle:off println
-      // Print this so that they are easily visible on the console and not hidden in the log4j logs.
       println(
         s"""
            |Sql-cloudant tests that require Cloudant databases have been enabled by

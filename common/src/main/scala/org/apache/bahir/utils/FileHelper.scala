@@ -21,10 +21,9 @@ import java.io.{File, IOException}
 import java.nio.file.{Files, FileVisitResult, Path, SimpleFileVisitor}
 import java.nio.file.attribute.BasicFileAttributes
 
-object BahirUtils extends Logging {
-
-  def recursiveDeleteDir(dir: File): Path = {
-    Files.walkFileTree(dir.toPath, new SimpleFileVisitor[Path]() {
+object FileHelper extends Logging {
+  def deleteFileQuietly(file: File): Path = {
+    Files.walkFileTree(file.toPath, new SimpleFileVisitor[Path]() {
       override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
         try {
           Files.delete(file)
@@ -44,5 +43,4 @@ object BahirUtils extends Logging {
       }
     })
   }
-
 }
