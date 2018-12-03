@@ -25,11 +25,12 @@ import scala.language.postfixOps
 import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.Eventually
 
+import org.apache.spark.ConditionalSparkFunSuite
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Seconds
 import org.apache.spark.streaming.StreamingContext
 
-class PubsubStreamSuite extends PubsubFunSuite with Eventually with BeforeAndAfter {
+class PubsubStreamSuite extends ConditionalSparkFunSuite with Eventually with BeforeAndAfter {
 
   val batchDuration = Seconds(1)
 
@@ -50,7 +51,7 @@ class PubsubStreamSuite extends PubsubFunSuite with Eventually with BeforeAndAft
   private var subForCreateFullName: String = null
 
   override def beforeAll(): Unit = {
-    runIfTestsEnabled("Prepare PubsubTestUtils") {
+    runIf(PubsubTestUtils.shouldRunTest) {
       pubsubTestUtils = new PubsubTestUtils
       topicFullName = pubsubTestUtils.getFullTopicPath(topicName)
       subscriptionFullName = pubsubTestUtils.getFullSubscriptionPath(subscriptionName)
@@ -88,7 +89,7 @@ class PubsubStreamSuite extends PubsubFunSuite with Eventually with BeforeAndAft
       PubsubTestUtils.credential, StorageLevel.MEMORY_AND_DISK_SER_2)
   }
 
-  testIfEnabled("pubsub input stream") {
+  testIf("pubsub input stream", PubsubTestUtils.shouldRunTest) {
     val receiveStream = PubsubUtils.createStream(
       ssc, PubsubTestUtils.projectId, Some(topicName), subscriptionName,
       PubsubTestUtils.credential, StorageLevel.MEMORY_AND_DISK_SER_2)
@@ -112,7 +113,7 @@ class PubsubStreamSuite extends PubsubFunSuite with Eventually with BeforeAndAft
     }
   }
 
-  testIfEnabled("pubsub input stream, create pubsub") {
+  testIf("pubsub input stream, create pubsub", PubsubTestUtils.shouldRunTest) {
     val receiveStream = PubsubUtils.createStream(
       ssc, PubsubTestUtils.projectId, Some(topicName), subForCreateName,
       PubsubTestUtils.credential, StorageLevel.MEMORY_AND_DISK_SER_2)

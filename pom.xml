@@ -75,15 +75,16 @@
   </mailingLists>
 
   <modules>
+    <module>common</module>
     <module>sql-cloudant</module>
-    <module>streaming-akka</module>
     <module>sql-streaming-akka</module>
-    <module>streaming-mqtt</module>
     <module>sql-streaming-mqtt</module>
+    <module>streaming-akka</module>
+    <module>streaming-mqtt</module>
+    <module>streaming-pubnub</module>
+    <module>streaming-pubsub</module>
     <module>streaming-twitter</module>
     <module>streaming-zeromq</module>
-    <module>streaming-pubsub</module>
-    <module>streaming-pubnub</module>
   </modules>
 
   <properties>
@@ -107,7 +108,6 @@
     <!-- Streaming Akka connector -->
     <akka.group>com.typesafe.akka</akka.group>
     <akka.version>2.5.12</akka.version>
-    <akka_zeromq.version>2.3.16</akka_zeromq.version>
 
     <protobuf.version>2.5.0</protobuf.version>
     <jsr305.version>3.0.1</jsr305.version>

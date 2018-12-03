@@ -26,12 +26,12 @@ import com.cloudant.client.api.CloudantClient
 import com.google.gson.{Gson, JsonArray, JsonObject}
 import org.scalatest.BeforeAndAfter
 
-import org.apache.spark.{SparkConf, SparkFunSuite}
+import org.apache.spark.{ConditionalSparkFunSuite, SparkConf}
 import org.apache.spark.sql.SparkSession
 
-import org.apache.bahir.cloudant.TestUtils.shouldRunTests
+import org.apache.bahir.utils.FileHelper
 
-class ClientSparkFunSuite extends SparkFunSuite with BeforeAndAfter {
+class ClientSparkFunSuite extends ConditionalSparkFunSuite with BeforeAndAfter {
   private val tempDir: File = new File(System.getProperty("java.io.tmpdir") + "/sql-cloudant/")
 
   var client: CloudantClient = _
@@ -40,7 +40,7 @@ class ClientSparkFunSuite extends SparkFunSuite with BeforeAndAfter {
   var spark: SparkSession = _
 
   override def beforeAll() {
-    runIfTestsEnabled("Prepare Cloudant test databases") {
+    runIf(TestUtils.shouldRunTest) {
       tempDir.mkdirs()
       tempDir.deleteOnExit()
       setupClient()
@@ -49,7 +49,7 @@ class ClientSparkFunSuite extends SparkFunSuite with BeforeAndAfter {
 }
 
   override def afterAll() {
-    TestUtils.deleteRecursively(tempDir)
+    FileHelper.deleteFileQuietly(tempDir)
     deleteTestDbs()
     teardownClient()
     spark.close()
@@ -118,26 +118,5 @@ class ClientSparkFunSuite extends SparkFunSuite with BeforeAndAfter {
 
   def deleteTestDb(dbName: String) {
     client.deleteDB(dbName)
-  }
-
-  /** Run the test if environment variable is set or ignore the test */
-  def testIfEnabled(testName: String)(testBody: => Unit) {
-    if (shouldRunTests) {
-      test(testName)(testBody)
-    } else {
-      ignore(s"$testName [enable by setting env var CLOUDANT_USER and " +
-        s"CLOUDANT_PASSWORD]")(testBody)
-    }
-  }
-
-
-  /** Run the body of code only if tests are enabled */
-  def runIfTestsEnabled(message: String)(body: => Unit): Unit = {
-    if (shouldRunTests) {
-      body
-    } else {
-      ignore(s"$message [enable by setting env var CLOUDANT_USER and " +
-        s"CLOUDANT_PASSWORD]")(())
-    }
   }
 }

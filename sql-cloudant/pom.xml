@@ -36,6 +36,18 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.apache.bahir</groupId>
+      <artifactId>bahir-common_${scala.binary.version}</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.bahir</groupId>
+      <artifactId>bahir-common_${scala.binary.version}</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>com.cloudant</groupId>
       <artifactId>cloudant-client</artifactId>
       <version>2.11.0</version>

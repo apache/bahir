@@ -77,6 +77,7 @@ class MQTTStreamSuite extends SparkFunSuite with Eventually with BeforeAndAfter 
     }
     ssc.stop()
   }
+
   test("mqtt input stream2") {
     val sendMessage1 = "MQTT demo for spark streaming1"
     val sendMessage2 = "MQTT demo for spark streaming2"

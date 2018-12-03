@@ -101,11 +101,10 @@ private[pubsub] object PubsubTestUtils {
   val envVarNameForP12KeyPath = "GCP_TEST_P12_KEY_PATH"
   val envVarNameForAccount = "GCP_TEST_ACCOUNT"
 
-  lazy val shouldRunTests = {
-    val isEnvSet = sys.env.get(envVarNameForEnablingTests) == Some("1")
+  def shouldRunTest(): Boolean = {
+    val isEnvSet = sys.env.get(envVarNameForEnablingTests).contains("1")
     if (isEnvSet) {
       // scalastyle:off println
-      // Print this so that they are easily visible on the console and not hidden in the log4j logs.
       println(
         s"""
            |Google Pub/Sub tests that actually send data has been enabled by setting the environment

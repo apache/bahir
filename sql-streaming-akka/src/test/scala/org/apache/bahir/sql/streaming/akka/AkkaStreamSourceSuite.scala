@@ -31,7 +31,7 @@ import org.apache.spark.sql.execution.streaming.FileStreamSource.Timestamp
 import org.apache.spark.sql.sources.v2.DataSourceOptions
 import org.apache.spark.sql.types.StructType
 
-import org.apache.bahir.utils.BahirUtils
+import org.apache.bahir.utils.FileHelper
 
 class AkkaStreamSourceSuite extends SparkFunSuite with BeforeAndAfter {
 
@@ -50,7 +50,7 @@ class AkkaStreamSourceSuite extends SparkFunSuite with BeforeAndAfter {
 
   after {
     Persistence.close()
-    BahirUtils.recursiveDeleteDir(tempDir)
+    FileHelper.deleteFileQuietly(tempDir)
   }
 
   protected val tmpDir: String = tempDir.getAbsolutePath

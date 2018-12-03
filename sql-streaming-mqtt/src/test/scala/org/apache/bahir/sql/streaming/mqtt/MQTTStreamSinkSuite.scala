@@ -36,7 +36,7 @@ import org.apache.spark.sql.sources.v2.DataSourceOptions
 import org.apache.spark.sql.streaming.{OutputMode, StreamingQuery}
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 
-import org.apache.bahir.utils.BahirUtils
+import org.apache.bahir.utils.FileHelper
 
 
 class MQTTStreamSinkSuite extends SparkFunSuite with SharedSparkContext with BeforeAndAfter {
@@ -57,7 +57,7 @@ class MQTTStreamSinkSuite extends SparkFunSuite with SharedSparkContext with Bef
     testClient.disconnect()
     testClient.close()
     mqttTestUtils.teardown()
-    BahirUtils.recursiveDeleteDir(tempDir)
+    FileHelper.deleteFileQuietly(tempDir)
   }
 
   protected def createContextAndDF(messages: String*): (SQLContext, DataFrame) = {

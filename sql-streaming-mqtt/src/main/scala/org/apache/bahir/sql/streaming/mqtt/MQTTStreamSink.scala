@@ -34,6 +34,7 @@ import org.apache.spark.sql.streaming.OutputMode
 import org.apache.spark.sql.types.StructType
 
 import org.apache.bahir.utils.Logging
+import org.apache.bahir.utils.Retry
 
 
 class MQTTStreamWriter (schema: StructType, parameters: DataSourceOptions)
