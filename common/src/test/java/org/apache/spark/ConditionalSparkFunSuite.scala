@@ -15,32 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.spark.streaming.pubsub
+package org.apache.spark
 
-import org.apache.spark.SparkFunSuite
-
-/**
- * Helper class that runs Google Cloud Pub/Sub real data transfer tests of
- * ignores them based on env variable is set or not.
- */
-trait PubsubFunSuite extends SparkFunSuite {
-  import PubsubTestUtils._
-
-  /** Run the test if environment variable is set or ignore the test */
-  def testIfEnabled(testName: String)(testBody: => Unit) {
-    if (shouldRunTests) {
+trait ConditionalSparkFunSuite extends SparkFunSuite {
+  /**
+   * Run test if given predicate is satisfied.
+   * @param testName Test name
+   * @param condition If satisfied, test will be executed
+   * @param testBody Test body
+   */
+  def testIf(testName: String, condition: () => Boolean)(testBody: => Unit) {
+    if (condition()) {
       test(testName)(testBody)
     } else {
-      ignore(s"$testName [enable by setting env var $envVarNameForEnablingTests=1]")(testBody)
+      ignore(testName)(testBody)
     }
   }
 
-  /** Run the give body of code only if Kinesis tests are enabled */
-  def runIfTestsEnabled(message: String)(body: => Unit): Unit = {
-    if (shouldRunTests) {
+  /**
+   * Run given code only if predicate has been satisfied.
+   * @param condition If satisfied, run code block
+   * @param body Code block
+   */
+  def runIf(condition: () => Boolean)(body: => Unit): Unit = {
+    if (condition()) {
       body
-    } else {
-      ignore(s"$message [enable by setting env var $envVarNameForEnablingTests=1]")(())
     }
   }
 }

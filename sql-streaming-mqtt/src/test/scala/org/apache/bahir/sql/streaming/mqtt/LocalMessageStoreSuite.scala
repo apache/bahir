@@ -24,7 +24,7 @@ import org.scalatest.BeforeAndAfter
 
 import org.apache.spark.SparkFunSuite
 
-import org.apache.bahir.utils.BahirUtils
+import org.apache.bahir.utils.FileHelper
 
 
 class LocalMessageStoreSuite extends SparkFunSuite with BeforeAndAfter {
@@ -48,7 +48,7 @@ class LocalMessageStoreSuite extends SparkFunSuite with BeforeAndAfter {
   after {
     persistence.clear()
     persistence.close()
-    BahirUtils.recursiveDeleteDir(tempDir)
+    FileHelper.deleteFileQuietly(tempDir)
   }
 
   test("serialize and deserialize") {

@@ -25,8 +25,6 @@ class CloudantSparkSQLSuite extends ClientSparkFunSuite {
     protected override def _sqlContext: SQLContext = spark.sqlContext
   }
 
-  import testImplicits._
-
   val endpoint = "_all_docs"
 
   override def beforeAll() {
@@ -40,8 +38,8 @@ class CloudantSparkSQLSuite extends ClientSparkFunSuite {
       .getOrCreate()
   }
 
-  testIfEnabled("verify results from temp view of database n_airportcodemapping") {
-
+  testIf("verify results from temp view of database n_airportcodemapping",
+      TestUtils.shouldRunTest) {
     // create a temp table from Cloudant db and query it using sql syntax
     val sparkSql = spark.sql(
       s"""
@@ -69,7 +67,7 @@ class CloudantSparkSQLSuite extends ClientSparkFunSuite {
     assert(df2count == airportData.count())
   }
 
-  testIfEnabled("verify results from temp view of index in n_flight") {
+  testIf("verify results from temp view of index in n_flight", TestUtils.shouldRunTest) {
     // create a temp table from Cloudant index  and query it using sql syntax
     val sparkSql = spark.sql(
       s"""

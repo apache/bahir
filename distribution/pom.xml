@@ -34,6 +34,21 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.bahir</groupId>
+            <artifactId>spark-sql-cloudant_${scala.binary.version}</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.bahir</groupId>
+            <artifactId>spark-sql-streaming-akka_${scala.binary.version}</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.bahir</groupId>
+            <artifactId>spark-sql-streaming-mqtt_${scala.binary.version}</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.bahir</groupId>
             <artifactId>spark-streaming-akka_${scala.binary.version}</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -44,7 +59,12 @@
         </dependency>
         <dependency>
             <groupId>org.apache.bahir</groupId>
-            <artifactId>spark-sql-streaming-mqtt_${scala.binary.version}</artifactId>
+            <artifactId>spark-streaming-pubnub_${scala.binary.version}</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.bahir</groupId>
+            <artifactId>spark-streaming-pubsub_${scala.binary.version}</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

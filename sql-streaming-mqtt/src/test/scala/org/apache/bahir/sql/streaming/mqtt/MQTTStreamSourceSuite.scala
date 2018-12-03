@@ -31,7 +31,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.sources.v2.DataSourceOptions
 import org.apache.spark.sql.streaming.{DataStreamReader, StreamingQuery}
 
-import org.apache.bahir.utils.BahirUtils
+import org.apache.bahir.utils.FileHelper
 
 class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with BeforeAndAfter {
 
@@ -50,7 +50,7 @@ class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with B
 
   after {
     mqttTestUtils.teardown()
-    BahirUtils.recursiveDeleteDir(tempDir)
+    FileHelper.deleteFileQuietly(tempDir)
   }
 
   protected val tmpDir: String = tempDir.getAbsolutePath

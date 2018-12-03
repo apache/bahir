@@ -26,22 +26,15 @@
   </parent>
 
   <groupId>org.apache.bahir</groupId>
-  <artifactId>spark-streaming-mqtt_2.11</artifactId>
+  <artifactId>bahir-common_2.11</artifactId>
   <properties>
-    <sbt.project.name>streaming-mqtt</sbt.project.name>
+    <sbt.project.name>bahir-common</sbt.project.name>
   </properties>
   <packaging>jar</packaging>
-  <name>Apache Bahir - Spark Streaming MQTT</name>
+  <name>Apache Bahir - Common</name>
   <url>http://bahir.apache.org/</url>
 
   <dependencies>
-    <dependency>
-      <groupId>org.apache.bahir</groupId>
-      <artifactId>bahir-common_${scala.binary.version}</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-tags_${scala.binary.version}</artifactId>
@@ -50,7 +43,14 @@
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-streaming_${scala.binary.version}</artifactId>
       <version>${spark.version}</version>
-      <scope>provided</scope>
+      <scope>compile</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-core_${scala.binary.version}</artifactId>
+      <version>${spark.version}</version>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
@@ -60,56 +60,18 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.paho</groupId>
-      <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
-      <version>${mqtt.paho.client}</version>
-    </dependency>
-    <dependency>
       <groupId>org.scalacheck</groupId>
       <artifactId>scalacheck_${scala.binary.version}</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.activemq</groupId>
-      <artifactId>activemq-core</artifactId>
-      <version>5.7.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
   <build>
     <outputDirectory>target/scala-${scala.binary.version}/classes</outputDirectory>
     <testOutputDirectory>target/scala-${scala.binary.version}/test-classes</testOutputDirectory>
-
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
-      </plugin>
-
-      <!-- Assemble a jar with test dependencies for Python tests -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>test-jar-with-dependencies</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <!-- Make sure the file path is same as the sbt build -->
-              <finalName>spark-streaming-mqtt-test-${project.version}</finalName>
-              <outputDirectory>${project.build.directory}/scala-${scala.binary.version}/</outputDirectory>
-              <appendAssemblyId>false</appendAssemblyId>
-              <!-- Don't publish it since it's only for Python tests -->
-              <attach>false</attach>
-              <descriptors>
-                <descriptor>src/main/assembly/assembly.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

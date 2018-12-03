@@ -27,6 +27,7 @@ import scala.util.control.NonFatal
 import org.apache.spark.SparkEnv
 
 import org.apache.bahir.utils.Logging
+import org.apache.bahir.utils.Retry
 
 
 private[mqtt] object CachedMQTTClient extends Logging {
