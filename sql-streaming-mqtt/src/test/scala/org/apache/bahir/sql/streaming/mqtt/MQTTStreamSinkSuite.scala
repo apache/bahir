@@ -39,14 +39,16 @@ import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructT
 import org.apache.bahir.utils.BahirUtils
 
 
-class MQTTStreamSinkSuite extends SparkFunSuite with SharedSparkContext with BeforeAndAfter {
+class MQTTStreamSinkSuite(_ssl: Boolean) extends SparkFunSuite
+    with SharedSparkContext with BeforeAndAfter {
   protected var mqttTestUtils: MQTTTestUtils = _
   protected val tempDir: File = new File(System.getProperty("java.io.tmpdir") + "/mqtt-test/")
   protected val messages = new mutable.HashMap[Int, String]
   protected var testClient: MqttClient = _
 
   before {
-    mqttTestUtils = new MQTTTestUtils(tempDir)
+    SparkEnv.get.conf.set("spark.mqtt.client.connect.attempts", "1")
+    mqttTestUtils = new MQTTTestUtils(tempDir, ssl = _ssl)
     mqttTestUtils.setup()
     tempDir.mkdirs()
     messages.clear()
@@ -70,17 +72,22 @@ class MQTTStreamSinkSuite extends SparkFunSuite with SharedSparkContext with Bef
   }
 
   protected def sendToMQTT(dataFrame: DataFrame): StreamingQuery = {
-    dataFrame.writeStream
+    val protocol = if (_ssl) "ssl" else "tcp"
+    val writer = dataFrame.writeStream
       .format("org.apache.bahir.sql.streaming.mqtt.MQTTStreamSinkProvider")
       .option("topic", "test").option("localStorage", tempDir.getAbsolutePath)
       .option("clientId", "clientId").option("QoS", "2")
-      .start("tcp://" + mqttTestUtils.brokerUri)
+    if (_ssl) {
+      writer.option("ssl.trust.store", mqttTestUtils.clientTrustStore.getAbsolutePath)
+        .option("ssl.trust.store.type", "JKS")
+        .option("ssl.trust.store.password", mqttTestUtils.clientTrustStorePassword)
+    }
+    writer.start(protocol + "://" + mqttTestUtils.brokerUri)
   }
 }
 
-class BasicMQTTSinkSuite extends MQTTStreamSinkSuite {
+class BasicMQTTSinkSuite extends MQTTStreamSinkSuite(false) {
   test("broker down") {
-    SparkEnv.get.conf.set("spark.mqtt.client.connect.attempts", "1")
     SparkSession.setActiveSession(SparkSession.builder().getOrCreate())
     val provider = new MQTTStreamSinkProvider
     val parameters = Map(
@@ -138,7 +145,19 @@ class BasicMQTTSinkSuite extends MQTTStreamSinkSuite {
   }
 }
 
-class StressTestMQTTSink extends MQTTStreamSinkSuite {
+class MQTTSSLSinkSuite extends MQTTStreamSinkSuite(true) {
+  test("verify SSL connectivity") {
+    val msg1 = "Hello, World!"
+    val msg2 = "MQTT is a message queue."
+    val (_, dataFrame) = createContextAndDF(msg1, msg2)
+
+    sendToMQTT(dataFrame).awaitTermination(5000)
+
+    assert(Set(msg1, msg2).equals(messages.values.toSet))
+  }
+}
+
+class StressTestMQTTSink extends MQTTStreamSinkSuite(false) {
   // run with -Xmx1024m
   test("Send and receive messages of size 100MB.") {
     val freeMemory: Long = Runtime.getRuntime.freeMemory()
