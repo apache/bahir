@@ -26,8 +26,7 @@ import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 
 import org.apache.bahir.utils.Logging
 
-
-private[mqtt] object MQTTUtils extends Logging {
+object MQTTUtils extends Logging {
   // Since data source configuration properties are case-insensitive,
   // we have to introduce our own keys. Also, good for vendor independence.
   private[mqtt] val sslParamMapping = Map(
@@ -45,7 +44,7 @@ private[mqtt] object MQTTUtils extends Logging {
     "ssl.trust.manager" -> "com.ibm.ssl.trustManager"
   )
 
-  private[mqtt] def parseConfigParams(config: Map[String, String]):
+  def parseConfigParams(config: Map[String, String]):
       (String, String, String, MqttClientPersistence, MqttConnectOptions, Int, Long, Long, Int) = {
     def e(s: String) = new IllegalArgumentException(s)
     val parameters = CaseInsensitiveMap(config)

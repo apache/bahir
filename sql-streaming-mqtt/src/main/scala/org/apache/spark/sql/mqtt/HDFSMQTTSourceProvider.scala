@@ -15,13 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.bahir.sql.streaming.mqtt
+package org.apache.spark.sql.mqtt
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.execution.streaming.Source
 import org.apache.spark.sql.sources.{DataSourceRegister, StreamSourceProvider}
-import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
+import org.apache.spark.sql.types.StructType
+
+import org.apache.bahir.sql.streaming.mqtt.{MQTTStreamConstants, MQTTUtils}
 
 /**
  * The provider class for creating MQTT source.
@@ -39,7 +41,6 @@ class HDFSMQTTSourceProvider extends StreamSourceProvider with DataSourceRegiste
     schema: Option[StructType], providerName: String, parameters: Map[String, String]): Source = {
 
     val parsedResult = MQTTUtils.parseConfigParams(parameters)
-
 
     new HdfsBasedMQTTStreamSource(
       sqlContext,

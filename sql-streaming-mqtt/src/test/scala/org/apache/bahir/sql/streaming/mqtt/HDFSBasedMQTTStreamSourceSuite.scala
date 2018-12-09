@@ -22,13 +22,17 @@ import java.io.File
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hdfs.MiniDFSCluster
+import org.apache.hadoop.security.Groups
 import org.scalatest.BeforeAndAfter
 
 import org.apache.spark.{SharedSparkContext, SparkFunSuite}
 import org.apache.spark.sql._
+import org.apache.spark.sql.mqtt.HdfsBasedMQTTStreamSource
 import org.apache.spark.sql.streaming.{DataStreamReader, StreamingQuery}
 
-import org.apache.bahir.utils.BahirUtils
+import org.apache.bahir.utils.FileHelper
 
 class HDFSBasedMQTTStreamSourceSuite
     extends SparkFunSuite
@@ -37,6 +41,7 @@ class HDFSBasedMQTTStreamSourceSuite
 
   protected var mqttTestUtils: MQTTTestUtils = _
   protected val tempDir: File = new File(System.getProperty("java.io.tmpdir") + "/mqtt-test/")
+  private var hadoop: MiniDFSCluster = _
 
   before {
     tempDir.mkdirs()
@@ -46,11 +51,13 @@ class HDFSBasedMQTTStreamSourceSuite
     tempDir.deleteOnExit()
     mqttTestUtils = new MQTTTestUtils(tempDir)
     mqttTestUtils.setup()
+    hadoop = HDFSTestUtils.prepareHadoop()
   }
 
   after {
     mqttTestUtils.teardown()
-    // BahirUtils.recursiveDeleteDir(tempDir)
+    HDFSTestUtils.shutdownHadoop()
+    FileHelper.deleteFileQuietly(tempDir)
   }
 
   protected val tmpDir: String = tempDir.getAbsolutePath
@@ -61,10 +68,7 @@ class HDFSBasedMQTTStreamSourceSuite
     val query: StreamingQuery = dataFrame.selectExpr("CAST(payload AS STRING)").as[String]
       .writeStream.format("csv").start(s"$tempDir/t.csv")
     while (!query.status.isTriggerActive) {
-      // scalastyle:off
-      println("waiting for 20 ms")
-      // scalastyle:on
-      Thread.sleep(200)
+      Thread.sleep(20)
     }
     query
   }
@@ -83,15 +87,47 @@ class HDFSBasedMQTTStreamSourceSuite
     val sqlContext: SQLContext = SparkSession.builder()
       .getOrCreate().sqlContext
 
-    sqlContext.setConf("spark.sql.streaming.checkpointLocation", tmpDir)
+    sqlContext.setConf("spark.sql.streaming.checkpointLocation",
+      s"hdfs://localhost:${hadoop.getNameNodePort}/testCheckpoint")
 
     val ds: DataStreamReader =
-      sqlContext.readStream.format("org.apache.bahir.sql.streaming.mqtt.HDFSMQTTSourceProvider")
+      sqlContext.readStream.format("org.apache.spark.sql.mqtt.HDFSMQTTSourceProvider")
         .option("topic", "test").option("clientId", "clientId").option("connectionTimeout", "120")
         .option("keepAlive", "1200").option("autoReconnect", "false")
         .option("cleanSession", "true").option("QoS", "2")
     val dataFrame = ds.load("tcp://" + mqttTestUtils.brokerUri)
     (sqlContext, dataFrame)
+  }
+}
+
+object HDFSTestUtils {
+
+  private var hadoop: MiniDFSCluster = _
+
+  def prepareHadoop(): MiniDFSCluster = {
+    if (hadoop != null) {
+      hadoop
+    } else {
+      val baseDir = new File(System.getProperty("java.io.tmpdir") + "/hadoop").getAbsoluteFile
+      System.setProperty("HADOOP_USER_NAME", "test")
+      val conf = new Configuration
+      conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath)
+      conf.setBoolean("dfs.namenode.acls.enabled", true)
+      conf.setBoolean("dfs.permissions", true)
+      Groups.getUserToGroupsMappingService(conf)
+      val builder = new MiniDFSCluster.Builder(conf)
+      hadoop = builder.build
+      conf.set("fs.defaultFS", "hdfs://localhost:" + hadoop.getNameNodePort + "/")
+      HdfsBasedMQTTStreamSource.hadoopConfig = conf
+      hadoop
+    }
+  }
+
+  def shutdownHadoop(): Unit = {
+    if (null != hadoop) {
+      hadoop.shutdown(true)
+    }
+    hadoop = null
   }
 }
 

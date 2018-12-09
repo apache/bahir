@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.bahir.sql.streaming.mqtt
+package org.apache.spark.sql.mqtt
 
 import java.io.IOException
 import java.sql.Timestamp
@@ -34,6 +34,8 @@ import org.apache.spark.sql.execution.streaming._
 import org.apache.spark.sql.execution.streaming.HDFSMetadataLog.FileContextManager
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.unsafe.types.UTF8String
+
+import org.apache.bahir.sql.streaming.mqtt.{LongOffset, MQTTStreamConstants}
 
 /**
  * A Text based mqtt stream source, it interprets the payload of each incoming message by converting
@@ -96,7 +98,13 @@ class HdfsBasedMQTTStreamSource(
 
   private val lock: Lock = new ReentrantLock()
 
-  private val hadoopConfig: Configuration = new Configuration()
+  private val hadoopConfig: Configuration = if (HdfsBasedMQTTStreamSource.hadoopConfig != null) {
+    logInfo("using setted hadoop configuration!")
+    HdfsBasedMQTTStreamSource.hadoopConfig
+  } else {
+    logInfo("create a new configuration.")
+    new Configuration()
+  }
 
   private val rootCheckpointPath = {
     val path = new Path(metadataPath).getParent.getParent.toUri.toString
@@ -215,16 +223,6 @@ class HdfsBasedMQTTStreamSource(
 
     client = new MqttClient(brokerUrl, clientId, new MemoryPersistence())
 
-    /*
-    val coreSiteUrl = this.getClass.getClassLoader.getResource("core-site.xml")
-    if (null != coreSiteUrl) {
-      hadoopConfig.addResource(coreSiteUrl)
-    }
-    val hdfsSiteUrl = this.getClass.getClassLoader.getResource("hdfs-site.xml")
-    if (null != hdfsSiteUrl) {
-      hadoopConfig.addResource(hdfsSiteUrl)
-    }
-    */
     val callback = new MqttCallbackExtended() {
 
       override def messageArrived(topic: String, message: MqttMessage): Unit = {
@@ -351,18 +349,21 @@ class HdfsBasedMQTTStreamSource(
         // get topic
         var subStr = str.substring(idIndex + SEP.length)
         val topicIndex = subStr.indexOf(SEP)
-        val topic = subStr.substring(0, topicIndex)
+        val topic = UTF8String.fromString(subStr.substring(0, topicIndex))
         // get timestamp
         subStr = subStr.substring(topicIndex + SEP.length)
         val timestampIndex = subStr.indexOf(SEP)
+        /*
         val timestamp = Timestamp.valueOf(
           MQTTStreamConstants.DATE_FORMAT.format(subStr.substring(0, timestampIndex).toLong))
+          */
+        val timestamp = subStr.substring(0, timestampIndex).toLong
         // get playload
         subStr = subStr.substring(timestampIndex + SEP.length)
         val payload = UTF8String.fromString(subStr).getBytes
-        Row(messageId, topic, payload, timestamp)
+        InternalRow(messageId, topic, payload, timestamp)
       }
-    sqlContext.createDataFrame(rdd, MQTTStreamConstants.SCHEMA_DEFAULT)
+    sqlContext.internalCreateDataFrame(rdd, MQTTStreamConstants.SCHEMA_DEFAULT, true)
   }
 
   /**
@@ -392,4 +393,8 @@ class HdfsBasedMQTTStreamSource(
     }
     offsetValue
   }
+}
+object HdfsBasedMQTTStreamSource {
+
+  var hadoopConfig: Configuration = _
 }
