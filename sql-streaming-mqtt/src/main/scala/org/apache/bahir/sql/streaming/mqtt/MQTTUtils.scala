@@ -27,7 +27,7 @@ import org.apache.bahir.utils.Logging
 
 private[mqtt] object MQTTUtils extends Logging {
   private[mqtt] def parseConfigParams(config: Map[String, String]):
-      (String, String, String, MqttClientPersistence, MqttConnectOptions, Int) = {
+      (String, String, String, MqttClientPersistence, MqttConnectOptions, Int, Long, Long, Int) = {
     def e(s: String) = new IllegalArgumentException(s)
     val parameters = CaseInsensitiveMap(config)
 
@@ -65,6 +65,11 @@ private[mqtt] object MQTTUtils extends Logging {
     val autoReconnect: Boolean = parameters.getOrElse("autoReconnect", "false").toBoolean
     val maxInflight: Int = parameters.getOrElse("maxInflight", "60").toInt
 
+    val maxBatchMessageNum = parameters.getOrElse("maxBatchMessageNum", s"${Long.MaxValue}").toLong
+    val maxBatchMessageSize = parameters.getOrElse("maxBatchMessageSize",
+      s"${Long.MaxValue}").toLong
+    val maxRetryNumber = parameters.getOrElse("maxRetryNum", "3").toInt
+
     val mqttConnectOptions: MqttConnectOptions = new MqttConnectOptions()
     mqttConnectOptions.setAutomaticReconnect(autoReconnect)
     mqttConnectOptions.setCleanSession(cleanSession)
@@ -79,7 +84,8 @@ private[mqtt] object MQTTUtils extends Logging {
       case _ =>
     }
 
-    (brokerUrl, clientId, topic, persistence, mqttConnectOptions, qos)
+    (brokerUrl, clientId, topic, persistence, mqttConnectOptions, qos,
+      maxBatchMessageNum, maxBatchMessageSize, maxRetryNumber)
   }
 }
 

@@ -65,7 +65,7 @@ private[mqtt] object CachedMQTTClient extends Logging {
 
   private def createMqttClient(config: Map[String, String]):
       (MqttClient, MqttClientPersistence) = {
-    val (brokerUrl, clientId, _, persistence, mqttConnectOptions, _) =
+    val (brokerUrl, clientId, _, persistence, mqttConnectOptions, _, _, _, _) =
       MQTTUtils.parseConfigParams(config)
     val client = new MqttClient(brokerUrl, clientId, persistence)
     val callback = new MqttCallbackExtended() {
