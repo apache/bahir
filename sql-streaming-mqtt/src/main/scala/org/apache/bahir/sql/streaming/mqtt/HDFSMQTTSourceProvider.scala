@@ -17,17 +17,11 @@
 
 package org.apache.bahir.sql.streaming.mqtt
 
-import java.util.Locale
-
-import org.eclipse.paho.client.mqttv3.{MqttClient, MqttConnectOptions}
-
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.execution.streaming.Source
 import org.apache.spark.sql.sources.{DataSourceRegister, StreamSourceProvider}
 import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
-
-import org.apache.bahir.utils.MQTTConfig
 
 /**
  * The provider class for creating MQTT source.
@@ -38,147 +32,32 @@ class HDFSMQTTSourceProvider extends StreamSourceProvider with DataSourceRegiste
 
   override def sourceSchema(sqlContext: SQLContext, schema: Option[StructType],
     providerName: String, parameters: Map[String, String]): (String, StructType) = {
-    ("mqtt", HDFSMQTTSourceProvider.SCHEMA_DEFAULT)
+    ("hdfs-mqtt", MQTTStreamConstants.SCHEMA_DEFAULT)
   }
 
   override def createSource(sqlContext: SQLContext, metadataPath: String,
     schema: Option[StructType], providerName: String, parameters: Map[String, String]): Source = {
 
-    def e(s: String) = new IllegalArgumentException(s)
+    val parsedResult = MQTTUtils.parseConfigParams(parameters)
 
-    val caseInsensitiveParameter = parameters.map{case (key: String, value: String) =>
-      key.toLowerCase(Locale.ROOT) -> value
-    }
-
-    val brokerUrl: String = getParameterValue(caseInsensitiveParameter, MQTTConfig.brokerUrl, "")
-
-    if (brokerUrl.isEmpty) {
-      throw e("Please specify a brokerUrl, by .options(\"brokerUrl\",...)")
-    }
-    logInfo(s"Using brokerUrl $brokerUrl")
-
-    // if default is subscribe everything, it leads to getting a lot of unwanted system messages.
-    val topic: String = getParameterValue(caseInsensitiveParameter, MQTTConfig.topic, "")
-    if (topic.isEmpty) {
-      throw e("Please specify a topic, by .options(\"topic\",...)")
-    }
-    logInfo(s"Subscribe topic $topic")
-
-    val clientId: String = getParameterValue(caseInsensitiveParameter, MQTTConfig.clientId, {
-      val randomClientId = MqttClient.generateClientId()
-      logInfo(s"Using random clientId ${randomClientId}.")
-      randomClientId
-    })
-    logInfo(s"ClientId $clientId")
-
-    val usernameString: String = getParameterValue(caseInsensitiveParameter,
-      MQTTConfig.username, "")
-    val username: Option[String] = if (usernameString.isEmpty) {
-      None
-    } else {
-      Some(usernameString)
-    }
-
-    val passwordString: String = getParameterValue(caseInsensitiveParameter,
-      MQTTConfig.password, "")
-    val password: Option[String] = if (passwordString.isEmpty) {
-      None
-    } else {
-      Some(passwordString)
-    }
-
-    val connectionTimeout: Int = getParameterValue(
-      caseInsensitiveParameter,
-      MQTTConfig.connectionTimeout,
-      MqttConnectOptions.CONNECTION_TIMEOUT_DEFAULT.toString
-    ).toInt
-    logInfo(s"Set connection timeout $connectionTimeout")
-
-    val keepAlive: Int = getParameterValue(
-      caseInsensitiveParameter,
-      MQTTConfig.keetAliveInterval,
-      MqttConnectOptions.KEEP_ALIVE_INTERVAL_DEFAULT.toString
-    ).toInt
-    logInfo(s"Set keep alive interval $keepAlive")
-
-    val mqttVersion: Int = getParameterValue(
-      caseInsensitiveParameter,
-      MQTTConfig.mqttVersion,
-      MqttConnectOptions.MQTT_VERSION_DEFAULT.toString
-    ).toInt
-    logInfo(s"Set mqtt version $mqttVersion")
-
-    val cleanSession: Boolean = getParameterValue(
-      caseInsensitiveParameter,
-      MQTTConfig.cleanSession,
-      "true"
-    ).toBoolean
-    logInfo(s"Set clean session $cleanSession")
-
-    val qos: Int = getParameterValue(
-      caseInsensitiveParameter,
-      MQTTConfig.qos,
-      "0"
-    ).toInt
-    logInfo(s"Set qos $qos")
-
-    val maxBatchMessageNum = getParameterValue(
-      caseInsensitiveParameter,
-      MQTTConfig.maxBatchMessageNum, s"${Long.MaxValue}"
-    ).toLong
-    logInfo(s"Control max message number in one batch $maxBatchMessageNum")
-
-    val maxBatchMessageSize = getParameterValue(
-      caseInsensitiveParameter,
-      MQTTConfig.maxBatchMessageSize, s"${Long.MaxValue}"
-    ).toLong
-    logInfo(s"Control max message content size in one batch $maxBatchMessageSize")
-
-    val maxRetryNumber = getParameterValue(
-      caseInsensitiveParameter,
-      MQTTConfig.maxRetryNumber, "3"
-    ).toInt
-    logInfo(s"Set max retry number $maxRetryNumber")
-
-    val mqttConnectOptions: MqttConnectOptions = new MqttConnectOptions()
-    mqttConnectOptions.setAutomaticReconnect(true)
-    mqttConnectOptions.setCleanSession(cleanSession)
-    mqttConnectOptions.setConnectionTimeout(connectionTimeout)
-    mqttConnectOptions.setKeepAliveInterval(keepAlive)
-    mqttConnectOptions.setMqttVersion(mqttVersion)
-    (username, password) match {
-      case (Some(u: String), Some(p: String)) =>
-        mqttConnectOptions.setUserName(u)
-        mqttConnectOptions.setPassword(p.toCharArray)
-      case _ =>
-    }
 
     new HdfsBasedMQTTStreamSource(
       sqlContext,
       metadataPath,
-      brokerUrl,
-      topic,
-      clientId,
-      mqttConnectOptions,
-      qos,
-      maxBatchMessageNum,
-      maxBatchMessageSize,
-      maxRetryNumber)
+      parsedResult._1, // brokerUrl
+      parsedResult._2, // clientId
+      parsedResult._3, // topic
+      parsedResult._5, // mqttConnectionOptions
+      parsedResult._6, // qos
+      parsedResult._7, // maxBatchMessageNum
+      parsedResult._8, // maxBatchMessageSize
+      parsedResult._9  // maxRetryNum
+    )
   }
 
   override def shortName(): String = "hdfs-mqtt"
-
-  private def getParameterValue(
-      parameters: Map[String, String],
-      parameterName: String,
-      defaultValue: String): String = {
-
-    parameters.getOrElse(parameterName.toLowerCase(Locale.ROOT), defaultValue)
-  }
 }
 
 object HDFSMQTTSourceProvider {
-  val SCHEMA_DEFAULT = StructType(
-    StructField("value", StringType) :: StructField("timestamp", LongType) :: Nil)
   val SEP = "##"
 }

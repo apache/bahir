@@ -18,6 +18,7 @@
 package org.apache.bahir.sql.streaming.mqtt
 
 import java.io.IOException
+import java.sql.Timestamp
 import java.util.Calendar
 import java.util.concurrent.locks.{Lock, ReentrantLock}
 
@@ -58,8 +59,8 @@ class HdfsBasedMQTTStreamSource(
   sqlContext: SQLContext,
   metadataPath: String,
   brokerUrl: String,
-  topic: String,
   clientId: String,
+  topic: String,
   mqttConnectOptions: MqttConnectOptions,
   qos: Int,
   maxBatchNumber: Long = Long.MaxValue,
@@ -67,7 +68,9 @@ class HdfsBasedMQTTStreamSource(
   maxRetryNumber: Int = 3
 ) extends Source with Logging {
 
-  override def schema: StructType = HDFSMQTTSourceProvider.SCHEMA_DEFAULT
+  import HDFSMQTTSourceProvider.SEP
+
+  override def schema: StructType = MQTTStreamConstants.SCHEMA_DEFAULT
 
   // Last batch offset file index
   private var lastOffset: Long = -1L
@@ -212,12 +215,16 @@ class HdfsBasedMQTTStreamSource(
 
     client = new MqttClient(brokerUrl, clientId, new MemoryPersistence())
 
-    hadoopConfig.addResource(this.getClass.getClassLoader.getResource("core-site.xml"))
+    /*
+    val coreSiteUrl = this.getClass.getClassLoader.getResource("core-site.xml")
+    if (null != coreSiteUrl) {
+      hadoopConfig.addResource(coreSiteUrl)
+    }
     val hdfsSiteUrl = this.getClass.getClassLoader.getResource("hdfs-site.xml")
     if (null != hdfsSiteUrl) {
       hadoopConfig.addResource(hdfsSiteUrl)
     }
-
+    */
     val callback = new MqttCallbackExtended() {
 
       override def messageArrived(topic: String, message: MqttMessage): Unit = {
@@ -239,14 +246,16 @@ class HdfsBasedMQTTStreamSource(
             }
             messageStoreOutputStream = fs.append(path)
           }
+
+          messageStoreOutputStream.writeBytes(s"${message.getId}${SEP}")
+          messageStoreOutputStream.writeBytes(s"${topic}${SEP}")
           val timestamp = Calendar.getInstance().getTimeInMillis().toString
-          messageStoreOutputStream.writeBytes(timestamp)
-          messageStoreOutputStream.writeBytes(HDFSMQTTSourceProvider.SEP)
+          messageStoreOutputStream.writeBytes(s"${timestamp}${SEP}")
           messageStoreOutputStream.write(message.getPayload())
           messageStoreOutputStream.writeBytes("\n")
           addReceivedMessageInfo(1, messageSize)
           consecutiveFailNum = 0
-          logTrace(s"Message arrived, topic: $topic, message payload $message, "
+          logInfo(s"Message arrived, topic: $topic, message payload $message, "
             + s"messageId: ${message.getId}, message size: ${messageSize}")
         }
       }
@@ -336,13 +345,24 @@ class HdfsBasedMQTTStreamSource(
     logTrace(s"Create a data frame using hdfs file $receivedDataPath/$endIndex")
     val rdd = sqlContext.sparkContext.textFile(s"$receivedDataPath/$endIndex")
       .map{case str =>
-        val sepIndex = str.indexOf(HDFSMQTTSourceProvider.SEP)
-        val timestamp = str.substring(0, sepIndex).toLong
-        val stringValue = UTF8String.fromString(
-          str.substring(sepIndex + HDFSMQTTSourceProvider.SEP.length))
-        Row(stringValue, timestamp)
+        // calculate message in
+        val idIndex = str.indexOf(SEP)
+        val messageId = str.substring(0, idIndex).toInt
+        // get topic
+        var subStr = str.substring(idIndex + SEP.length)
+        val topicIndex = subStr.indexOf(SEP)
+        val topic = subStr.substring(0, topicIndex)
+        // get timestamp
+        subStr = subStr.substring(topicIndex + SEP.length)
+        val timestampIndex = subStr.indexOf(SEP)
+        val timestamp = Timestamp.valueOf(
+          MQTTStreamConstants.DATE_FORMAT.format(subStr.substring(0, timestampIndex).toLong))
+        // get playload
+        subStr = subStr.substring(timestampIndex + SEP.length)
+        val payload = UTF8String.fromString(subStr).getBytes
+        Row(messageId, topic, payload, timestamp)
       }
-    sqlContext.createDataFrame(rdd, HDFSMQTTSourceProvider.SCHEMA_DEFAULT)
+    sqlContext.createDataFrame(rdd, MQTTStreamConstants.SCHEMA_DEFAULT)
   }
 
   /**

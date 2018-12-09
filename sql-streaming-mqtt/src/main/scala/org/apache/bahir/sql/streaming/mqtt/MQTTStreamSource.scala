@@ -244,7 +244,7 @@ class MQTTStreamSourceProvider extends DataSourceV2
     }
 
     import scala.collection.JavaConverters._
-    val (brokerUrl, clientId, topic, persistence, mqttConnectOptions, qos) =
+    val (brokerUrl, clientId, topic, persistence, mqttConnectOptions, qos, _, _, _) =
       MQTTUtils.parseConfigParams(collection.immutable.HashMap() ++ parameters.asMap().asScala)
 
     new MQTTStreamSource(parameters, brokerUrl, persistence, topic, clientId,

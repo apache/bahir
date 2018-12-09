@@ -52,7 +52,7 @@ class MQTTStreamWriter (schema: StructType, parameters: DataSourceOptions)
 
   initialize()
   private def initialize(): Unit = {
-    val (_, _, topic_, _, _, qos_) = MQTTUtils.parseConfigParams(
+    val (_, _, topic_, _, _, qos_, _, _, _) = MQTTUtils.parseConfigParams(
       collection.immutable.HashMap() ++ parameters.asMap().asScala
     )
     topic = topic_
