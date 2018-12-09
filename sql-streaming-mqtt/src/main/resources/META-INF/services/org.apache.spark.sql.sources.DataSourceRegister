@@ -17,4 +17,4 @@
 
 org.apache.bahir.sql.streaming.mqtt.MQTTStreamSinkProvider
 org.apache.bahir.sql.streaming.mqtt.MQTTStreamSourceProvider
-org.apache.bahir.sql.streaming.mqtt.HDFSMQTTSourceProvider
+org.apache.spark.sql.mqtt.HDFSMQTTSourceProvider

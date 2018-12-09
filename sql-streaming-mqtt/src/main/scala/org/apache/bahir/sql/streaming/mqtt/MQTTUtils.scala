@@ -24,9 +24,8 @@ import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 
 import org.apache.bahir.utils.Logging
 
-
-private[mqtt] object MQTTUtils extends Logging {
-  private[mqtt] def parseConfigParams(config: Map[String, String]):
+object MQTTUtils extends Logging {
+  def parseConfigParams(config: Map[String, String]):
       (String, String, String, MqttClientPersistence, MqttConnectOptions, Int, Long, Long, Int) = {
     def e(s: String) = new IllegalArgumentException(s)
     val parameters = CaseInsensitiveMap(config)
