@@ -41,17 +41,18 @@ class CloudantAllDocsDFSuite extends ClientSparkFunSuite {
     // Caching df in memory to speed computations
     // and not to retrieve data from cloudant again
     df.cache()
+
     // all docs in database minus the design doc
-    assert(df.count() == 1967)
+    assert(df.count() == 100)
   }
 
   testIf("load and count data from Cloudant search index", TestUtils.shouldRunTest) {
     val df = spark.read.format("org.apache.bahir.cloudant")
       .option("index", "_design/view/_search/n_flights").load("n_flight")
-    val total = df.filter(df("flightSegmentId") >"AA9")
+    val total = df.filter(df("flightSegmentId") >"AA14")
       .select("flightSegmentId", "scheduledDepartureTime")
       .orderBy(df("flightSegmentId")).count()
-    assert(total == 50)
+    assert(total == 89)
   }
 
   testIf("load data and count rows in filtered dataframe", TestUtils.shouldRunTest) {
@@ -67,16 +68,16 @@ class CloudantAllDocsDFSuite extends ClientSparkFunSuite {
     val df = spark.read.format("org.apache.bahir.cloudant").load("n_flight")
 
     // Saving data frame with filter to Cloudant db
-    val df2 = df.filter(df("flightSegmentId") === "AA106")
+    val df2 = df.filter(df("flightSegmentId") === "AA142")
       .select("flightSegmentId", "economyClassBaseCost")
 
-    assert(df2.count() == 5)
+    assert(df2.count() == 2)
 
     df2.write.format("org.apache.bahir.cloudant").save("n_flight2")
 
     val dfFlight2 = spark.read.format("org.apache.bahir.cloudant").load("n_flight2")
 
-    assert(dfFlight2.count() == 5)
+    assert(dfFlight2.count() == 2)
   }
 
   // createDBOnSave option test
@@ -90,7 +91,6 @@ class CloudantAllDocsDFSuite extends ClientSparkFunSuite {
     Try {
       client.deleteDB(saveDfToDb)
     }
-
     // Saving dataframe to Cloudant db
     // to create a Cloudant db during save set the option createDBOnSave=true
     val df2 = df.filter(df("_id") >= "CAA")
@@ -109,7 +109,7 @@ class CloudantAllDocsDFSuite extends ClientSparkFunSuite {
   testIf("load and count data from view", TestUtils.shouldRunTest) {
     val df = spark.read.format("org.apache.bahir.cloudant")
       .option("view", "_design/view/_view/AA0").load("n_flight")
-    assert(df.count() == 5)
+    assert(df.count() == 1)
   }
 
   testIf("load data from view with MapReduce function", TestUtils.shouldRunTest) {

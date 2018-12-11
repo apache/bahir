@@ -47,16 +47,16 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
     df.cache()
 
     // all docs in database minus the design doc
-    assert(df.count() == 1967)
+    assert(df.count() == 100)
   }
 
   testIf("load and count data from Cloudant search index", TestUtils.shouldRunTest) {
     val df = spark.read.format("org.apache.bahir.cloudant")
       .option("index", "_design/view/_search/n_flights").load("n_flight")
-    val total = df.filter(df("flightSegmentId") >"AA9")
+    val total = df.filter(df("flightSegmentId") >"AA14")
       .select("flightSegmentId", "scheduledDepartureTime")
       .orderBy(df("flightSegmentId")).count()
-    assert(total == 50)
+    assert(total == 89)
   }
 
   testIf("load data and verify deleted doc is not in results", TestUtils.shouldRunTest) {
@@ -66,7 +66,7 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
 
     val df = spark.read.format("org.apache.bahir.cloudant").load("n_flight")
     // all docs in database minus the design doc and _deleted=true doc
-    assert(df.count() == 1966)
+    assert(df.count() == 99)
 
     assert(!df.columns.contains("_deleted"))
   }
@@ -84,16 +84,16 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
     val df = spark.read.format("org.apache.bahir.cloudant").load("n_flight")
 
     // Saving data frame with filter to Cloudant db
-    val df2 = df.filter(df("flightSegmentId") === "AA106")
+    val df2 = df.filter(df("flightSegmentId") === "AA142")
       .select("flightSegmentId", "economyClassBaseCost")
 
-    assert(df2.count() == 5)
+    assert(df2.count() == 2)
 
     df2.write.format("org.apache.bahir.cloudant").save("n_flight2")
 
     val dfFlight2 = spark.read.format("org.apache.bahir.cloudant").load("n_flight2")
 
-    assert(dfFlight2.count() == 5)
+    assert(dfFlight2.count() == 2)
   }
 
   // createDBOnSave option test
@@ -130,7 +130,7 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
   testIf("load and count data from view", TestUtils.shouldRunTest) {
     val df = spark.read.format("org.apache.bahir.cloudant")
       .option("view", "_design/view/_view/AA0").load("n_flight")
-    assert(df.count() == 5)
+    assert(df.count() == 1)
   }
 
   testIf("load data from view with MapReduce function", TestUtils.shouldRunTest) {
@@ -143,20 +143,20 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
   testIf("load data and verify total count of selector, filter, and view option",
       TestUtils.shouldRunTest) {
     val df = spark.read.format("org.apache.bahir.cloudant")
-      .option("selector", "{\"flightSegmentId\": {\"$eq\": \"AA2\"}}")
+      .option("selector", "{\"flightSegmentId\": {\"$eq\": \"AA202\"}}")
       .load("n_flight")
     val dfcount = df.count()
-    assert(dfcount == 5)
+    assert(dfcount == 2)
 
     val df2 = spark.read.format("org.apache.bahir.cloudant")
       .load("n_flight")
-    val df2count = df2.filter(df2("flightSegmentId") === "AA2")
+    val df2count = df2.filter(df2("flightSegmentId") === "AA202")
       .select("flightSegmentId", "scheduledDepartureTime")
       .orderBy(df2("flightSegmentId")).count()
     assert(df2count == dfcount)
 
     val df3 = spark.read.format("org.apache.bahir.cloudant")
-      .option("view", "_design/view/_view/AA2").load("n_flight")
+      .option("view", "_design/view/_view/AA202").load("n_flight")
     val df3count = df3.count()
     assert(dfcount == df3count)
     assert(df2count == df3count)

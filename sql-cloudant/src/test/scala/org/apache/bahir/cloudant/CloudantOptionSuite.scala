@@ -31,6 +31,7 @@ class CloudantOptionSuite extends ClientSparkFunSuite with BeforeAndAfter {
 
   testIf("invalid api receiver option throws an error message", TestUtils.shouldRunTest) {
     spark = SparkSession.builder().config(conf)
+      .config("cloudant.protocol", TestUtils.getProtocol)
       .config("cloudant.host", TestUtils.getHost)
       .config("cloudant.username", TestUtils.getUsername)
       .config("cloudant.password", TestUtils.getPassword)
@@ -46,6 +47,7 @@ class CloudantOptionSuite extends ClientSparkFunSuite with BeforeAndAfter {
 
   testIf("empty username option throws an error message", TestUtils.shouldRunTest) {
     spark = SparkSession.builder().config(conf)
+      .config("cloudant.protocol", TestUtils.getProtocol)
       .config("cloudant.host", TestUtils.getHost)
       .config("cloudant.username", "")
       .config("cloudant.password", TestUtils.getPassword)
@@ -60,6 +62,7 @@ class CloudantOptionSuite extends ClientSparkFunSuite with BeforeAndAfter {
 
   testIf("empty password option throws an error message", TestUtils.shouldRunTest) {
     spark = SparkSession.builder().config(conf)
+      .config("cloudant.protocol", TestUtils.getProtocol)
       .config("cloudant.host", TestUtils.getHost)
       .config("cloudant.username", TestUtils.getUsername)
       .config("cloudant.password", "")
@@ -74,6 +77,7 @@ class CloudantOptionSuite extends ClientSparkFunSuite with BeforeAndAfter {
 
   testIf("empty databaseName throws an error message", TestUtils.shouldRunTest) {
     spark = SparkSession.builder().config(conf)
+      .config("cloudant.protocol", TestUtils.getProtocol)
       .config("cloudant.host", TestUtils.getHost)
       .config("cloudant.username", TestUtils.getUsername)
       .config("cloudant.password", TestUtils.getPassword)
@@ -106,6 +110,7 @@ class CloudantOptionSuite extends ClientSparkFunSuite with BeforeAndAfter {
 
   testIf("string with valid value for cloudant.numberOfRetries option", TestUtils.shouldRunTest) {
     spark = SparkSession.builder().config(conf)
+      .config("cloudant.protocol", TestUtils.getProtocol)
       .config("cloudant.host", TestUtils.getHost)
       .config("cloudant.username", TestUtils.getUsername)
       .config("cloudant.password", TestUtils.getPassword)
@@ -119,6 +124,7 @@ class CloudantOptionSuite extends ClientSparkFunSuite with BeforeAndAfter {
   testIf("invalid value for cloudant.numberOfRetries option throws an error message",
       TestUtils.shouldRunTest) {
     spark = SparkSession.builder().config(conf)
+      .config("cloudant.protocol", TestUtils.getProtocol)
       .config("cloudant.host", TestUtils.getHost)
       .config("cloudant.username", TestUtils.getUsername)
       .config("cloudant.password", TestUtils.getPassword)
