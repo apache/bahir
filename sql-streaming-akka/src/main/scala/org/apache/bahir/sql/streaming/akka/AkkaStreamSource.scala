@@ -41,10 +41,12 @@ import com.typesafe.config.ConfigFactory
 import org.rocksdb.{Options, RocksDB}
 
 import org.apache.spark.SparkEnv
-import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.codegen.UTF8StringBuilder
 import org.apache.spark.sql.sources.DataSourceRegister
 import org.apache.spark.sql.sources.v2.{DataSourceOptions, MicroBatchReadSupport}
-import org.apache.spark.sql.sources.v2.reader.{DataReader, DataReaderFactory}
+import org.apache.spark.sql.sources.v2.reader.{InputPartition, InputPartitionReader}
 import org.apache.spark.sql.sources.v2.reader.streaming.{MicroBatchReader, Offset}
 import org.apache.spark.sql.types.{StringType, StructField, StructType, TimestampType}
 
@@ -262,7 +264,7 @@ class AkkaMicroBatchReader(urlOfPublisher: String,
 
   override def readSchema(): StructType = AkkaStreamConstants.SCHEMA_DEFAULT
 
-  override def createDataReaderFactories(): util.List[DataReaderFactory[Row]] = {
+  override def planInputPartitions(): util.List[InputPartition[InternalRow]] = {
     assert(startOffset != null && endOffset != null,
       "start offset and end offset should already be set before create read tasks.")
 
@@ -283,8 +285,9 @@ class AkkaMicroBatchReader(urlOfPublisher: String,
 
     (0 until numPartitions).map { i =>
       val slice = slices(i)
-      new DataReaderFactory[Row] {
-        override def createDataReader(): DataReader[Row] = new DataReader[Row] {
+      new InputPartition[InternalRow] {
+        override def createPartitionReader(): InputPartitionReader[InternalRow] =
+            new InputPartitionReader[InternalRow] {
           private var currentIdx = -1
 
           override def next(): Boolean = {
@@ -292,8 +295,10 @@ class AkkaMicroBatchReader(urlOfPublisher: String,
             currentIdx < slice.size
           }
 
-          override def get(): Row = {
-            Row.fromTuple(slice(currentIdx))
+          override def get(): InternalRow = {
+            val builder = new UTF8StringBuilder()
+            builder.append(slice(currentIdx)._1)
+            InternalRow(builder.build(), slice(currentIdx)._2.getTime)
           }
 
           override def close(): Unit = {}

@@ -38,11 +38,11 @@ to the staging release location.
 
 --release-publish --tag="v2.3.0-rc1"
 Publish the maven artifacts of a release to the Apache staging maven repository.
-Note that this will publish both Scala 2.10 and 2.11 artifacts.
+Note that this will publish both Scala 2.11 and 2.12 artifacts.
 
 --release-snapshot
 Publish the maven snapshot artifacts to Apache snapshots maven repository
-Note that this will publish both Scala 2.10 and 2.11 artifacts.
+Note that this will publish both Scala 2.11 and 2.12 artifacts.
 
 OPTIONS
 
@@ -78,7 +78,7 @@ if [ $# -eq 0 ]; then
 fi
 
 
-# Process each provided argument configuration
+# process each provided argument configuration
 while [ "${1+defined}" ]; do
   IFS="=" read -ra PARTS <<< "$1"
   case "${PARTS[0]}" in
@@ -134,7 +134,7 @@ while [ "${1+defined}" ]; do
      echo "Error: Unknown option: $1" >&2
      exit 1
      ;;
-    *)  # No more options
+    *)  # no more options
      break
      ;;
   esac
@@ -160,7 +160,7 @@ fi
 
 if [[ "$RELEASE_PUBLISH" == "true"  ]]; then
     if [[ "$GIT_REF" && "$GIT_TAG" ]]; then
-        echo "ERROR: Only one argumented permitted when publishing : --gitCommitHash or --gitTag"
+        echo "ERROR: Only one argument permitted when publishing : --gitCommitHash or --gitTag"
         exit_with_usage
     fi
     if [[ -z "$GIT_REF" && -z "$GIT_TAG" ]]; then
@@ -175,11 +175,11 @@ if [[ "$RELEASE_PUBLISH" == "true" && "$DRY_RUN" ]]; then
 fi
 
 if [[ "$RELEASE_SNAPSHOT" == "true" && "$DRY_RUN" ]]; then
-    echo "ERROR: --dryRun not supported for --release-publish"
+    echo "ERROR: --dryRun not supported for --release-snapshot"
     exit_with_usage
 fi
 
-# Commit ref to checkout when building
+# commit ref to checkout when building
 GIT_REF=${GIT_REF:-master}
 if [[ "$RELEASE_PUBLISH" == "true" && "$GIT_TAG" ]]; then
     GIT_REF="tags/$GIT_TAG"
@@ -200,11 +200,10 @@ fi
 
 RELEASE_STAGING_LOCATION="https://dist.apache.org/repos/dist/dev/bahir/bahir-spark"
 
-
 echo "  "
-echo "-------------------------------------------------------------"
-echo "------- Release preparation with the following parameters ---"
-echo "-------------------------------------------------------------"
+echo "-----------------------------------------------------------------"
+echo "------- Release preparation with the following parameters -------"
+echo "-----------------------------------------------------------------"
 echo "Executing           ==> $GOAL"
 echo "Git reference       ==> $GIT_REF"
 echo "release version     ==> $RELEASE_VERSION"
@@ -220,7 +219,6 @@ echo $RELEASE_STAGING_LOCATION
 echo "  "
 
 function checkout_code {
-    # Checkout code
     rm -rf target
     mkdir target
     cd target
@@ -231,33 +229,41 @@ function checkout_code {
     git_hash=`git rev-parse --short HEAD`
     echo "Checked out Bahir git hash $git_hash"
 
-    cd "$BASE_DIR" #return to base dir
+    cd "$BASE_DIR" # return to base dir
 }
 
 if [[ "$RELEASE_PREPARE" == "true" ]]; then
     echo "Preparing release $RELEASE_VERSION"
-    # Checkout code
+    # checkout code
     checkout_code
     cd target/bahir
 
-    # Build and prepare the release
-    $MVN $PUBLISH_PROFILES release:clean release:prepare $DRY_RUN -Darguments="-Dgpg.passphrase=\"$GPG_PASSPHRASE\" -DskipTests" -DreleaseVersion="$RELEASE_VERSION" -DdevelopmentVersion="$DEVELOPMENT_VERSION" -Dtag="$RELEASE_TAG"
+    # test with scala 2.11 and 2.12
+    ./dev/change-scala-version.sh 2.11
+    $MVN $PUBLISH_PROFILES clean test -Dscala-2.11 || exit 1
+    ./dev/change-scala-version.sh 2.12
+    $MVN $PUBLISH_PROFILES clean test || exit 1
 
-    cd .. #exit bahir
+    # build and prepare the release
+    $MVN $PUBLISH_PROFILES release:clean release:prepare $DRY_RUN \
+        -DskipTests=true -Dgpg.passphrase="$GPG_PASSPHRASE" \
+        -DreleaseVersion="$RELEASE_VERSION" -DdevelopmentVersion="$DEVELOPMENT_VERSION" -Dtag="$RELEASE_TAG"
+
+    cd .. # exit bahir
 
     if [ -z "$DRY_RUN" ]; then
         cd "$BASE_DIR/target/bahir"
         git checkout $RELEASE_TAG
         git clean -d -f -x
 
-        $MVN $PUBLISH_PROFILES clean install -DskiptTests -Darguments="-DskipTests"
+        $MVN $PUBLISH_PROFILES clean install -DskipTests=true
 
         cd "$BASE_DIR/target"
         svn co $RELEASE_STAGING_LOCATION svn-bahir
         mkdir -p svn-bahir/$RELEASE_VERSION-$RELEASE_RC
 
         cp bahir/distribution/target/*.tar.gz svn-bahir/$RELEASE_VERSION-$RELEASE_RC/
-        cp bahir/distribution/target/*.zip    svn-bahir/$RELEASE_VERSION-$RELEASE_RC/
+        cp bahir/distribution/target/*.zip svn-bahir/$RELEASE_VERSION-$RELEASE_RC/
 
         cd svn-bahir/$RELEASE_VERSION-$RELEASE_RC/
         rm -f *.asc
@@ -265,49 +271,50 @@ if [[ "$RELEASE_PREPARE" == "true" ]]; then
         rm -f *.sha*
         for i in *.zip *.tar.gz; do shasum --algorithm 512 $i > $i.sha512; done
 
-        cd .. #exit $RELEASE_VERSION-$RELEASE_RC/
+        cd .. # exit $RELEASE_VERSION-$RELEASE_RC
 
         svn add $RELEASE_VERSION-$RELEASE_RC/
         svn ci -m"Apache Bahir $RELEASE_VERSION-$RELEASE_RC"
     fi
 
-
-    cd "$BASE_DIR" #exit target
-
+    cd "$BASE_DIR" # exit target
     exit 0
 fi
 
 
 if [[ "$RELEASE_PUBLISH" == "true" ]]; then
     echo "Preparing release $RELEASE_VERSION"
-    # Checkout code
+    # checkout code
     checkout_code
     cd target/bahir
 
-    #Deploy default scala 2.11
-    mvn $PUBLISH_PROFILES -DaltDeploymentRepository=apache.releases.https::default::https://repository.apache.org/service/local/staging/deploy/maven2 clean package gpg:sign install:install deploy:deploy -DskiptTests -Darguments="-DskipTests" -Dgpg.passphrase=$GPG_PASSPHRASE
+    DEPLOYMENT_REPOSITORY="apache.releases.https::default::https://repository.apache.org/service/local/staging/deploy/maven2"
 
-    #mvn clean
+    # deploy default scala 2.12
+    $MVN $PUBLISH_PROFILES clean package gpg:sign install:install deploy:deploy \
+        -DaltDeploymentRepository=$DEPLOYMENT_REPOSITORY \
+        -DskipTests=true -Dgpg.passphrase=$GPG_PASSPHRASE
 
-    #Deploy scala 2.10
-    #./dev/change-scala-version.sh 2.10
-    #mvn $PUBLISH_PROFILES -DaltDeploymentRepository=apache.releases.https::default::https://repository.apache.org/service/local/staging/deploy/maven2 clean package gpg:sign install:install deploy:deploy -DskiptTests -Darguments="-DskipTests" -Dscala-2.10 -Dgpg.passphrase=$GPG_PASSPHRASE
+    # deploy scala 2.11
+    ./dev/change-scala-version.sh 2.11
+    $MVN $PUBLISH_PROFILES clean package gpg:sign install:install deploy:deploy \
+        -DaltDeploymentRepository=$DEPLOYMENT_REPOSITORY \
+        -DskipTests=true -Dgpg.passphrase=$GPG_PASSPHRASE -Dscala-2.11
 
-    cd "$BASE_DIR" #exit target
-
+    cd "$BASE_DIR" # exit target
     exit 0
 fi
 
 
 if [[ "$RELEASE_SNAPSHOT" == "true" ]]; then
-    # Checkout code
+    # checkout code
     checkout_code
     cd target/bahir
 
-    CURRENT_VERSION=$($MVN help:evaluate -Dexpression=project.version \
-    | grep -v INFO | grep -v WARNING | grep -v Download)
+    DEPLOYMENT_REPOSITORY="apache.snapshots.https::default::https://repository.apache.org/content/repositories/snapshots"
+    CURRENT_VERSION=$($MVN help:evaluate -Dexpression=project.version | grep -v INFO | grep -v WARNING | grep -v Download)
 
-    # Publish Bahir Snapshots to Maven snapshot repo
+    # publish Bahir snapshots to maven repository
     echo "Deploying Bahir SNAPSHOT at '$GIT_REF' ($git_hash)"
     echo "Publish version is $CURRENT_VERSION"
     if [[ ! $CURRENT_VERSION == *"SNAPSHOT"* ]]; then
@@ -316,19 +323,23 @@ if [[ "$RELEASE_SNAPSHOT" == "true" ]]; then
         exit 1
     fi
 
-    #Deploy default scala 2.11
-    $MVN $PUBLISH_PROFILES -DaltDeploymentRepository=apache.snapshots.https::default::https://repository.apache.org/content/repositories/snapshots clean package gpg:sign install:install deploy:deploy -DskiptTests -Darguments="-DskipTests" -Dgpg.passphrase=$GPG_PASSPHRASE
+    # deploy default scala 2.12
+    $MVN $PUBLISH_PROFILES clean package gpg:sign install:install deploy:deploy \
+        -DaltDeploymentRepository=$DEPLOYMENT_REPOSITORY \
+        -DskipTests=true -Dgpg.passphrase=$GPG_PASSPHRASE
 
-    #Deploy scala 2.10
-    ./dev/change-scala-version.sh 2.10
-    $MVN $PUBLISH_PROFILES -DaltDeploymentRepository=apache.snapshots.https::default::https://repository.apache.org/content/repositories/snapshots clean package gpg:sign install:install deploy:deploy -DskiptTests -Darguments="-DskipTests" -Dscala-2.10 -Dgpg.passphrase=$GPG_PASSPHRASE
+    # deploy scala 2.11
+    ./dev/change-scala-version.sh 2.11
+    $MVN $PUBLISH_PROFILES clean package gpg:sign install:install deploy:deploy \
+        -DaltDeploymentRepository=$DEPLOYMENT_REPOSITORY \
+        -DskipTests=true -Dgpg.passphrase=$GPG_PASSPHRASE -Dscala-2.11
 
-    cd "$BASE_DIR" #exit target
+    cd "$BASE_DIR" # exit target
     exit 0
 fi
 
 
-cd "$BASE_DIR" #return to base dir
+cd "$BASE_DIR" # return to base directory
 rm -rf target
 echo "ERROR: wrong execution goals"
 exit_with_usage

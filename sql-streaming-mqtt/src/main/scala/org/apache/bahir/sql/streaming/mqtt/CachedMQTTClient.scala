@@ -94,8 +94,16 @@ private[mqtt] object CachedMQTTClient extends Logging {
   private def closeMqttClient(params: Seq[(String, String)],
       client: MqttClient, persistence: MqttClientPersistence): Unit = {
     try {
-      client.disconnect()
-      persistence.close()
+      if (client.isConnected) {
+        client.disconnect()
+      }
+      try {
+        persistence.close()
+      } catch {
+        case NonFatal(e) => log.warn(
+          s"Error while closing MQTT persistent store ${e.getMessage}", e
+        )
+      }
       client.close()
     } catch {
       case NonFatal(e) => log.warn(s"Error while closing MQTT client ${e.getMessage}", e)

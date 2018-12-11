@@ -76,7 +76,7 @@ case class CloudantReadWriteRelation (config: CloudantConfig,
       logger.warn("Database " + config.getDbname +
         ": nothing was saved because the number of records was 0!")
     } else {
-      val result = data.toJSON.foreachPartition { x =>
+      data.toJSON.foreachPartition { x: Iterator[String] =>
         val list = x.toList // Has to pass as List, Iterator results in 0 data
         dataAccess.saveAll(list)
       }

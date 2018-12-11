@@ -22,19 +22,17 @@ import java.net.ConnectException
 import java.util
 
 import org.eclipse.paho.client.mqttv3.MqttClient
+import org.eclipse.paho.client.mqttv3.MqttException
 import org.scalatest.BeforeAndAfter
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.Future
 
-import org.apache.spark.{SharedSparkContext, SparkEnv, SparkException, SparkFunSuite}
-import org.apache.spark.sql.{DataFrame, Row, SparkSession, SQLContext}
-import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
+import org.apache.spark.{SharedSparkContext, SparkEnv, SparkFunSuite}
+import org.apache.spark.sql.{DataFrame, SparkSession, SQLContext}
 import org.apache.spark.sql.execution.streaming.MemoryStream
-import org.apache.spark.sql.execution.streaming.sources.PackedRowCommitMessage
 import org.apache.spark.sql.sources.v2.DataSourceOptions
 import org.apache.spark.sql.streaming.{OutputMode, StreamingQuery}
-import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 
 import org.apache.bahir.utils.FileHelper
 
@@ -56,7 +54,8 @@ class MQTTStreamSinkSuite(_ssl: Boolean) extends SparkFunSuite
   }
 
   after {
-    testClient.disconnect()
+    CachedMQTTClient.clear()
+    testClient.disconnectForcibly()
     testClient.close()
     mqttTestUtils.teardown()
     FileHelper.deleteFileQuietly(tempDir)
@@ -95,15 +94,12 @@ class BasicMQTTSinkSuite extends MQTTStreamSinkSuite(false) {
       "topic" -> "test",
       "localStorage" -> tempDir.getAbsoluteFile.toString
     )
-    val schema = StructType(StructField("value", StringType) :: Nil)
-    val messages : Array[Row] = Array(new GenericRowWithSchema(Array("value1"), schema))
-    val thrown: Exception = intercept[SparkException] {
+    val thrown: Exception = intercept[MqttException] {
       provider.createStreamWriter(
-        "query1", schema, OutputMode.Complete(), new DataSourceOptions(parameters.asJava)
-      ).commit(1, Array(PackedRowCommitMessage(messages)))
+        "query1", null, OutputMode.Complete(), new DataSourceOptions(parameters.asJava)
+      ).createWriterFactory().createDataWriter(1, 1, 1).write(null)
     }
-    // SparkException -> MqttException -> ConnectException
-    assert(thrown.getCause.getCause.isInstanceOf[ConnectException])
+    assert(thrown.getCause.isInstanceOf[ConnectException])
   }
 
   test("basic usage") {
@@ -111,7 +107,7 @@ class BasicMQTTSinkSuite extends MQTTStreamSinkSuite(false) {
     val msg2 = "MQTT is a message queue."
     val (_, dataFrame) = createContextAndDF(msg1, msg2)
 
-    sendToMQTT(dataFrame).awaitTermination(3000)
+    sendToMQTT(dataFrame).awaitTermination(5000)
 
     assert(Set(msg1, msg2).equals(messages.values.toSet))
   }
@@ -120,7 +116,7 @@ class BasicMQTTSinkSuite extends MQTTStreamSinkSuite(false) {
     val msg = List.tabulate(100)(n => "Hello, World!" + n)
     val (_, dataFrame) = createContextAndDF(msg: _*)
 
-    sendToMQTT(dataFrame).awaitTermination(3000)
+    sendToMQTT(dataFrame).awaitTermination(5000)
 
     assert(Set(msg: _*).equals(messages.values.toSet))
   }
@@ -134,13 +130,13 @@ class BasicMQTTSinkSuite extends MQTTStreamSinkSuite(false) {
     intercept[IllegalArgumentException] {
       provider.createStreamWriter(
         "query1", null, OutputMode.Complete(), new DataSourceOptions(parameters.asJava)
-      )
+      ).createWriterFactory().createDataWriter(1, 1, 1).write(null)
     }
     intercept[IllegalArgumentException] {
       provider.createStreamWriter(
         "query1", null, OutputMode.Complete(),
         new DataSourceOptions(new util.HashMap[String, String])
-      )
+      ).createWriterFactory().createDataWriter(1, 1, 1).write(null)
     }
   }
 }
@@ -163,7 +159,7 @@ class StressTestMQTTSink extends MQTTStreamSinkSuite(false) {
     val freeMemory: Long = Runtime.getRuntime.freeMemory()
     log.info(s"Available memory before test run is ${freeMemory / (1024 * 1024)}MB.")
     val noOfMsgs: Int = 200
-    val noOfBatches: Int = 10
+    val noOfBatches: Int = 5
 
     val messageBuilder = new StringBuilder()
     for (i <- 0 until (500 * 1024)) yield messageBuilder.append(((i % 26) + 65).toChar)
