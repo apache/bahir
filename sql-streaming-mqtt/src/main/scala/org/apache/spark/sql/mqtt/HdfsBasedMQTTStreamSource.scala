@@ -18,7 +18,6 @@
 package org.apache.spark.sql.mqtt
 
 import java.io.IOException
-import java.sql.Timestamp
 import java.util.Calendar
 import java.util.concurrent.locks.{Lock, ReentrantLock}
 
@@ -28,10 +27,9 @@ import org.eclipse.paho.client.mqttv3._
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.{DataFrame, Row, SQLContext}
+import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.streaming._
-import org.apache.spark.sql.execution.streaming.HDFSMetadataLog.FileContextManager
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -191,7 +189,7 @@ class HdfsBasedMQTTStreamSource(
     // recover message data file offset from hdfs
     val dataPath = new Path(receivedDataPath)
     if (fs.exists(dataPath)) {
-      val fileManager = new FileContextManager(dataPath, hadoopConfig)
+      val fileManager = CheckpointFileManager.create(dataPath, hadoopConfig)
       val dataFileIndexs = fileManager.list(dataPath, new PathFilter {
         private def isBatchFile(path: Path) = {
           try {

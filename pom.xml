@@ -24,7 +24,7 @@
     <version>18</version>
   </parent>
   <groupId>org.apache.bahir</groupId>
-  <artifactId>bahir-parent_2.11</artifactId>
+  <artifactId>bahir-parent_2.12</artifactId>
   <version>2.4.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Apache Bahir - Parent POM</name>
@@ -90,18 +90,19 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <skipTests>false</skipTests>
 
     <!-- General project dependencies version -->
     <java.version>1.8</java.version>
     <maven.version>3.3.9</maven.version>
-    <scala.version>2.11.12</scala.version>
-    <scala.binary.version>2.11</scala.binary.version>
+    <scala.version>2.12.7</scala.version>
+    <scala.binary.version>2.12</scala.binary.version>
 
     <slf4j.version>1.7.16</slf4j.version>
     <log4j.version>1.2.17</log4j.version>
 
     <!-- Spark version -->
-    <spark.version>2.3.2</spark.version>
+    <spark.version>2.4.0</spark.version>
 
     <!-- Hadoop version -->
     <hadoop.version>2.6.5</hadoop.version>
@@ -179,7 +180,7 @@
       published POMs are flattened and do not contain variables. Without this dependency, some
       subprojects' published POMs would contain variables like ${scala.binary.version} that will
       be substituted according to the default properties instead of the ones determined by the
-      profiles that were active during publishing, causing the Scala 2.10 build's POMs to have 2.11
+      profiles that were active during publishing, causing the Scala 2.11 build's POMs to have 2.12
       dependencies due to the incorrect substitutions. By ensuring that maven-shade runs for all
       subprojects, we eliminate this problem because the substitutions are baked into the final POM.
 
@@ -204,6 +205,17 @@
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
+    <!--
+      Temporary workaround. Spark Core 2.4.0 with Scala 2.12 depends on Apache Avro 1.8.2,
+      which pulls in transitive dependency of Paranamer 2.7. All integration tests fail
+      with error message same as SPARK-22128. Manually upgrading Paranamer to 2.8.
+    -->
+    <dependency>
+      <groupId>com.thoughtworks.paranamer</groupId>
+      <artifactId>paranamer</artifactId>
+      <version>2.8</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <dependencyManagement>
@@ -213,6 +225,11 @@
         <artifactId>spark-core_${scala.binary.version}</artifactId>
         <version>${spark.version}</version>
         <exclusions>
+          <!-- Temporary fix, see above. -->
+          <exclusion>
+            <groupId>com.thoughtworks.paranamer</groupId>
+            <artifactId>paranamer</artifactId>
+          </exclusion>
           <exclusion>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-plus</artifactId>
@@ -308,7 +325,7 @@
       <dependency>
         <groupId>org.json4s</groupId>
         <artifactId>json4s-jackson_${scala.binary.version}</artifactId>
-        <version>3.2.11</version>
+        <version>3.5.3</version>
       </dependency>
 
       <dependency>
@@ -982,6 +999,9 @@
       <plugin>
         <groupId>org.scalatest</groupId>
         <artifactId>scalatest-maven-plugin</artifactId>
+        <configuration>
+          <skipTests>${skipTests}</skipTests>
+        </configuration>
       </plugin>
       <!-- Build test-jar's for all projects, since some projects depend on tests from others -->
       <plugin>
@@ -1040,33 +1060,56 @@
 
     <profile>
       <id>distribution</id>
-
       <modules>
         <module>distribution</module>
       </modules>
     </profile>
 
-    <!--
     <profile>
-      <id>scala-2.10</id>
+      <id>scala-2.11</id>
       <activation>
-        <property><name>scala-2.10</name></property>
+        <property><name>scala-2.11</name></property>
       </activation>
       <properties>
-        <scala.version>2.10.6</scala.version>
-        <scala.binary.version>2.10</scala.binary.version>
-        <jline.version>${scala.version}</jline.version>
-        <jline.groupid>org.scala-lang</jline.groupid>
+        <scala.version>2.11.12</scala.version>
+        <scala.binary.version>2.11</scala.binary.version>
       </properties>
-      <dependencyManagement>
-        <dependencies>
-          <dependency>
-            <groupId>${jline.groupid}</groupId>
-            <artifactId>jline</artifactId>
-            <version>${jline.version}</version>
-          </dependency>
-        </dependencies>
-      </dependencyManagement>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>enforce-versions</id>
+                <goals>
+                  <goal>enforce</goal>
+                </goals>
+                <configuration>
+                  <rules>
+                    <bannedDependencies>
+                      <excludes combine.children="append">
+                        <exclude>*:*_2.12</exclude>
+                      </excludes>
+                    </bannedDependencies>
+                  </rules>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>scala-2.12</id>
+      <activation>
+        <property><name>!scala-2.11</name></property>
+      </activation>
+      <properties>
+        <scala.version>2.12.7</scala.version>
+        <scala.binary.version>2.12</scala.binary.version>
+      </properties>
       <build>
         <plugins>
           <plugin>
@@ -1092,53 +1135,6 @@
           </plugin>
         </plugins>
       </build>
-    </profile>
-
-    <profile>
-      <id>scala-2.11</id>
-      <activation>
-        <property><name>!scala-2.10</name></property>
-      </activation>
-      <properties>
-        <scala.version>2.11.8</scala.version>
-        <scala.binary.version>2.11</scala.binary.version>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-enforcer-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>enforce-versions</id>
-                <goals>
-                  <goal>enforce</goal>
-                </goals>
-                <configuration>
-                  <rules>
-                    <bannedDependencies>
-                      <excludes combine.children="append">
-                        <exclude>*:*_2.10</exclude>
-                      </excludes>
-                    </bannedDependencies>
-                  </rules>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    -->
-
-    <profile>
-      <id>test-java-home</id>
-      <activation>
-        <property><name>env.JAVA_HOME</name></property>
-      </activation>
-      <properties>
-        <test.java.home>${env.JAVA_HOME}</test.java.home>
-      </properties>
     </profile>
 
   </profiles>

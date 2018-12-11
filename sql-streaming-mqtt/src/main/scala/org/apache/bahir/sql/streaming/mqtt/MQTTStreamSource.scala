@@ -17,6 +17,7 @@
 
 package org.apache.bahir.sql.streaming.mqtt
 
+import java.{util => jutil}
 import java.nio.charset.Charset
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
@@ -31,9 +32,10 @@ import scala.collection.mutable.ListBuffer
 import org.eclipse.paho.client.mqttv3._
 
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.DataSourceRegister
 import org.apache.spark.sql.sources.v2.{DataSourceOptions, DataSourceV2, MicroBatchReadSupport}
-import org.apache.spark.sql.sources.v2.reader.{DataReader, DataReaderFactory}
+import org.apache.spark.sql.sources.v2.reader.{InputPartition, InputPartitionReader}
 import org.apache.spark.sql.sources.v2.reader.streaming.{MicroBatchReader, Offset => OffsetV2}
 import org.apache.spark.sql.types._
 
@@ -169,7 +171,7 @@ class MQTTStreamSource(options: DataSourceOptions, brokerUrl: String, persistenc
     MQTTStreamConstants.SCHEMA_DEFAULT
   }
 
-  override def createDataReaderFactories(): java.util.List[DataReaderFactory[Row]] = {
+  override def planInputPartitions(): jutil.List[InputPartition[InternalRow]] = {
     val rawList: IndexedSeq[MQTTMessage] = synchronized {
       val sliceStart = LongOffset.convert(startOffset).get.offset + 1
       val sliceEnd = LongOffset.convert(endOffset).get.offset + 1
@@ -186,8 +188,9 @@ class MQTTStreamSource(options: DataSourceOptions, brokerUrl: String, persistenc
 
     (0 until numPartitions).map { i =>
       val slice = slices(i)
-      new DataReaderFactory[Row] {
-        override def createDataReader(): DataReader[Row] = new DataReader[Row] {
+      new InputPartition[InternalRow] {
+        override def createPartitionReader(): InputPartitionReader[InternalRow] =
+            new InputPartitionReader[InternalRow] {
           private var currentIdx = -1
 
           override def next(): Boolean = {
@@ -195,8 +198,8 @@ class MQTTStreamSource(options: DataSourceOptions, brokerUrl: String, persistenc
             currentIdx < slice.size
           }
 
-          override def get(): Row = {
-            Row(slice(currentIdx).id, slice(currentIdx).topic,
+          override def get(): InternalRow = {
+            InternalRow(slice(currentIdx).id, slice(currentIdx).topic,
               slice(currentIdx).payload, slice(currentIdx).timestamp)
           }
 

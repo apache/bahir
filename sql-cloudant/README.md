@@ -37,7 +37,7 @@ Submit a job in Scala:
 
 	spark-submit --class "<your class>" --master local[4] --packages org.apache.bahir:spark-sql-cloudant__{{site.SCALA_BINARY_VERSION}}:{{site.SPARK_VERSION}} <path to spark-sql-cloudant jar>
 
-This library is compiled for Scala 2.11 only, and intends to support Spark 2.0 onwards.
+This library is cross-published for Scala 2.11 and Scala 2.12, so users should replace the proper Scala version in the commands listed above.
 
 ## Configuration options	
 The configuration is obtained in the following sequence:

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,7 +19,7 @@
 
 set -e
 
-VALID_VERSIONS=( 2.10 2.11 )
+VALID_VERSIONS=( 2.11 2.12 )
 
 usage() {
   echo "Usage: $(basename $0) [-h|--help] <version>
@@ -43,10 +44,10 @@ check_scala_version() {
 
 check_scala_version "$TO_VERSION"
 
-if [ $TO_VERSION = "2.11" ]; then
-  FROM_VERSION="2.10"
-else
+if [ $TO_VERSION = "2.12" ]; then
   FROM_VERSION="2.11"
+else
+  FROM_VERSION="2.12"
 fi
 
 sed_i() {
@@ -59,7 +60,7 @@ BASEDIR=$(dirname $0)/..
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' -print \
   -exec bash -c "sed_i 's/\(artifactId.*\)_'$FROM_VERSION'/\1_'$TO_VERSION'/g' {}" \;
 
-# Also update <scala.binary.version> in parent POM
-# Match any scala binary version to ensure idempotency
+# also update <scala.binary.version> in parent POM
+# match any scala binary version to ensure idempotency
 sed_i '1,/<scala\.binary\.version>[0-9]*\.[0-9]*</s/<scala\.binary\.version>[0-9]*\.[0-9]*</<scala.binary.version>'$TO_VERSION'</' \
   "$BASEDIR/pom.xml"

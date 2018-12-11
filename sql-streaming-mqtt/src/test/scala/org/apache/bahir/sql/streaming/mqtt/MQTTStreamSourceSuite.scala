@@ -33,6 +33,7 @@ import org.scalatest.time.Span
 
 import org.apache.spark.{SharedSparkContext, SparkFunSuite}
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.v2.DataSourceOptions
 import org.apache.spark.sql.streaming.{DataStreamReader, StreamingQuery}
 
@@ -157,15 +158,15 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
     // Clear in-memory cache to simulate recovery.
     source.messages.clear()
     source.setOffsetRange(Optional.empty(), Optional.empty())
-    var message: Row = null
-    for (f <- source.createDataReaderFactories().asScala) {
-      val dataReader = f.createDataReader()
+    var message: InternalRow = null
+    for (f <- source.planInputPartitions().asScala) {
+      val dataReader = f.createPartitionReader()
       if (dataReader.next()) {
         message = dataReader.get()
       }
     }
     source.commit(source.getCurrentOffset)
-    assert(payload == new String(message.getAs[Array[Byte]](2), "UTF-8"))
+    assert(payload == new String(message.getBinary(2), "UTF-8"))
   }
 
   test("no server up") {
