@@ -82,7 +82,7 @@ class CloudantSparkSQLSuite extends ClientSparkFunSuite {
          |FROM flightTable
          |WHERE flightSegmentId >'AA9' AND flightSegmentId<'AA95'
         """.stripMargin)
-    assert(flightData.count() == 25)
+    assert(flightData.count() == 1)
 
     // create filtered dataframe to compare with SQL temp. view
     val df2 = spark.read.format("org.apache.bahir.cloudant")
