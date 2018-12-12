@@ -28,12 +28,12 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.time
 import org.scalatest.time.Span
 
-import org.apache.spark.SparkFunSuite
+import org.apache.spark.ConditionalSparkFunSuite
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Seconds
 import org.apache.spark.streaming.StreamingContext
 
-class PubNubStreamSuite extends SparkFunSuite with Eventually with BeforeAndAfter {
+class PubNubStreamSuite extends ConditionalSparkFunSuite with Eventually with BeforeAndAfter {
   val subscribeKey = "demo"
   val publishKey = "demo"
   val channel = "test"
@@ -41,6 +41,8 @@ class PubNubStreamSuite extends SparkFunSuite with Eventually with BeforeAndAfte
   var ssc: StreamingContext = _
   var configuration: PNConfiguration = _
   var client: PubNub = _
+
+  def shouldRunTest(): Boolean = sys.env.get("ENABLE_PUBNUB_TESTS").contains("1")
 
   override def beforeAll(): Unit = {
     configuration = new PNConfiguration()
@@ -63,7 +65,7 @@ class PubNubStreamSuite extends SparkFunSuite with Eventually with BeforeAndAfte
     }
   }
 
-  test("Stream receives messages") {
+  testIf("Stream receives messages", shouldRunTest) {
     val nbOfMsg = 5
     var publishedMessages: List[JsonObject] = List()
     @volatile var receivedMessages: Set[SparkPubNubMessage] = Set()
@@ -99,7 +101,7 @@ class PubNubStreamSuite extends SparkFunSuite with Eventually with BeforeAndAfte
     }
   }
 
-  test("Message filtering") {
+  testIf("Message filtering", shouldRunTest) {
     val config = new PNConfiguration()
     config.setSubscribeKey(subscribeKey)
     config.setPublishKey(publishKey)
@@ -132,7 +134,7 @@ class PubNubStreamSuite extends SparkFunSuite with Eventually with BeforeAndAfte
     }
   }
 
-  test("Test time token") {
+  testIf("Test time token", shouldRunTest) {
     val config = new PNConfiguration()
     config.setSubscribeKey(subscribeKey)
     config.setPublishKey(publishKey)

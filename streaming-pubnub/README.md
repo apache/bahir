@@ -74,4 +74,10 @@ For complete code examples, please review _examples_ directory.
 
 ## Unit Test
 
-Unit tests take advantage of publicly available _demo_ subscription and and publish key, which has limited request rate.
+Unit tests take advantage of publicly available _demo_ subscription and publish key, which have limited request rate.
+Anyone playing with PubNub _demo_ credentials may interrupt the tests, therefore execution of integration tests
+has to be explicitly enabled by setting environment variable _ENABLE_PUBNUB_TESTS_ to _1_.
+
+    cd streaming-pubnub
+    export ENABLE_PUBNUB_TESTS=1
+    mvn clean test
