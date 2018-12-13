@@ -25,11 +25,12 @@ import scala.collection.mutable
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hdfs.MiniDFSCluster
 import org.apache.hadoop.security.Groups
+import org.eclipse.paho.client.mqttv3.MqttException
 import org.scalatest.BeforeAndAfter
 
 import org.apache.spark.{SharedSparkContext, SparkFunSuite}
 import org.apache.spark.sql._
-import org.apache.spark.sql.mqtt.HdfsBasedMQTTStreamSource
+import org.apache.spark.sql.mqtt.{HdfsBasedMQTTStreamSource, HDFSMQTTSourceProvider}
 import org.apache.spark.sql.streaming.{DataStreamReader, StreamingQuery}
 
 import org.apache.bahir.utils.FileHelper
@@ -41,7 +42,7 @@ class HDFSBasedMQTTStreamSourceSuite
 
   protected var mqttTestUtils: MQTTTestUtils = _
   protected val tempDir: File = new File(System.getProperty("java.io.tmpdir") + "/mqtt-test/")
-  private var hadoop: MiniDFSCluster = _
+  protected var hadoop: MiniDFSCluster = _
 
   before {
     tempDir.mkdirs()
@@ -64,7 +65,6 @@ class HDFSBasedMQTTStreamSourceSuite
 
   protected def writeStreamResults(sqlContext: SQLContext, dataFrame: DataFrame): StreamingQuery = {
     import sqlContext.implicits._
-    dataFrame.printSchema()
     val query: StreamingQuery = dataFrame.selectExpr("CAST(payload AS STRING)").as[String]
       .writeStream.format("csv").start(s"$tempDir/t.csv")
     while (!query.status.isTriggerActive) {
@@ -149,5 +149,50 @@ class BasicHDFSBasedMQTTSourceSuite extends HDFSBasedMQTTStreamSourceSuite {
     assert(resultBuffer.size == 1)
     assert(resultBuffer.head == sendMessage)
   }
-}
 
+  test("Send and receive 50 messages.") {
+
+    val sendMessage = "MQTT is a message queue."
+
+    val (sqlContext: SQLContext, dataFrame: DataFrame) = createStreamingDataFrame()
+
+    val q = writeStreamResults(sqlContext, dataFrame)
+
+    mqttTestUtils.publishData("test", sendMessage, 50)
+    q.processAllAvailable()
+    q.awaitTermination(10000)
+
+    val resultBuffer: mutable.Buffer[String] = readBackStreamingResults(sqlContext)
+
+    assert(resultBuffer.size == 50)
+    assert(resultBuffer.head == sendMessage)
+  }
+
+  test("no server up") {
+    val provider = new HDFSMQTTSourceProvider
+    val sqlContext: SQLContext = SparkSession.builder().getOrCreate().sqlContext
+    intercept[MqttException] {
+      provider.createSource(
+        sqlContext,
+        s"hdfs://localhost:${hadoop.getNameNodePort}/testCheckpoint/0",
+        Some(MQTTStreamConstants.SCHEMA_DEFAULT),
+        "org.apache.spark.sql.mqtt.HDFSMQTTSourceProvider",
+        Map("brokerUrl" -> "tcp://localhost:1881", "topic" -> "test")
+      )
+    }
+  }
+
+  test("params not provided.") {
+    val provider = new HDFSMQTTSourceProvider
+    val sqlContext: SQLContext = SparkSession.builder().getOrCreate().sqlContext
+    intercept[IllegalArgumentException] {
+      provider.createSource(
+        sqlContext,
+        s"hdfs://localhost:${hadoop.getNameNodePort}/testCheckpoint/0",
+        Some(MQTTStreamConstants.SCHEMA_DEFAULT),
+        "org.apache.spark.sql.mqtt.HDFSMQTTSourceProvider",
+        Map()
+      )
+    }
+  }
+}
