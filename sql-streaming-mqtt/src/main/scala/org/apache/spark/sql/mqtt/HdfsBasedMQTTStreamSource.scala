@@ -223,19 +223,6 @@ class HdfsBasedMQTTStreamSource(
 
     client = new MqttClient(brokerUrl, clientId, new MemoryPersistence())
 
-<<<<<<< HEAD:sql-streaming-mqtt/src/main/scala/org/apache/spark/sql/mqtt/HdfsBasedMQTTStreamSource.scala
-=======
-    /*
-    val coreSiteUrl = this.getClass.getClassLoader.getResource("core-site.xml")
-    if (null != coreSiteUrl) {
-      hadoopConfig.addResource(coreSiteUrl)
-    }
-    val hdfsSiteUrl = this.getClass.getClassLoader.getResource("hdfs-site.xml")
-    if (null != hdfsSiteUrl) {
-      hadoopConfig.addResource(hdfsSiteUrl)
-    }
-    */
->>>>>>> code reuse and add unit test.:sql-streaming-mqtt/src/main/scala/org/apache/bahir/sql/streaming/mqtt/HdfsBasedMQTTStreamSource.scala
     val callback = new MqttCallbackExtended() {
 
       override def messageArrived(topic: String, message: MqttMessage): Unit = {
@@ -362,7 +349,6 @@ class HdfsBasedMQTTStreamSource(
         // get topic
         var subStr = str.substring(idIndex + SEP.length)
         val topicIndex = subStr.indexOf(SEP)
-<<<<<<< HEAD:sql-streaming-mqtt/src/main/scala/org/apache/spark/sql/mqtt/HdfsBasedMQTTStreamSource.scala
         val topic = UTF8String.fromString(subStr.substring(0, topicIndex))
         // get timestamp
         subStr = subStr.substring(topicIndex + SEP.length)
@@ -378,20 +364,6 @@ class HdfsBasedMQTTStreamSource(
         InternalRow(messageId, topic, payload, timestamp)
       }
     sqlContext.internalCreateDataFrame(rdd, MQTTStreamConstants.SCHEMA_DEFAULT, true)
-=======
-        val topic = subStr.substring(0, topicIndex)
-        // get timestamp
-        subStr = subStr.substring(topicIndex + SEP.length)
-        val timestampIndex = subStr.indexOf(SEP)
-        val timestamp = Timestamp.valueOf(
-          MQTTStreamConstants.DATE_FORMAT.format(subStr.substring(0, timestampIndex).toLong))
-        // get playload
-        subStr = subStr.substring(timestampIndex + SEP.length)
-        val payload = UTF8String.fromString(subStr).getBytes
-        Row(messageId, topic, payload, timestamp)
-      }
-    sqlContext.createDataFrame(rdd, MQTTStreamConstants.SCHEMA_DEFAULT)
->>>>>>> code reuse and add unit test.:sql-streaming-mqtt/src/main/scala/org/apache/bahir/sql/streaming/mqtt/HdfsBasedMQTTStreamSource.scala
   }
 
   /**

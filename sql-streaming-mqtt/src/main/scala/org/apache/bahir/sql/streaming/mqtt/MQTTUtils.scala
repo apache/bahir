@@ -45,13 +45,8 @@ object MQTTUtils extends Logging {
     "ssl.trust.manager" -> "com.ibm.ssl.trustManager"
   )
 
-<<<<<<< HEAD
-  def parseConfigParams(config: Map[String, String]):
-  (String, String, String, MqttClientPersistence, MqttConnectOptions, Int, Long, Long, Int) = {
-=======
   private[mqtt] def parseConfigParams(config: Map[String, String]):
       (String, String, String, MqttClientPersistence, MqttConnectOptions, Int, Long, Long, Int) = {
->>>>>>> code reuse and add unit test.
     def e(s: String) = new IllegalArgumentException(s)
     val parameters = CaseInsensitiveMap(config)
 
