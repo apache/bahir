@@ -18,22 +18,30 @@
 package org.apache.bahir.sql.streaming.mqtt
 
 import java.io.File
+import java.io.FileInputStream
 import java.net.{ServerSocket, URI}
 import java.nio.charset.Charset
+import java.security.{KeyStore, SecureRandom}
+import java.util.Properties
+import javax.net.ssl.KeyManagerFactory
 
 import scala.collection.mutable
 
-import org.apache.activemq.broker.{BrokerService, TransportConnector}
+import org.apache.activemq.broker.{BrokerService, SslBrokerService, SslContext, TransportConnector}
 import org.eclipse.paho.client.mqttv3._
-import org.eclipse.paho.client.mqttv3.persist.{MemoryPersistence, MqttDefaultFilePersistence}
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 
 import org.apache.bahir.utils.Logging
 
 
-class MQTTTestUtils(tempDir: File, port: Int = 0) extends Logging {
+class MQTTTestUtils(tempDir: File, port: Int = 0, ssl: Boolean = false) extends Logging {
 
   private val brokerHost = "127.0.0.1"
   private val brokerPort: Int = if (port == 0) findFreePort() else port
+  val serverKeyStore = new File("src/test/resources/keystore.jks")
+  val serverKeyStorePassword = "changeit"
+  val clientTrustStore = new File("src/test/resources/truststore.jks")
+  val clientTrustStorePassword = "changeit"
 
   private var broker: BrokerService = _
   private var connector: TransportConnector = _
@@ -50,11 +58,21 @@ class MQTTTestUtils(tempDir: File, port: Int = 0) extends Logging {
   }
 
   def setup(): Unit = {
-    broker = new BrokerService()
+    broker = if (ssl) new SslBrokerService() else new BrokerService()
     broker.setDataDirectoryFile(tempDir)
+    val protocol = if (ssl) "mqtt+ssl" else "mqtt"
+    if (ssl) {
+      val keyStore = KeyStore.getInstance("JKS")
+      keyStore.load(new FileInputStream(serverKeyStore), serverKeyStorePassword.toCharArray)
+      val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
+      keyManagerFactory.init(keyStore, serverKeyStorePassword.toCharArray)
+      broker.setSslContext(
+        new SslContext(keyManagerFactory.getKeyManagers, null, new SecureRandom())
+      )
+    }
     connector = new TransportConnector()
     connector.setName("mqtt")
-    connector.setUri(new URI("mqtt://" + brokerUri))
+    connector.setUri(new URI(protocol + "://" + brokerUri))
     broker.addConnector(connector)
     broker.start()
   }
@@ -76,12 +94,10 @@ class MQTTTestUtils(tempDir: File, port: Int = 0) extends Logging {
   def publishData(topic: String, data: String, N: Int = 1): Unit = {
     var client: MqttClient = null
     try {
-      val persistence = new MemoryPersistence()
-      client = new MqttClient("tcp://" + brokerUri, MqttClient.generateClientId(), persistence)
-      client.connect()
+      client = connectToServer(new MemoryPersistence(), null)
       if (client.isConnected) {
         val msgTopic = client.getTopic(topic)
-        for (i <- 0 until N) {
+        for (_ <- 0 until N) {
           try {
             Thread.sleep(20)
             val message = new MqttMessage(data.getBytes())
@@ -107,7 +123,6 @@ class MQTTTestUtils(tempDir: File, port: Int = 0) extends Logging {
   }
 
   def subscribeData(topic: String, messages: mutable.Map[Int, String]): MqttClient = {
-    val client = new MqttClient("tcp://" + brokerUri, MqttClient.generateClientId(), null)
     val callback = new MqttCallbackExtended() {
       override def messageArrived(topic_ : String, message: MqttMessage): Unit = synchronized {
         messages.put(message.getId, new String(message.getPayload, Charset.defaultCharset()))
@@ -122,9 +137,30 @@ class MQTTTestUtils(tempDir: File, port: Int = 0) extends Logging {
       override def connectComplete(reconnect: Boolean, serverURI: String): Unit = {
       }
     }
-    client.setCallback(callback)
-    client.connect()
+    val client = connectToServer(null, callback)
     client.subscribe(topic)
+    client
+  }
+
+  def connectToServer(
+    persistence: MqttClientPersistence, callback: MqttCallbackExtended
+  ): MqttClient = {
+    val protocol = if (ssl) "ssl" else "tcp"
+    val client = new MqttClient(
+      protocol + "://" + brokerUri, MqttClient.generateClientId(), persistence
+    )
+    val connectOptions: MqttConnectOptions = new MqttConnectOptions()
+    if (ssl) {
+      val sslProperties = new Properties()
+      sslProperties.setProperty("com.ibm.ssl.trustStore", clientTrustStore.getAbsolutePath)
+      sslProperties.setProperty("com.ibm.ssl.trustStoreType", "JKS")
+      sslProperties.setProperty("com.ibm.ssl.trustStorePassword", clientTrustStorePassword)
+      connectOptions.setSSLProperties(sslProperties)
+    }
+    if (callback != null) {
+      client.setCallback(callback)
+    }
+    client.connect(connectOptions)
     client
   }
 

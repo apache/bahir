@@ -32,7 +32,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.mqtt.HdfsBasedMQTTStreamSource
 import org.apache.spark.sql.streaming.{DataStreamReader, StreamingQuery}
 
-import org.apache.bahir.utils.BahirUtils
+import org.apache.bahir.utils.{FileHelper}
 
 class HDFSBasedMQTTStreamSourceSuite
     extends SparkFunSuite
@@ -56,8 +56,8 @@ class HDFSBasedMQTTStreamSourceSuite
 
   after {
     mqttTestUtils.teardown()
-    BahirUtils.recursiveDeleteDir(tempDir)
     HDFSTestUtils.shutdownHadoop()
+    FileHelper.deleteFileQuietly(tempDir)
   }
 
   protected val tmpDir: String = tempDir.getAbsolutePath

@@ -17,6 +17,8 @@
 
 package org.apache.bahir.sql.streaming.mqtt
 
+import java.util.Properties
+
 import org.eclipse.paho.client.mqttv3.{MqttClient, MqttClientPersistence, MqttConnectOptions}
 import org.eclipse.paho.client.mqttv3.persist.{MemoryPersistence, MqttDefaultFilePersistence}
 
@@ -25,8 +27,26 @@ import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.bahir.utils.Logging
 
 object MQTTUtils extends Logging {
+
+  // Since data source configuration properties are case-insensitive,
+  // we have to introduce our own keys. Also, good for vendor independence.
+  private[mqtt] val sslParamMapping = Map(
+    "ssl.protocol" -> "com.ibm.ssl.protocol",
+    "ssl.key.store" -> "com.ibm.ssl.keyStore",
+    "ssl.key.store.password" -> "com.ibm.ssl.keyStorePassword",
+    "ssl.key.store.type" -> "com.ibm.ssl.keyStoreType",
+    "ssl.key.store.provider" -> "com.ibm.ssl.keyStoreProvider",
+    "ssl.trust.store" -> "com.ibm.ssl.trustStore",
+    "ssl.trust.store.password" -> "com.ibm.ssl.trustStorePassword",
+    "ssl.trust.store.type" -> "com.ibm.ssl.trustStoreType",
+    "ssl.trust.store.provider" -> "com.ibm.ssl.trustStoreProvider",
+    "ssl.ciphers" -> "com.ibm.ssl.enabledCipherSuites",
+    "ssl.key.manager" -> "com.ibm.ssl.keyManager",
+    "ssl.trust.manager" -> "com.ibm.ssl.trustManager"
+  )
+
   def parseConfigParams(config: Map[String, String]):
-      (String, String, String, MqttClientPersistence, MqttConnectOptions, Int, Long, Long, Int) = {
+  (String, String, String, MqttClientPersistence, MqttConnectOptions, Int, Long, Long, Int) = {
     def e(s: String) = new IllegalArgumentException(s)
     val parameters = CaseInsensitiveMap(config)
 
@@ -82,6 +102,13 @@ object MQTTUtils extends Logging {
         mqttConnectOptions.setPassword(p.toCharArray)
       case _ =>
     }
+    val sslProperties = new Properties()
+    config.foreach(e => {
+      if (e._1.startsWith("ssl.")) {
+        sslProperties.setProperty(sslParamMapping(e._1), e._2)
+      }
+    })
+    mqttConnectOptions.setSSLProperties(sslProperties)
 
     (brokerUrl, clientId, topic, persistence, mqttConnectOptions, qos,
       maxBatchMessageNum, maxBatchMessageSize, maxRetryNumber)
