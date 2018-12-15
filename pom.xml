@@ -103,6 +103,9 @@
     <!-- Spark version -->
     <spark.version>2.3.2</spark.version>
 
+    <!-- Hadoop version -->
+    <hadoop.version>2.6.5</hadoop.version>
+
     <!-- MQTT Client -->
     <mqtt.paho.client>1.1.0</mqtt.paho.client>
     <!-- Streaming Akka connector -->
