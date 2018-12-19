@@ -39,6 +39,9 @@ trait MessageStore {
   /** Highest offset we have stored */
   def maxProcessedOffset: Long
 
+  /** Remove message corresponding to a given id. */
+  def remove[T](id: Long): Unit
+
 }
 
 private[mqtt] class MqttPersistableData(bytes: Array[Byte]) extends MqttPersistable {
@@ -118,7 +121,7 @@ private[mqtt] class LocalMessageStore(val persistentStore: MqttClientPersistence
 
   import scala.collection.JavaConverters._
 
-  def maxProcessedOffset: Long = {
+  override def maxProcessedOffset: Long = {
     val keys: util.Enumeration[_] = persistentStore.keys()
     keys.asScala.map(x => x.toString.toInt).max
   }
@@ -138,6 +141,10 @@ private[mqtt] class LocalMessageStore(val persistentStore: MqttClientPersistence
   /** Retrieve message corresponding to a given id. */
   override def retrieve[T](id: Long): T = {
     serializer.deserialize(get(id))
+  }
+
+  override def remove[T](id: Long): Unit = {
+    persistentStore.remove(id.toString)
   }
 
 }

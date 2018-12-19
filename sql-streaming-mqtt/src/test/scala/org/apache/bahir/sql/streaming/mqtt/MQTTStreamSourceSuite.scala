@@ -23,8 +23,13 @@ import java.util.Optional
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.eclipse.paho.client.mqttv3.MqttException
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.scalatest.BeforeAndAfter
+import org.scalatest.concurrent.Eventually
+import org.scalatest.time
+import org.scalatest.time.Span
 
 import org.apache.spark.{SharedSparkContext, SparkFunSuite}
 import org.apache.spark.sql._
@@ -33,7 +38,8 @@ import org.apache.spark.sql.streaming.{DataStreamReader, StreamingQuery}
 
 import org.apache.bahir.utils.FileHelper
 
-class MQTTStreamSourceSuite extends SparkFunSuite with SharedSparkContext with BeforeAndAfter {
+class MQTTStreamSourceSuite extends SparkFunSuite
+    with Eventually with SharedSparkContext with BeforeAndAfter {
 
   protected var mqttTestUtils: MQTTTestUtils = _
   protected val tempDir: File = new File(System.getProperty("java.io.tmpdir") + "/mqtt-test/")
@@ -134,6 +140,32 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
 
     assert(resultBuffer.size == 50)
     assert(resultBuffer.head == sendMessage)
+  }
+
+  test("messages persisted in store") {
+    val sqlContext: SQLContext = SparkSession.builder().getOrCreate().sqlContext
+    val source = new MQTTStreamSource(
+      DataSourceOptions.empty(), "tcp://" + mqttTestUtils.brokerUri, new MemoryPersistence(),
+      "test", "clientId", new MqttConnectOptions(), 2
+    )
+    val payload = "MQTT is a message queue."
+    mqttTestUtils.publishData("test", payload)
+    eventually(timeout(Span(5, time.Seconds)), interval(Span(500, time.Millis))) {
+      val message = source.store.retrieve(0).asInstanceOf[Object]
+      assert(message != null)
+    }
+    // Clear in-memory cache to simulate recovery.
+    source.messages.clear()
+    source.setOffsetRange(Optional.empty(), Optional.empty())
+    var message: Row = null
+    for (f <- source.createDataReaderFactories().asScala) {
+      val dataReader = f.createDataReader()
+      if (dataReader.next()) {
+        message = dataReader.get()
+      }
+    }
+    source.commit(source.getCurrentOffset)
+    assert(payload == new String(message.getAs[Array[Byte]](2), "UTF-8"))
   }
 
   test("no server up") {
