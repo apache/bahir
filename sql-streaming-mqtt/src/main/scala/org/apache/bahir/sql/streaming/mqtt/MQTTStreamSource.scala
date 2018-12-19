@@ -101,9 +101,9 @@ class MQTTStreamSource(options: DataSourceOptions, brokerUrl: String, persistenc
   /* Older than last N messages, will not be checked for redelivery. */
   val backLog = options.getInt("autopruning.backlog", 500)
 
-  private val store = new LocalMessageStore(persistence)
+  private[mqtt] val store = new LocalMessageStore(persistence)
 
-  private val messages = new TrieMap[Long, MQTTMessage]
+  private[mqtt] val messages = new TrieMap[Long, MQTTMessage]
 
   @GuardedBy("this")
   private var currentOffset: LongOffset = LongOffset(-1L)
@@ -125,6 +125,7 @@ class MQTTStreamSource(options: DataSourceOptions, brokerUrl: String, persistenc
         val mqttMessage = new MQTTMessage(message, topic_)
         val offset = currentOffset.offset + 1L
         messages.put(offset, mqttMessage)
+        store.store(offset, mqttMessage)
         currentOffset = LongOffset(offset)
         log.trace(s"Message arrived, $topic_ $mqttMessage")
       }
@@ -172,7 +173,8 @@ class MQTTStreamSource(options: DataSourceOptions, brokerUrl: String, persistenc
     val rawList: IndexedSeq[MQTTMessage] = synchronized {
       val sliceStart = LongOffset.convert(startOffset).get.offset + 1
       val sliceEnd = LongOffset.convert(endOffset).get.offset + 1
-      for (i <- sliceStart until sliceEnd) yield messages(i)
+      for (i <- sliceStart until sliceEnd) yield
+        messages.getOrElse(i, store.retrieve[MQTTMessage](i))
     }
     val spark = SparkSession.getActiveSession.get
     val numPartitions = spark.sparkContext.defaultParallelism
@@ -218,6 +220,7 @@ class MQTTStreamSource(options: DataSourceOptions, brokerUrl: String, persistenc
 
     (lastOffsetCommitted.offset until newOffset.offset).foreach { x =>
       messages.remove(x + 1)
+      store.remove(x + 1)
     }
     lastOffsetCommitted = newOffset
   }
