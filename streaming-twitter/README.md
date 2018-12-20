@@ -45,4 +45,18 @@ can be provided by any of the [methods](http://twitter4j.org/en/configuration.ht
 
 
 You can also either get the public stream, or get the filtered stream based on keywords. 
-See end-to-end examples at [Twitter Examples](https://github.com/apache/bahir/tree/master/streaming-twitter/examples)
+See end-to-end examples at [Twitter Examples](https://github.com/apache/bahir/tree/master/streaming-twitter/examples).
+
+## Unit Test
+
+Executing integration tests requires users to register custom application at
+[Twitter Developer Portal](https://developer.twitter.com) and obtain private OAuth credentials.
+Below listing present how to run complete test suite on local workstation.
+
+    cd streaming-twitter
+    env ENABLE_TWITTER_TESTS=1 \
+        twitter4j.oauth.consumerKey=${customer key} \
+        twitter4j.oauth.consumerSecret=${customer secret} \
+        twitter4j.oauth.accessToken=${access token} \
+        twitter4j.oauth.accessTokenSecret=${access token secret} \
+        mvn clean test
