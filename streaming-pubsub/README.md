@@ -27,11 +27,13 @@ The `--packages` argument can also be used with `bin/spark-submit`.
 First you need to create credential by SparkGCPCredentials, it support four type of credentials
 * application default
     `SparkGCPCredentials.builder.build()`
-* json type service account
+* JSON type service account (based on file or its binary content)
     `SparkGCPCredentials.builder.jsonServiceAccount(PATH_TO_JSON_KEY).build()`
-* p12 type service account
+    `SparkGCPCredentials.builder.jsonServiceAccount(JSON_KEY_BYTES).build()`
+* P12 type service account
     `SparkGCPCredentials.builder.p12ServiceAccount(PATH_TO_P12_KEY, EMAIL_ACCOUNT).build()`
-* metadata service account(running on dataproc)
+    `SparkGCPCredentials.builder.p12ServiceAccount(P12_KEY_BYTES, EMAIL_ACCOUNT).build()`
+* Metadata service account (running on dataproc)
     `SparkGCPCredentials.builder.metadataServiceAccount().build()`
 
 ### Scala API

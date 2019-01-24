@@ -19,11 +19,11 @@ package org.apache.spark.streaming.pubsub
 
 import java.nio.file.{Files, Paths}
 
-import org.scalatest.concurrent.TimeLimits
 import org.scalatest.BeforeAndAfter
+import org.scalatest.concurrent.TimeLimits
 
-import org.apache.spark.util.Utils
 import org.apache.spark.SparkFunSuite
+import org.apache.spark.util.Utils
 
 class SparkGCPCredentialsBuilderSuite
     extends SparkFunSuite with TimeLimits with BeforeAndAfter{
@@ -33,17 +33,17 @@ class SparkGCPCredentialsBuilderSuite
   private val p12FilePath = sys.env.get(PubsubTestUtils.envVarNameForP12KeyPath)
   private val emailAccount = sys.env.get(PubsubTestUtils.envVarNameForAccount)
 
-  private def jsonAssumption {
+  private def jsonAssumption() {
     assume(
-      !jsonFilePath.isEmpty,
+      jsonFilePath.isDefined,
       s"as the environment variable ${PubsubTestUtils.envVarNameForJsonKeyPath} is not set.")
   }
-  private def p12Assumption {
+  private def p12Assumption() {
     assume(
-      !p12FilePath.isEmpty,
+      p12FilePath.isDefined,
       s"as the environment variable ${PubsubTestUtils.envVarNameForP12KeyPath} is not set.")
     assume(
-      !emailAccount.isEmpty,
+      emailAccount.isDefined,
       s"as the environment variable ${PubsubTestUtils.envVarNameForAccount} is not set.")
   }
 
@@ -52,71 +52,75 @@ class SparkGCPCredentialsBuilderSuite
   }
 
   test("should build json service account") {
-    jsonAssumption
+    jsonAssumption()
 
-    val jsonCreds = ServiceAccountCredentials(jsonFilePath = jsonFilePath)
-    assertResult(jsonCreds) {
-      builder.jsonServiceAccount(jsonFilePath.get).build()
-    }
+    assert(builder.jsonServiceAccount(jsonFilePath.get).build() != null)
   }
 
-  test("should provide json creds") {
-    jsonAssumption
+  test("should provide json credentials based on file") {
+    jsonAssumption()
 
-    val jsonCreds = ServiceAccountCredentials(jsonFilePath = jsonFilePath)
-    val credential = jsonCreds.provider
-    assert(credential.refreshToken, "Failed to retrive a new access token.")
+    val jsonCred = new JsonConfigCredentials(jsonFilePath.get)
+    assert(jsonCred.provider.refreshToken, "Failed to retrieve new access token.")
+  }
+
+  test("should provide json credentials based on binary content") {
+    jsonAssumption()
+
+    val fileContent = Files.readAllBytes(Paths.get(jsonFilePath.get))
+    val jsonCred = JsonConfigCredentials(fileContent)
+    assert(jsonCred.provider.refreshToken, "Failed to retrieve new access token.")
   }
 
   test("should build p12 service account") {
-    p12Assumption
+    p12Assumption()
 
-    val p12Creds = ServiceAccountCredentials(
-      p12FilePath = p12FilePath, emailAccount = emailAccount)
-    assertResult(p12Creds) {
-      builder.p12ServiceAccount(p12FilePath.get, emailAccount.get).build()
-    }
+    assert(builder.p12ServiceAccount(p12FilePath.get, emailAccount.get).build() != null)
   }
 
-  test("should provide p12 creds") {
-    p12Assumption
+  test("should provide p12 credentials based on file") {
+    p12Assumption()
 
-    val p12Creds = ServiceAccountCredentials(
-      p12FilePath = p12FilePath, emailAccount = emailAccount)
-    val credential = p12Creds.provider
-    assert(credential.refreshToken, "Failed to retrive a new access token.")
+    val p12Cred = new EMailPrivateKeyCredentials(emailAccount.get, p12FilePath.get)
+    assert(p12Cred.provider.refreshToken, "Failed to retrieve new access token.")
+  }
+
+  test("should provide p12 credentials based on binary content") {
+    p12Assumption()
+
+    val fileContent = Files.readAllBytes(Paths.get(p12FilePath.get))
+    val p12Cred = EMailPrivateKeyCredentials(emailAccount.get, fileContent)
+    assert(p12Cred.provider.refreshToken, "Failed to retrieve new access token.")
   }
 
   test("should build metadata service account") {
-    val metadataCreds = ServiceAccountCredentials()
-    assertResult(metadataCreds) {
+    val metadataCred = MetadataServiceCredentials()
+    assertResult(metadataCred) {
       builder.metadataServiceAccount().build()
     }
   }
 
   test("SparkGCPCredentials classes should be serializable") {
-    jsonAssumption
-    p12Assumption
+    jsonAssumption()
+    p12Assumption()
 
-    val jsonCreds = ServiceAccountCredentials(jsonFilePath = jsonFilePath)
-    val p12Creds = ServiceAccountCredentials(
-      p12FilePath = p12FilePath, emailAccount = emailAccount)
-    val metadataCreds = ServiceAccountCredentials()
-    assertResult(jsonCreds) {
-      Utils.deserialize[ServiceAccountCredentials](Utils.serialize(jsonCreds))
-    }
+    val jsonCred = new JsonConfigCredentials(jsonFilePath.get)
+    val p12Cred = new EMailPrivateKeyCredentials(emailAccount.get, p12FilePath.get)
+    val metadataCred = MetadataServiceCredentials()
 
-    assertResult(p12Creds) {
-      Utils.deserialize[ServiceAccountCredentials](Utils.serialize(p12Creds))
-    }
+    val jsonCredDeserialized: JsonConfigCredentials = Utils.deserialize(Utils.serialize(jsonCred))
+    assert(jsonCredDeserialized != null)
 
-    assertResult(metadataCreds) {
-      Utils.deserialize[ServiceAccountCredentials](Utils.serialize(metadataCreds))
+    val p12CredDeserialized: EMailPrivateKeyCredentials =
+      Utils.deserialize(Utils.serialize(p12Cred))
+    assert(p12CredDeserialized != null)
+
+    assertResult(metadataCred) {
+      Utils.deserialize(Utils.serialize(metadataCred))
     }
 
     assertResult(ApplicationDefaultCredentials) {
-      Utils.deserialize[ServiceAccountCredentials](Utils.serialize(ApplicationDefaultCredentials))
+      Utils.deserialize(Utils.serialize(ApplicationDefaultCredentials))
     }
   }
-
 }
