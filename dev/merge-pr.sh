@@ -19,7 +19,7 @@
 
 GIT_APACHE_URL=https://git-wip-us.apache.org/repos/asf/bahir.git
 GIT_GITHUB_URL=https://github.com/apache/bahir.git
-TARGET_BRANCH=master
+TARGET_BRANCH=${2:-master}
 
 JIRA_URL=https://issues.apache.org/jira
 
@@ -34,7 +34,7 @@ merge-pr - Merges given pull request and resolves associated JIRA ticket.
 
 SYNOPSIS
 
-usage: merge-pr.sh [pull-request-ID]
+usage: merge-pr.sh [pull-request-ID] [base-branch]
 
 DESCRIPTION
 
@@ -44,11 +44,14 @@ e.g. [BAHIR-123] Support SSL in MQTT.
 
 OPTIONS
 
-pull-request-ID     - Number of the pull request
+pull-request-ID     - Number of the pull request. Required.
+base-branch         - Name of the target branch to merge pull request to.
+                      Optional, default: master.
 
 EXAMPLES
 
 merge-pr.sh 77
+merge-pr.sh 77 2.3.0
 
 EOF
 }
@@ -105,6 +108,19 @@ function merge_git_pr() {
         fi
     fi
 
+    git rebase --quiet ${TARGET_BRANCH} > /dev/null 2>&1
+    if [[ $? != 0 ]]; then
+        # Fail in case of conflicts.
+        git merge --abort > /dev/null 2>&1
+        echo "Branch contains conflicts. Ask contributor to rebase with ${TARGET_BRANCH}."
+        exit_with_code 1
+    fi
+
+    read -r -p "Approver Git user name: " git_user_name
+    git config --local user.name ${git_user_name}
+    read -r -p "Approver Git user e-mail: " git_user_email
+    git config --local user.email ${git_user_email}
+
     local last_commit_msg=$(git log -1 --pretty=%B)
     read -r -p "Close pull request #${pull_id}? [y/n] " confirmation
     if [[ ${confirmation} == "y" ]]; then
@@ -112,17 +128,13 @@ function merge_git_pr() {
         git commit --quiet --amend -m "${last_commit_msg}${suffix}"
     fi
 
-    git rebase ${TARGET_BRANCH} --quiet
-    if [[ $? != 0 ]]; then
-        # Fail in case of conflicts.
-        git merge --abort
-        echo "Branch contains conflicts. Ask contributor to rebase with master."
-        exit_with_code 1
-    fi
-
     git checkout ${TARGET_BRANCH} --quiet
     git merge --quiet pr-${pull_id}
     git push --quiet origin ${TARGET_BRANCH}
+    if [[ $? != 0 ]]; then
+        echo "Failed to push changes to remote repository."
+        exit_with_code 1
+    fi
     echo "Commits pushed to origin/${TARGET_BRANCH}."
 
     eval ${jira_issue}=$(echo ${last_commit_msg} | awk -F'[' '{print $2}' | awk -F']' '{print $1}')
@@ -207,12 +219,16 @@ function update_and_resolve_jira {
     echo "JIRA ticket successfully updated."
 }
 
-if ! [[ $# == 1 && $1 =~ ^[0-9]+$ ]]; then
+if ! [[ ( $# == 1 || $# == 2 ) && $1 =~ ^[0-9]+$ ]]; then
   print_usage
   exit 1
 fi
 
 init
 merge_git_pr $1 jira_ticket
+if [[ ${jira_ticket} == "" ]]; then
+    echo "Failed to identify corresponding JIRA ticket. JIRA will not be updated."
+    exit_with_code 1
+fi
 update_and_resolve_jira $(echo ${jira_ticket} | cut -d- -f1) $(echo ${jira_ticket} | cut -d- -f2)
 exit_with_code 0
