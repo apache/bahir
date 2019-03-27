@@ -19,6 +19,7 @@ package org.apache.bahir.sql.streaming.mqtt
 
 import java.util.Properties
 
+import org.apache.hadoop.conf.Configuration
 import org.eclipse.paho.client.mqttv3.{MqttClient, MqttClientPersistence, MqttConnectOptions}
 import org.eclipse.paho.client.mqttv3.persist.{MemoryPersistence, MqttDefaultFilePersistence}
 
@@ -45,7 +46,7 @@ object MQTTUtils extends Logging {
   )
 
   def parseConfigParams(config: Map[String, String]):
-      (String, String, String, MqttClientPersistence, MqttConnectOptions, Int, Long, Long, Int) = {
+      (String, String, String, MqttClientPersistence, MqttConnectOptions, Int) = {
     def e(s: String) = new IllegalArgumentException(s)
     val parameters = CaseInsensitiveMap(config)
 
@@ -54,6 +55,14 @@ object MQTTUtils extends Logging {
 
     val persistence: MqttClientPersistence = parameters.get("persistence") match {
       case Some("memory") => new MemoryPersistence()
+      case Some("hdfs") =>
+        val hadoopConfig = new Configuration
+        for (parameter <- parameters) {
+          if (parameter._1.startsWith("hdfs.")) {
+            hadoopConfig.set(parameter._1.replaceFirst("hdfs.", ""), parameter._2)
+          }
+        }
+        new HdfsMqttClientPersistence( hadoopConfig )
       case _ => val localStorage: Option[String] = parameters.get("localStorage")
         localStorage match {
           case Some(x) => new MqttDefaultFilePersistence(x)
@@ -83,11 +92,6 @@ object MQTTUtils extends Logging {
     val autoReconnect: Boolean = parameters.getOrElse("autoReconnect", "false").toBoolean
     val maxInflight: Int = parameters.getOrElse("maxInflight", "60").toInt
 
-    val maxBatchMessageNum = parameters.getOrElse("maxBatchMessageNum", s"${Long.MaxValue}").toLong
-    val maxBatchMessageSize = parameters.getOrElse("maxBatchMessageSize",
-      s"${Long.MaxValue}").toLong
-    val maxRetryNumber = parameters.getOrElse("maxRetryNum", "3").toInt
-
     val mqttConnectOptions: MqttConnectOptions = new MqttConnectOptions()
     mqttConnectOptions.setAutomaticReconnect(autoReconnect)
     mqttConnectOptions.setCleanSession(cleanSession)
@@ -109,7 +113,6 @@ object MQTTUtils extends Logging {
     })
     mqttConnectOptions.setSSLProperties(sslProperties)
 
-    (brokerUrl, clientId, topic, persistence, mqttConnectOptions, qos,
-      maxBatchMessageNum, maxBatchMessageSize, maxRetryNumber)
+    (brokerUrl, clientId, topic, persistence, mqttConnectOptions, qos)
   }
 }

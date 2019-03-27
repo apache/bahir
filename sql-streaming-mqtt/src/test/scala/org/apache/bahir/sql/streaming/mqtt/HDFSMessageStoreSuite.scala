@@ -17,38 +17,43 @@
 
 package org.apache.bahir.sql.streaming.mqtt
 
-import java.io.File
-
-import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hdfs.MiniDFSCluster
+import org.eclipse.paho.client.mqttv3.MqttClientPersistence
 import org.scalatest.BeforeAndAfter
 
-import org.apache.spark.SparkFunSuite
-
-import org.apache.bahir.utils.FileHelper
+import org.apache.spark.{SharedSparkContext, SparkFunSuite}
 
 
-class LocalMessageStoreSuite extends SparkFunSuite with BeforeAndAfter {
+class HDFSMessageStoreSuite extends SparkFunSuite with SharedSparkContext with BeforeAndAfter {
 
   private val testData = Seq(1, 2, 3, 4, 5, 6)
   private val javaSerializer: JavaSerializer = new JavaSerializer()
-
   private val serializerInstance = javaSerializer
-  private val tempDir: File = new File(System.getProperty("java.io.tmpdir") + "/mqtt-test-local/")
-  private val persistence: MqttDefaultFilePersistence =
-    new MqttDefaultFilePersistence(tempDir.getAbsolutePath)
+  private var config: Configuration = _
+  private var hadoop: MiniDFSCluster = _
+  private var persistence: MqttClientPersistence = _
+  private var store: LocalMessageStore = _
 
-  private val store = new LocalMessageStore(persistence, javaSerializer)
-
-  before {
-    tempDir.mkdirs()
-    tempDir.deleteOnExit()
+  override def beforeAll() {
+    val (hadoopConfig, hadoopInstance) = HDFSTestUtils.prepareHadoop()
+    config = hadoopConfig
+    hadoop = hadoopInstance
+    persistence = new HdfsMqttClientPersistence(config)
     persistence.open("temp", "tcp://dummy-url:0000")
+    store = new LocalMessageStore(persistence, javaSerializer)
   }
 
-  after {
+  override def afterAll() {
+    store = null
     persistence.clear()
     persistence.close()
-    FileHelper.deleteFileQuietly(tempDir)
+    persistence = null
+    if (hadoop != null) {
+      hadoop.shutdown(true)
+    }
+    hadoop = null
+    config = null
   }
 
   test("serialize and deserialize") {
@@ -58,10 +63,11 @@ class LocalMessageStoreSuite extends SparkFunSuite with BeforeAndAfter {
     assert(testData === deserialized)
   }
 
-  test("Store and retrieve") {
+  test("Store, retrieve and remove") {
     store.store(1, testData)
-    val result: Seq[Int] = store.retrieve(1)
+    var result: Seq[Int] = store.retrieve(1)
     assert(testData === result)
+    store.remove(1)
   }
 
   test("Max offset stored") {

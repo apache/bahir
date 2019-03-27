@@ -68,7 +68,7 @@ class MQTTDataWriter(config: mutable.Map[String, String]) extends DataWriter[Int
   private lazy val publishBackoff: Long =
     SparkEnv.get.conf.getTimeAsMs("spark.mqtt.client.publish.backoff", "5s")
 
-  private lazy val (_, _, topic, _, _, qos, _, _, _) = MQTTUtils.parseConfigParams(config.toMap)
+  private lazy val (_, _, topic, _, _, qos) = MQTTUtils.parseConfigParams(config.toMap)
 
   override def write(record: InternalRow): Unit = {
     val client = CachedMQTTClient.getOrCreate(config.toMap)

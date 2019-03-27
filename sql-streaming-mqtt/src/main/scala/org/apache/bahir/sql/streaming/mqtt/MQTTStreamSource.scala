@@ -100,9 +100,6 @@ class MQTTStreamSource(options: DataSourceOptions, brokerUrl: String, persistenc
   private var startOffset: OffsetV2 = _
   private var endOffset: OffsetV2 = _
 
-  /* Older than last N messages, will not be checked for redelivery. */
-  val backLog = options.getInt("autopruning.backlog", 500)
-
   private[mqtt] val store = new LocalMessageStore(persistence)
 
   private[mqtt] val messages = new TrieMap[Long, MQTTMessage]
@@ -231,7 +228,6 @@ class MQTTStreamSource(options: DataSourceOptions, brokerUrl: String, persistenc
   /** Stop this source. */
   override def stop(): Unit = synchronized {
     client.disconnect()
-    persistence.close()
     client.close()
   }
 
@@ -250,7 +246,7 @@ class MQTTStreamSourceProvider extends DataSourceV2
     }
 
     import scala.collection.JavaConverters._
-    val (brokerUrl, clientId, topic, persistence, mqttConnectOptions, qos, _, _, _) =
+    val (brokerUrl, clientId, topic, persistence, mqttConnectOptions, qos) =
       MQTTUtils.parseConfigParams(collection.immutable.HashMap() ++ parameters.asMap().asScala)
 
     new MQTTStreamSource(parameters, brokerUrl, persistence, topic, clientId,

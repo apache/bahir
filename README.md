@@ -61,7 +61,7 @@ Furthermore, to generate scaladocs for each module:
 
 `$ mvn package`
 
-Scaladocs is generated in, `MODULE_NAME/target/site/scaladocs/index.html`.  __ Where `MODULE_NAME` is one of, `sql-streaming-mqtt`, `streaming-akka`, `streaming-mqtt`, `streaming-zeromq`, `streaming-twitter`. __
+Scaladocs is generated in `${MODULE_NAME}/target/site/scaladocs/index.html`, where `MODULE_NAME` is one of `sql-streaming-mqtt`, `streaming-akka`, `streaming-mqtt`, `streaming-zeromq` or `streaming-twitter`.
 
 ## A note about Apache Spark integration
 
