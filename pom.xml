@@ -79,6 +79,7 @@
     <module>sql-cloudant</module>
     <module>sql-streaming-akka</module>
     <module>sql-streaming-mqtt</module>
+    <module>sql-streaming-jdbc</module>
     <module>streaming-akka</module>
     <module>streaming-mqtt</module>
     <module>streaming-pubnub</module>
@@ -420,6 +421,9 @@
         <includes>
           <include>**/*.py</include>
         </includes>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
       </resource>
     </resources>
 
