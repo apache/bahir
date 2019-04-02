@@ -20,13 +20,13 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.apache.bahir</groupId>
-    <artifactId>bahir-parent_2.11</artifactId>
+    <artifactId>bahir-parent_2.12</artifactId>
     <version>2.4.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
   <groupId>org.apache.bahir</groupId>
-  <artifactId>spark-sql-streaming-jdbc_2.11</artifactId>
+  <artifactId>spark-sql-streaming-jdbc_2.12</artifactId>
   <properties>
     <sbt.project.name>sql-streaming-jdbc</sbt.project.name>
   </properties>

@@ -24,6 +24,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.types._
+import org.apache.spark.unsafe.types.UTF8String
 
 /**
  * Util functions for JDBC tables.
@@ -78,7 +79,11 @@ object JdbcUtil {
 
     case StringType =>
       (stmt: PreparedStatement, row: Row, pos: Int) =>
-        stmt.setString(pos + 1, row.getString(pos))
+        val strValue = row.get(pos) match {
+          case str: UTF8String => str.toString
+          case str: String => str
+        }
+        stmt.setString(pos + 1, strValue)
 
     case BinaryType =>
       (stmt: PreparedStatement, row: Row, pos: Int) =>

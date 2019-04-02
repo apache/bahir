@@ -23,6 +23,7 @@ import java.util.Locale
 import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.sources.v2.writer.{DataWriter, DataWriterFactory, WriterCommitMessage}
@@ -51,7 +52,7 @@ class JdbcStreamWriter(
     log.info(s"epoch ${epochId} of JdbcStreamWriter aborted!")
   }
 
-  override def createWriterFactory(): DataWriterFactory[Row] = {
+  override def createWriterFactory(): DataWriterFactory[InternalRow] = {
     new JdbcStreamWriterFactory(schema, options)
   }
 }
@@ -62,8 +63,12 @@ class JdbcStreamWriter(
 case class JdbcStreamWriterFactory(
   schema: StructType,
   options: Map[String, String]
-) extends DataWriterFactory[Row] {
-  override def createDataWriter(partitionId: Int, attemptNumber: Int): DataWriter[Row] = {
+) extends DataWriterFactory[InternalRow] with Logging {
+  override def createDataWriter(
+      partitionId: Int,
+      taskId: Long,
+      epochId: Long): DataWriter[InternalRow] = {
+    log.info(s"Create date writer for TID ${taskId}, EpochId ${epochId}")
     JdbcStreamDataWriter(schema, options)
   }
 }
@@ -74,7 +79,7 @@ case class JdbcStreamWriterFactory(
 case class JdbcStreamDataWriter(
   schema: StructType,
   options: Map[String, String]
-) extends DataWriter[Row] with Logging {
+) extends DataWriter[InternalRow] with Logging {
   private val jdbcOptions = new JDBCOptions(options)
 
   // use a local cache for batch write to jdbc.
@@ -95,7 +100,8 @@ case class JdbcStreamDataWriter(
     (columnListBuilder.substring(1), holderListBuilder.substring(1))
   }
 
-  private val sql = s"REPLACE INTO ${jdbcOptions.table} ( ${sqlPart._1} ) values ( ${sqlPart._2} )"
+  private val sql = s"REPLACE INTO ${jdbcOptions.tableOrQuery} " +
+    s"( ${sqlPart._1} ) values ( ${sqlPart._2} )"
   log.trace(s"Sql string for jdbc writing is ${sql}")
   private val dialect = JdbcDialects.get(jdbcOptions.url)
   // used for batch writing.
@@ -103,7 +109,6 @@ case class JdbcStreamDataWriter(
   private var stmt: PreparedStatement = _
 
   checkSchema()
-
   private val setters = schema.fields.map { f =>
     resetConnectionAndStmt()
     JdbcUtil.makeSetter(conn, dialect, f.dataType)
@@ -120,17 +125,17 @@ case class JdbcStreamDataWriter(
     resetConnectionAndStmt()
     val tableSchemaMap = JdbcUtils.getSchemaOption(conn, jdbcOptions) match {
       case Some(tableSchema) =>
-        log.info(s"Get table ${jdbcOptions.table}'s schema $tableSchema")
+        log.info(s"Get table ${jdbcOptions.tableOrQuery}'s schema $tableSchema")
         tableSchema.fields.map(field => field.name.toLowerCase(Locale.ROOT) -> field).toMap
       case _ => throw new IllegalStateException(
-        s"Schema of table ${jdbcOptions.table} is not defined, make sure table exist!")
+        s"Schema of table ${jdbcOptions.tableOrQuery} is not defined, make sure table exist!")
     }
     schema.map { field =>
       val tableColumn = tableSchemaMap.get(field.name.toLowerCase(Locale.ROOT))
       assert(tableColumn.isDefined,
-        s"Data column ${field.name} cannot be found in table ${jdbcOptions.table}")
+        s"Data column ${field.name} cannot be found in table ${jdbcOptions.tableOrQuery}")
       assert(field.dataType == tableColumn.get.dataType,
-        s"Type of data column ${field.name} is not the same in table ${jdbcOptions.table}")
+        s"Type of data column ${field.name} is not the same in table ${jdbcOptions.tableOrQuery}")
     }
   }
   // Using a local connection cache, avoid getting a new connection every time.
@@ -144,8 +149,8 @@ case class JdbcStreamDataWriter(
     }
   }
 
-  override def write(record: Row): Unit = {
-    localBuffer.append(record)
+  override def write(record: InternalRow): Unit = {
+    localBuffer.append(Row.fromSeq(record.copy().toSeq(schema)))
     if (localBuffer.size == batchSize) {
       log.debug(s"Local buffer is full with size $batchSize, do write and reset local buffer.")
       doWriteAndResetBuffer()

@@ -188,6 +188,6 @@ class JdbcStreamWriteSuite extends StreamTest with BeforeAndAfter{
         }
       }
     }
-    assert(thrown2.getMessage.contains("requirement failed: Option 'dbtable' is required."))
+    assert(thrown2.getMessage.contains("Option 'dbtable' or 'query' is required"))
   }
 }
