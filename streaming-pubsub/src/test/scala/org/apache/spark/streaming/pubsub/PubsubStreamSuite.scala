@@ -29,6 +29,7 @@ import org.apache.spark.ConditionalSparkFunSuite
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Seconds
 import org.apache.spark.streaming.StreamingContext
+import org.apache.spark.streaming.dstream.ReceiverInputDStream
 
 class PubsubStreamSuite extends ConditionalSparkFunSuite with Eventually with BeforeAndAfter {
 
@@ -44,11 +45,11 @@ class PubsubStreamSuite extends ConditionalSparkFunSuite with Eventually with Be
 
   private val subForCreateName: String = s"${topicName}_create_me"
 
-  private var ssc: StreamingContext = null
-  private var pubsubTestUtils: PubsubTestUtils = null
-  private var topicFullName: String = null
-  private var subscriptionFullName: String = null
-  private var subForCreateFullName: String = null
+  private var ssc: StreamingContext = _
+  private var pubsubTestUtils: PubsubTestUtils = _
+  private var topicFullName: String = _
+  private var subscriptionFullName: String = _
+  private var subForCreateFullName: String = _
 
   override def beforeAll(): Unit = {
     runIf(PubsubTestUtils.shouldRunTest) {
@@ -89,35 +90,30 @@ class PubsubStreamSuite extends ConditionalSparkFunSuite with Eventually with Be
       PubsubTestUtils.credential, StorageLevel.MEMORY_AND_DISK_SER_2)
   }
 
-  testIf("pubsub input stream", PubsubTestUtils.shouldRunTest) {
+  testIf("pubsub input stream", () => PubsubTestUtils.shouldRunTest()) {
     val receiveStream = PubsubUtils.createStream(
       ssc, PubsubTestUtils.projectId, Some(topicName), subscriptionName,
       PubsubTestUtils.credential, StorageLevel.MEMORY_AND_DISK_SER_2)
-
-    @volatile var receiveMessages: List[SparkPubsubMessage] = List()
-    receiveStream.foreachRDD { rdd =>
-      if (rdd.collect().length > 0) {
-        receiveMessages = receiveMessages ::: List(rdd.first)
-        receiveMessages
-      }
-    }
-
-    ssc.start()
-
-    eventually(timeout(10000 milliseconds), interval(100 milliseconds)) {
-      val sendMessages = pubsubTestUtils.generatorMessages(10)
-      pubsubTestUtils.publishData(topicFullName, sendMessages)
-      assert(sendMessages.map(m => new String(m.getData))
-          .contains(new String(receiveMessages(0).getData)))
-      assert(sendMessages.map(_.getAttributes).contains(receiveMessages(0).getAttributes))
-    }
+    sendReceiveMessages(receiveStream)
   }
 
-  testIf("pubsub input stream, create pubsub", PubsubTestUtils.shouldRunTest) {
+  testIf("manual acknowledgement", () => PubsubTestUtils.shouldRunTest()) {
+    val receiveStream = PubsubUtils.createStream(
+      ssc, PubsubTestUtils.projectId, Some(topicName), subscriptionName,
+      PubsubTestUtils.credential, StorageLevel.MEMORY_AND_DISK_SER_2, autoAcknowledge = false)
+    sendReceiveMessages(receiveStream)
+    ssc.stop()
+    assert(pubsubTestUtils.receiveData(subscriptionFullName, 10).nonEmpty)
+  }
+
+  testIf("create subscription", () => PubsubTestUtils.shouldRunTest()) {
     val receiveStream = PubsubUtils.createStream(
       ssc, PubsubTestUtils.projectId, Some(topicName), subForCreateName,
       PubsubTestUtils.credential, StorageLevel.MEMORY_AND_DISK_SER_2)
+    sendReceiveMessages(receiveStream)
+  }
 
+  private def sendReceiveMessages(receiveStream: ReceiverInputDStream[SparkPubsubMessage]): Unit = {
     @volatile var receiveMessages: List[SparkPubsubMessage] = List()
     receiveStream.foreachRDD { rdd =>
       if (rdd.collect().length > 0) {
@@ -131,9 +127,12 @@ class PubsubStreamSuite extends ConditionalSparkFunSuite with Eventually with Be
     eventually(timeout(10000 milliseconds), interval(100 milliseconds)) {
       val sendMessages = pubsubTestUtils.generatorMessages(10)
       pubsubTestUtils.publishData(topicFullName, sendMessages)
-      assert(sendMessages.map(m => new String(m.getData))
-          .contains(new String(receiveMessages(0).getData)))
-      assert(sendMessages.map(_.getAttributes).contains(receiveMessages(0).getAttributes))
+      assert(
+        sendMessages.map(m => new String(m.getData()))
+          .contains(new String(receiveMessages.head.getData()))
+      )
+      assert(sendMessages.map(_.getAttributes()).contains(receiveMessages.head.getAttributes()))
+      assert(receiveMessages.head.getAckId() != null)
     }
   }
 }

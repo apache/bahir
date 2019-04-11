@@ -40,6 +40,7 @@ object PubsubUtils {
    * @param subscription    Subscription name to subscribe to
    * @param credentials     SparkGCPCredentials to use for authenticating
    * @param storageLevel    RDD storage level
+   * @param autoAcknowledge Auto acknowledge incoming messages
    * @return
    */
   def createStream(
@@ -48,7 +49,8 @@ object PubsubUtils {
       topic: Option[String],
       subscription: String,
       credentials: SparkGCPCredentials,
-      storageLevel: StorageLevel): ReceiverInputDStream[SparkPubsubMessage] = {
+      storageLevel: StorageLevel,
+      autoAcknowledge: Boolean = true): ReceiverInputDStream[SparkPubsubMessage] = {
     ssc.withNamedScope("pubsub stream") {
 
       new PubsubInputDStream(
@@ -57,7 +59,8 @@ object PubsubUtils {
         topic,
         subscription,
         credentials,
-        storageLevel)
+        storageLevel,
+        autoAcknowledge)
     }
   }
 
@@ -78,6 +81,26 @@ object PubsubUtils {
       credentials: SparkGCPCredentials, storageLevel: StorageLevel
       ): JavaReceiverInputDStream[SparkPubsubMessage] = {
     createStream(jssc.ssc, project, None, subscription, credentials, storageLevel)
+  }
+
+  /**
+   * Create an input stream that receives messages pushed by a Pub/Sub publisher
+   * using given credential
+   *
+   * Throw not found exception if the subscription doesn't exist
+   *
+   * @param jssc         JavaStreamingContext object
+   * @param project      Google cloud project id
+   * @param subscription Subscription name to subscribe to
+   * @param credentials  SparkGCPCredentials to use for authenticating
+   * @param storageLevel RDD storage level
+   * @param autoAcknowledge Auto acknowledge incoming messages
+   * @return
+   */
+  def createStream(jssc: JavaStreamingContext, project: String, subscription: String,
+      credentials: SparkGCPCredentials, storageLevel: StorageLevel, autoAcknowledge: Boolean
+      ): JavaReceiverInputDStream[SparkPubsubMessage] = {
+    createStream(jssc.ssc, project, None, subscription, credentials, storageLevel, autoAcknowledge)
   }
 
   /**

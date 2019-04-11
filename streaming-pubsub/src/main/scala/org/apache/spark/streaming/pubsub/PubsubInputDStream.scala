@@ -51,11 +51,12 @@ class PubsubInputDStream(
     val topic: Option[String],
     val subscription: String,
     val credential: SparkGCPCredentials,
-    val _storageLevel: StorageLevel
+    val _storageLevel: StorageLevel,
+    val autoAcknowledge: Boolean
 ) extends ReceiverInputDStream[SparkPubsubMessage](_ssc) {
 
   override def getReceiver(): Receiver[SparkPubsubMessage] = {
-    new PubsubReceiver(project, topic, subscription, credential, _storageLevel)
+    new PubsubReceiver(project, topic, subscription, credential, _storageLevel, autoAcknowledge)
   }
 }
 
@@ -68,12 +69,15 @@ class PubsubInputDStream(
 class SparkPubsubMessage() extends Externalizable {
 
   private[pubsub] var message = new PubsubMessage
+  private[pubsub] var ackId: String = _
 
   def getData(): Array[Byte] = message.decodeData()
 
   def getAttributes(): java.util.Map[String, String] = message.getAttributes
 
   def getMessageId(): String = message.getMessageId
+
+  def getAckId(): String = ackId
 
   def getPublishTime(): String = message.getPublishTime
 
@@ -91,6 +95,14 @@ class SparkPubsubMessage() extends Externalizable {
         val idBuff = Utils.serialize(id)
         out.writeInt(idBuff.length)
         out.write(idBuff)
+    }
+
+    ackId match {
+      case null => out.writeInt(-1)
+      case id =>
+        val ackIdBuff = Utils.serialize(ackId)
+        out.writeInt(ackIdBuff.length)
+        out.write(ackIdBuff)
     }
 
     message.getPublishTime match {
@@ -132,6 +144,14 @@ class SparkPubsubMessage() extends Externalizable {
         in.readFully(idBuff)
         val id: String = Utils.deserialize(idBuff)
         message.setMessageId(id)
+    }
+
+    in.readInt() match {
+      case -1 => ackId = null
+      case ackIdLength =>
+        val ackIdBuff = new Array[Byte](ackIdLength)
+        in.readFully(ackIdBuff)
+        ackId = Utils.deserialize(ackIdBuff)
     }
 
     in.readInt() match {
@@ -202,7 +222,8 @@ class PubsubReceiver(
     topic: Option[String],
     subscription: String,
     credential: SparkGCPCredentials,
-    storageLevel: StorageLevel)
+    storageLevel: StorageLevel,
+    autoAcknowledge: Boolean)
     extends Receiver[SparkPubsubMessage](storageLevel) {
 
   val APP_NAME = "sparkstreaming-pubsub-receiver"
@@ -261,13 +282,16 @@ class PubsubReceiver(
             .map(x => {
               val sm = new SparkPubsubMessage
               sm.message = x.getMessage
+              sm.ackId = x.getAckId
               sm
             })
             .iterator)
 
-        val ackRequest = new AcknowledgeRequest()
-        ackRequest.setAckIds(receivedMessages.map(x => x.getAckId).asJava)
-        client.projects().subscriptions().acknowledge(subscriptionFullName, ackRequest).execute()
+        if (autoAcknowledge) {
+          val ackRequest = new AcknowledgeRequest()
+          ackRequest.setAckIds(receivedMessages.map(x => x.getAckId).asJava)
+          client.projects().subscriptions().acknowledge(subscriptionFullName, ackRequest).execute()
+        }
         backoff = INIT_BACKOFF
       } catch {
         case e: GoogleJsonResponseException =>
