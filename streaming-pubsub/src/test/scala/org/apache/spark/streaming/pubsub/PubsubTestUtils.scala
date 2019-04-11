@@ -23,6 +23,8 @@ import com.google.api.services.pubsub.Pubsub
 import com.google.api.services.pubsub.Pubsub.Builder
 import com.google.api.services.pubsub.model.PublishRequest
 import com.google.api.services.pubsub.model.PubsubMessage
+import com.google.api.services.pubsub.model.PullRequest
+import com.google.api.services.pubsub.model.ReceivedMessage
 import com.google.api.services.pubsub.model.Subscription
 import com.google.api.services.pubsub.model.Topic
 import com.google.cloud.hadoop.util.RetryHttpInitializer
@@ -60,6 +62,13 @@ private[pubsub] class PubsubTestUtils extends Logging {
     val publishRequest = new PublishRequest()
     publishRequest.setMessages(messages.map(m => m.message).asJava)
     client.projects().topics().publish(topic, publishRequest).execute()
+  }
+
+  def receiveData(subscription: String, maxMsgs: Integer): List[ReceivedMessage] = {
+    val pullRequest = new PullRequest().setMaxMessages(maxMsgs).setReturnImmediately(false)
+    val pullResponse = client.projects().subscriptions().pull(subscription, pullRequest).execute()
+    val returnedMessages = pullResponse.getReceivedMessages
+    if (returnedMessages != null) returnedMessages.asScala.toList else List()
   }
 
   def removeSubscription(subscription: String): Unit = {
