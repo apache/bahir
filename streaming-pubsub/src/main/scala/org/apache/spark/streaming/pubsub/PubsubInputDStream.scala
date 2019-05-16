@@ -22,7 +22,6 @@ import java.io.{Externalizable, ObjectInput, ObjectOutput}
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
 
-import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.json.jackson2.JacksonFactory
@@ -277,8 +276,9 @@ class PubsubReceiver(
       try {
         val pullResponse =
           client.projects().subscriptions().pull(subscriptionFullName, pullRequest).execute()
-        val receivedMessages = pullResponse.getReceivedMessages.asScala.toList
-        store(receivedMessages
+        val receivedMessages = pullResponse.getReceivedMessages
+        if (receivedMessages != null) {
+          store(receivedMessages.asScala.toList
             .map(x => {
               val sm = new SparkPubsubMessage
               sm.message = x.getMessage
@@ -287,10 +287,12 @@ class PubsubReceiver(
             })
             .iterator)
 
-        if (autoAcknowledge) {
-          val ackRequest = new AcknowledgeRequest()
-          ackRequest.setAckIds(receivedMessages.map(x => x.getAckId).asJava)
-          client.projects().subscriptions().acknowledge(subscriptionFullName, ackRequest).execute()
+          if (autoAcknowledge) {
+            val ackRequest = new AcknowledgeRequest()
+            ackRequest.setAckIds(receivedMessages.asScala.map(x => x.getAckId).asJava)
+            client.projects().subscriptions().acknowledge(subscriptionFullName,
+              ackRequest).execute()
+          }
         }
         backoff = INIT_BACKOFF
       } catch {
