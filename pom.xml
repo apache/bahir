@@ -38,8 +38,8 @@
   </licenses>
   <scm>
     <connection>scm:git:git@github.com:apache/bahir.git</connection>
-    <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/bahir.git</developerConnection>
-    <url>scm:git:git@github.com:apache/bahir.git</url>
+    <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/bahir.git</developerConnection>
+    <url>https://github.com/apache/bahir</url>
     <tag>HEAD</tag>
   </scm>
   <issueManagement>
