@@ -32,11 +32,11 @@ Use maven infrastructure to create a project release package and publish
 to staging release location (https://dist.apache.org/repos/dist/dev/bahir)
 and maven staging release repository.
 
---release-prepare --releaseVersion="2.3.0" --developmentVersion="2.4.0-SNAPSHOT" [--releaseRc="rc1"] [--tag="v2.3.0-rc1"] [--gitCommitHash="a874b73"]
+--release-prepare --releaseVersion="2.4.0" --developmentVersion="3.0.0-SNAPSHOT" [--tag="v2.4.0-rc1"] [--gitBranch="branch-2.4"]
 This form execute maven release:prepare and upload the release candidate distribution
 to the staging release location.
 
---release-publish --tag="v2.3.0-rc1"
+--release-publish --tag="v2.4.0-rc1"
 Publish the maven artifacts of a release to the Apache staging maven repository.
 Note that this will publish both Scala 2.11 and 2.12 artifacts.
 
@@ -48,8 +48,8 @@ OPTIONS
 
 --releaseVersion     - Release identifier used when publishing
 --developmentVersion - Release identifier used for next development cyce
---releaseRc          - Release RC identifier used when publishing, default 'rc1'
 --tag                - Release Tag identifier used when taging the release, default 'v$releaseVersion'
+--gitBranch          - Release branch used when checking out the code to be released
 --gitCommitHash      - Release tag or commit to build from, default master HEAD
 --dryRun             - Dry run only, mostly used for testing.
 
@@ -59,11 +59,11 @@ GPG_PASSPHRASE - Passphrase for GPG key used to sign release
 
 EXAMPLES
 
-release-build.sh --release-prepare --releaseVersion="2.3.0" --developmentVersion="2.4.0-SNAPSHOT"
-release-build.sh --release-prepare --releaseVersion="2.3.0" --developmentVersion="2.4.0-SNAPSHOT" --releaseRc="rc1"
-release-build.sh --release-prepare --releaseVersion="2.3.0" --developmentVersion="2.4.0-SNAPSHOT" --tag="v2.3.0-rc1"  --gitCommitHash="a874b73" --dryRun
+release-build.sh --release-prepare --releaseVersion="2.4.0" --developmentVersion="3.0.0-SNAPSHOT" --tag="v2.4.0-rc1"
+release-build.sh --release-prepare --releaseVersion="2.4.0" --developmentVersion="3.0.0-SNAPSHOT" --tag="v2.4.0-rc1" --gitBranch="branch-2.4"
+release-build.sh --release-prepare --releaseVersion="2.4.0" --developmentVersion="3.0.0-SNAPSHOT" --tag="v2.4.0-rc1" --gitBranch="branch-2.4"  --dryRun
 
-release-build.sh --release-publish --gitTag="v2.3.0rc1"
+release-build.sh --release-publish --gitTag="v2.4.0-rc1"
 
 release-build.sh --release-snapshot
 
@@ -98,7 +98,11 @@ while [ "${1+defined}" ]; do
       shift
       ;;
     --gitCommitHash)
-      GIT_REF="${PARTS[1]}"
+      GIT_HASH="${PARTS[1]}"
+      shift
+      ;;
+    --gitBranch)
+      GIT_BRANCH="${PARTS[1]}"
       shift
       ;;
     --gitTag)
@@ -111,10 +115,6 @@ while [ "${1+defined}" ]; do
       ;;
     --developmentVersion)
       DEVELOPMENT_VERSION="${PARTS[1]}"
-      shift
-      ;;
-    --releaseRc)
-      RELEASE_RC="${PARTS[1]}"
       shift
       ;;
     --tag)
@@ -158,15 +158,27 @@ if [[ "$RELEASE_PREPARE" == "true" && -z "$DEVELOPMENT_VERSION" ]]; then
     exit_with_usage
 fi
 
+if [[ "$RELEASE_PREPARE" == "true"  ]]; then
+    if [[ "$GIT_HASH" && "$GIT_BRANCH" ]]; then
+        echo "ERROR: Only one argument permitted when publishing : --gitCommitHash or --gitBranch"
+        exit_with_usage
+    fi
+fi
+
 if [[ "$RELEASE_PUBLISH" == "true"  ]]; then
-    if [[ "$GIT_REF" && "$GIT_TAG" ]]; then
+    if [[ "$GIT_HASH" && "$GIT_TAG" ]]; then
         echo "ERROR: Only one argument permitted when publishing : --gitCommitHash or --gitTag"
         exit_with_usage
     fi
-    if [[ -z "$GIT_REF" && -z "$GIT_TAG" ]]; then
+    if [[ -z "$GIT_HASH" && -z "$GIT_TAG" ]]; then
         echo "ERROR: --gitCommitHash OR --gitTag must be passed as an argument to run this script"
         exit_with_usage
     fi
+fi
+
+if [[ "$RELEASE_PUBLISH" == "true" && "$GIT_HASH" ]]; then
+    echo "ERROR: --gitCommitHash not supported for --release-publish"
+    exit_with_usage
 fi
 
 if [[ "$RELEASE_PUBLISH" == "true" && "$DRY_RUN" ]]; then
@@ -179,10 +191,20 @@ if [[ "$RELEASE_SNAPSHOT" == "true" && "$DRY_RUN" ]]; then
     exit_with_usage
 fi
 
+if [[ "$RELEASE_PREPARE" == "true" || "$RELEASE_PUBLISH" == "true" ]]; then
+  if [ -z "$RELEASE_TAG" ]; then
+    echo "ERROR: --tag must be passed as an argument to run this script"
+    exit_with_usage
+  fi
+fi
+
 # commit ref to checkout when building
-GIT_REF=${GIT_REF:-master}
+GIT_HASH=${GIT_HASH:-master}
+if [[ "$RELEASE_PREPARE" == "true" && "$GIT_BRANCH" ]]; then
+    GIT_HASH="origin/$GIT_BRANCH"
+fi
 if [[ "$RELEASE_PUBLISH" == "true" && "$GIT_TAG" ]]; then
-    GIT_REF="tags/$GIT_TAG"
+    GIT_HASH="tags/$GIT_TAG"
 fi
 
 BASE_DIR=$(pwd)
@@ -190,13 +212,6 @@ BASE_DIR=$(pwd)
 MVN="mvn"
 PUBLISH_PROFILES="-Pdistribution"
 
-if [ -z "$RELEASE_RC" ]; then
-  RELEASE_RC="rc1"
-fi
-
-if [ -z "$RELEASE_TAG" ]; then
-  RELEASE_TAG="v$RELEASE_VERSION-$RELEASE_RC"
-fi
 
 RELEASE_STAGING_LOCATION="https://dist.apache.org/repos/dist/dev/bahir/bahir-spark"
 
@@ -205,11 +220,10 @@ echo "-----------------------------------------------------------------"
 echo "------- Release preparation with the following parameters -------"
 echo "-----------------------------------------------------------------"
 echo "Executing           ==> $GOAL"
-echo "Git reference       ==> $GIT_REF"
-echo "release version     ==> $RELEASE_VERSION"
-echo "development version ==> $DEVELOPMENT_VERSION"
-echo "rc                  ==> $RELEASE_RC"
-echo "tag                 ==> $RELEASE_TAG"
+echo "Git reference       ==> $GIT_HASH"
+echo "Release version     ==> $RELEASE_VERSION"
+echo "Development version ==> $DEVELOPMENT_VERSION"
+echo "Tag                 ==> $RELEASE_TAG"
 if [ "$DRY_RUN" ]; then
    echo "dry run ?           ==> true"
 fi
@@ -225,7 +239,7 @@ function checkout_code {
     rm -rf bahir
     git clone https://git-wip-us.apache.org/repos/asf/bahir.git
     cd bahir
-    git checkout $GIT_REF
+    git checkout $GIT_HASH
     git_hash=`git rev-parse --short HEAD`
     echo "Checked out Bahir git hash $git_hash"
 
@@ -315,7 +329,7 @@ if [[ "$RELEASE_SNAPSHOT" == "true" ]]; then
     CURRENT_VERSION=$($MVN help:evaluate -Dexpression=project.version | grep -v INFO | grep -v WARNING | grep -v Download)
 
     # publish Bahir snapshots to maven repository
-    echo "Deploying Bahir SNAPSHOT at '$GIT_REF' ($git_hash)"
+    echo "Deploying Bahir SNAPSHOT at '$GIT_HASH' ($git_hash)"
     echo "Publish version is $CURRENT_VERSION"
     if [[ ! $CURRENT_VERSION == *"SNAPSHOT"* ]]; then
         echo "ERROR: Snapshots must have a version containing SNAPSHOT"
