@@ -60,12 +60,14 @@ GPG_PASSPHRASE - Passphrase for GPG key used to sign release
 EXAMPLES
 
 release-build.sh --release-prepare --releaseVersion="2.3.0" --developmentVersion="2.4.0-SNAPSHOT"
-release-build.sh --release-prepare --releaseVersion="2.3.0" --developmentVersion="2.4.0-SNAPSHOT" --releaseRc="rc1"
-release-build.sh --release-prepare --releaseVersion="2.3.0" --developmentVersion="2.4.0-SNAPSHOT" --tag="v2.3.0-rc1"  --gitCommitHash="a874b73" --dryRun
+release-build.sh --release-prepare --releaseVersion="2.3.0" --developmentVersion="2.4.0-SNAPSHOT" --releaseRc="rc1" --tag="v2.3.0-rc1"
+release-build.sh --release-prepare --releaseVersion="2.3.0" --developmentVersion="2.4.0-SNAPSHOT" --releaseRc="rc1" --gitBranch="branch-2.3" --tag="v2.3.0-rc1"
+release-build.sh --release-prepare --releaseVersion="2.3.0" --developmentVersion="2.4.0-SNAPSHOT" --releaseRc="rc1" --tag="v2.3.0-rc1"  --gitCommitHash="a874b73" --dryRun
 
-release-build.sh --release-publish --gitTag="v2.3.0rc1"
+release-build.sh --release-publish --gitTag="v2.3.0-rc1"
 
 release-build.sh --release-snapshot
+release-build.sh --release-snapshot --gitCommitHash="a874b73"
 
 EOF
   exit 1
@@ -99,6 +101,10 @@ while [ "${1+defined}" ]; do
       ;;
     --gitCommitHash)
       GIT_REF="${PARTS[1]}"
+      shift
+      ;;
+    --gitBranch)
+      GIT_BRANCH="${PARTS[1]}"
       shift
       ;;
     --gitTag)
@@ -158,15 +164,23 @@ if [[ "$RELEASE_PREPARE" == "true" && -z "$DEVELOPMENT_VERSION" ]]; then
     exit_with_usage
 fi
 
+if [[ "$RELEASE_PREPARE" == "true"  ]]; then
+    if [[ "$GIT_REF" && "$GIT_BRANCH" ]]; then
+        echo "ERROR: Only one argument permitted when publishing : --gitCommitHash or --gitBranch"
+        exit_with_usage
+    fi
+fi
+
 if [[ "$RELEASE_PUBLISH" == "true"  ]]; then
-    if [[ "$GIT_REF" && "$GIT_TAG" ]]; then
-        echo "ERROR: Only one argumented permitted when publishing : --gitCommitHash or --gitTag"
+    if [[ -z "$GIT_TAG" ]]; then
+        echo "ERROR: --gitTag must be passed as an argument to run this script"
         exit_with_usage
     fi
-    if [[ -z "$GIT_REF" && -z "$GIT_TAG" ]]; then
-        echo "ERROR: --gitCommitHash OR --gitTag must be passed as an argument to run this script"
-        exit_with_usage
-    fi
+fi
+
+if [[ "$RELEASE_PUBLISH" == "true" && "$GIT_REF" ]]; then
+    echo "ERROR: --gitCommitHash not supported for --release-publish"
+    exit_with_usage
 fi
 
 if [[ "$RELEASE_PUBLISH" == "true" && "$DRY_RUN" ]]; then
@@ -181,6 +195,9 @@ fi
 
 # Commit ref to checkout when building
 GIT_REF=${GIT_REF:-master}
+if [[ "$RELEASE_PREPARE" == "true" && "$GIT_BRANCH" ]]; then
+    GIT_REF="origin/$GIT_BRANCH"
+fi
 if [[ "$RELEASE_PUBLISH" == "true" && "$GIT_TAG" ]]; then
     GIT_REF="tags/$GIT_TAG"
 fi
@@ -207,6 +224,7 @@ echo "------- Release preparation with the following parameters ---"
 echo "-------------------------------------------------------------"
 echo "Executing           ==> $GOAL"
 echo "Git reference       ==> $GIT_REF"
+echo "Git branch          ==> $GIT_BRANCH"
 echo "release version     ==> $RELEASE_VERSION"
 echo "development version ==> $DEVELOPMENT_VERSION"
 echo "rc                  ==> $RELEASE_RC"
@@ -227,7 +245,12 @@ function checkout_code {
     rm -rf bahir
     git clone https://git-wip-us.apache.org/repos/asf/bahir.git
     cd bahir
-    git checkout $GIT_REF
+    if [[ "$GIT_BRANCH" ]]; then
+      git checkout --track $GIT_REF
+    else
+      git checkout $GIT_REF
+    fi
+
     git_hash=`git rev-parse --short HEAD`
     echo "Checked out Bahir git hash $git_hash"
 
