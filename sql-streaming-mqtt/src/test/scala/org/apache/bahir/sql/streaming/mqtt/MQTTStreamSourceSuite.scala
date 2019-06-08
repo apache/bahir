@@ -23,6 +23,8 @@ import java.util.Optional
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hdfs.MiniDFSCluster
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.eclipse.paho.client.mqttv3.MqttException
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
@@ -81,8 +83,9 @@ class MQTTStreamSourceSuite extends SparkFunSuite
     asList
   }
 
-  protected def createStreamingDataFrame(dir: String = tmpDir,
-      filePersistence: Boolean = false): (SQLContext, DataFrame) = {
+  protected def createStreamingDataFrame(persistenceMode: String = "memory",
+      persistenceConfig: Map[String, String] = Map())
+      : (SQLContext, DataFrame) = {
 
     val sqlContext: SQLContext = SparkSession.builder()
       .getOrCreate().sqlContext
@@ -95,12 +98,8 @@ class MQTTStreamSourceSuite extends SparkFunSuite
         .option("keepAlive", "1200").option("maxInflight", "120").option("autoReconnect", "false")
         .option("cleanSession", "true").option("QoS", "2")
 
-    val dataFrame = if (!filePersistence) {
-      ds.option("persistence", "memory").load("tcp://" + mqttTestUtils.brokerUri)
-    } else {
-      ds.option("persistence", "file").option("localStorage", tmpDir)
-        .load("tcp://" + mqttTestUtils.brokerUri)
-    }
+    val dataFrame = ds.option("persistence", persistenceMode).options(persistenceConfig)
+      .load("tcp://" + mqttTestUtils.brokerUri)
     (sqlContext, dataFrame)
   }
 
@@ -189,6 +188,72 @@ class BasicMQTTSourceSuite extends MQTTStreamSourceSuite {
     intercept[IllegalArgumentException] {
       provider.createMicroBatchReader(Optional.empty(), tempDir.toString, DataSourceOptions.empty())
     }
+  }
+
+}
+
+class FileMQTTSourceSuite extends MQTTStreamSourceSuite {
+
+  test("Send and receive 50 messages.") {
+    val sendMessage = "MQTT is a message queue."
+    val (sqlContext: SQLContext, dataFrame: DataFrame) =
+      createStreamingDataFrame("file", Map("localStorage" -> tmpDir))
+    val q = writeStreamResults(sqlContext, dataFrame)
+
+    mqttTestUtils.publishData("test", sendMessage, 50)
+    q.processAllAvailable()
+    q.awaitTermination(10000)
+
+    val resultBuffer: mutable.Buffer[String] = readBackStreamingResults(sqlContext)
+
+    assert(resultBuffer.size == 50)
+    assert(resultBuffer.head == sendMessage)
+  }
+
+}
+
+class HDFSMQTTSourceSuite extends MQTTStreamSourceSuite {
+
+  private var hadoopConfig: Configuration = _
+  private var hadoopInstance: MiniDFSCluster = _
+
+  override def beforeAll(): Unit = {
+    super.beforeAll
+    val (config, instance) = HDFSTestUtils.prepareHadoop()
+    hadoopConfig = config
+    hadoopInstance = instance
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll
+    if (hadoopInstance != null) {
+      hadoopInstance.shutdown(true)
+    }
+    hadoopInstance = null
+    hadoopConfig = null
+  }
+
+  test("Send and receive 50 messages.") {
+    val sendMessage = "MQTT is a message queue."
+    val (sqlContext: SQLContext, dataFrame: DataFrame) =
+      createStreamingDataFrame(
+        "hdfs", Map(
+          "hdfs.hdfs.minidfs.basedir" -> hadoopConfig.get("hdfs.minidfs.basedir"),
+          "hdfs.fs.defaultFS" -> hadoopConfig.get("fs.defaultFS"),
+          "hdfs.dfs.namenode.acls.enabled" -> hadoopConfig.get("dfs.namenode.acls.enabled"),
+          "hdfs.dfs.permissions" -> hadoopConfig.get("dfs.permissions")
+        )
+      )
+    val q = writeStreamResults(sqlContext, dataFrame)
+
+    mqttTestUtils.publishData("test", sendMessage, 50)
+    q.processAllAvailable()
+    q.awaitTermination(10000)
+
+    val resultBuffer: mutable.Buffer[String] = readBackStreamingResults(sqlContext)
+
+    assert(resultBuffer.size == 50)
+    assert(resultBuffer.head == sendMessage)
   }
 
 }
