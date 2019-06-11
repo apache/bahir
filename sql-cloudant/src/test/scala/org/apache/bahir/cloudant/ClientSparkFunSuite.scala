@@ -40,7 +40,7 @@ class ClientSparkFunSuite extends ConditionalSparkFunSuite with BeforeAndAfter {
   var spark: SparkSession = _
 
   override def beforeAll() {
-    runIf(TestUtils.shouldRunTest) {
+    runIf(() => TestUtils.shouldRunTest()) {
       tempDir.mkdirs()
       tempDir.deleteOnExit()
       setupClient()

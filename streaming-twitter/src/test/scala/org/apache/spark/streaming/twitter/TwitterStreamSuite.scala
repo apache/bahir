@@ -71,7 +71,7 @@ class TwitterStreamSuite extends ConditionalSparkFunSuite
       ssc, Some(authorization), Some(query), StorageLevel.MEMORY_AND_DISK_SER_2)
   }
 
-  testIf("messages received", shouldRunTest) {
+  testIf("messages received", () => TwitterStreamSuite.this.shouldRunTest()) {
     val userId = TwitterFactory.getSingleton.updateStatus(
       UUID.randomUUID().toString
     ).getUser.getId

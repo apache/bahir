@@ -47,7 +47,7 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
     assert(df.count() == 100)
   }
 
-  testIf("load and count data from Cloudant search index", TestUtils.shouldRunTest) {
+  testIf("load and count data from Cloudant search index", () => TestUtils.shouldRunTest()) {
     val df = spark.read.format("org.apache.bahir.cloudant")
       .option("index", "_design/view/_search/n_flights").load("n_flight")
     val total = df.filter(df("flightSegmentId") >"AA14")
@@ -56,7 +56,7 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
     assert(total == 89)
   }
 
-  testIf("load data and verify deleted doc is not in results", TestUtils.shouldRunTest) {
+  testIf("load data and verify deleted doc is not in results", () => TestUtils.shouldRunTest()) {
     val db = client.database("n_flight", false)
     // delete a saved doc to verify it's not included when loading data
     db.remove(deletedDoc.get("_id").getAsString, deletedDoc.get("_rev").getAsString)
@@ -68,7 +68,7 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
     assert(!df.columns.contains("_deleted"))
   }
 
-  testIf("load data and count rows in filtered dataframe", TestUtils.shouldRunTest) {
+  testIf("load data and count rows in filtered dataframe", () => TestUtils.shouldRunTest()) {
     // Loading data from Cloudant db
     val df = spark.read.format("org.apache.bahir.cloudant")
       .load("n_airportcodemapping")
@@ -77,7 +77,7 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
   }
 
   // save data to Cloudant test
-  testIf("save filtered dataframe to database", TestUtils.shouldRunTest) {
+  testIf("save filtered dataframe to database", () => TestUtils.shouldRunTest()) {
     val df = spark.read.format("org.apache.bahir.cloudant").load("n_flight")
 
     // Saving data frame with filter to Cloudant db
@@ -94,7 +94,8 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
   }
 
   // createDBOnSave option test
-  testIf("save dataframe to database using createDBOnSave=true option", TestUtils.shouldRunTest) {
+  testIf("save dataframe to database using createDBOnSave=true option",
+         () => TestUtils.shouldRunTest()) {
     val df = spark.read.format("org.apache.bahir.cloudant")
       .load("n_airportcodemapping")
 
@@ -124,13 +125,13 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
   }
 
   // view option tests
-  testIf("load and count data from view", TestUtils.shouldRunTest) {
+  testIf("load and count data from view", () => TestUtils.shouldRunTest()) {
     val df = spark.read.format("org.apache.bahir.cloudant")
       .option("view", "_design/view/_view/AA0").load("n_flight")
     assert(df.count() == 1)
   }
 
-  testIf("load data from view with MapReduce function", TestUtils.shouldRunTest) {
+  testIf("load data from view with MapReduce function", () => TestUtils.shouldRunTest()) {
     val df = spark.read.format("org.apache.bahir.cloudant")
       .option("view", "_design/view/_view/AAreduce?reduce=true")
       .load("n_flight")
@@ -138,7 +139,7 @@ class CloudantChangesDFSuite extends ClientSparkFunSuite {
   }
 
   testIf("load data and verify total count of selector, filter, and view option",
-      TestUtils.shouldRunTest) {
+      () => TestUtils.shouldRunTest()) {
     val df = spark.read.format("org.apache.bahir.cloudant")
       .option("selector", "{\"flightSegmentId\": {\"$eq\": \"AA202\"}}")
       .load("n_flight")

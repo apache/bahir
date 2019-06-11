@@ -65,7 +65,7 @@ class PubNubStreamSuite extends ConditionalSparkFunSuite with Eventually with Be
     }
   }
 
-  testIf("Stream receives messages", shouldRunTest) {
+  testIf("Stream receives messages", () => PubNubStreamSuite.this.shouldRunTest()) {
     val nbOfMsg = 5
     var publishedMessages: List[JsonObject] = List()
     @volatile var receivedMessages: Set[SparkPubNubMessage] = Set()
@@ -101,7 +101,7 @@ class PubNubStreamSuite extends ConditionalSparkFunSuite with Eventually with Be
     }
   }
 
-  testIf("Message filtering", shouldRunTest) {
+  testIf("Message filtering", () => PubNubStreamSuite.this.shouldRunTest()) {
     val config = new PNConfiguration()
     config.setSubscribeKey(subscribeKey)
     config.setPublishKey(publishKey)
@@ -134,7 +134,7 @@ class PubNubStreamSuite extends ConditionalSparkFunSuite with Eventually with Be
     }
   }
 
-  testIf("Test time token", shouldRunTest) {
+  testIf("Test time token", () => PubNubStreamSuite.this.shouldRunTest()) {
     val config = new PNConfiguration()
     config.setSubscribeKey(subscribeKey)
     config.setPublishKey(publishKey)

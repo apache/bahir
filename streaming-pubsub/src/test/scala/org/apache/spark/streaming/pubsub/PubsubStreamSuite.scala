@@ -52,7 +52,7 @@ class PubsubStreamSuite extends ConditionalSparkFunSuite with Eventually with Be
   private var subForCreateFullName: String = _
 
   override def beforeAll(): Unit = {
-    runIf(PubsubTestUtils.shouldRunTest) {
+    runIf(() => PubsubTestUtils.shouldRunTest()) {
       pubsubTestUtils = new PubsubTestUtils
       topicFullName = pubsubTestUtils.getFullTopicPath(topicName)
       subscriptionFullName = pubsubTestUtils.getFullSubscriptionPath(subscriptionName)
