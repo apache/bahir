@@ -321,9 +321,9 @@ class HdfsBasedMQTTStreamSource(
   }
 
   /**
-   * Returns the data that is between the offsets (`start`, `end`].
-   * The batch return the data in file ${checkpointPath}/receivedMessages/${end}.
-   * `Start` and `end` value have the relationship: `end value` = `start valud` + 1,
+   * Returns the data that is between the offsets (`start`, `end`).
+   * The batch return the data in file {checkpointPath}/receivedMessages/{end}.
+   * `Start` and `end` value have the relationship: `end value` = `start value` + 1,
    * if `start` is not None.
    */
   override def getBatch(start: Option[Offset], end: Offset): DataFrame = {
