@@ -39,7 +39,7 @@ class CloudantSparkSQLSuite extends ClientSparkFunSuite {
   }
 
   testIf("verify results from temp view of database n_airportcodemapping",
-      TestUtils.shouldRunTest) {
+      () => TestUtils.shouldRunTest()) {
     // create a temp table from Cloudant db and query it using sql syntax
     val sparkSql = spark.sql(
       s"""
@@ -67,7 +67,7 @@ class CloudantSparkSQLSuite extends ClientSparkFunSuite {
     assert(df2count == airportData.count())
   }
 
-  testIf("verify results from temp view of index in n_flight", TestUtils.shouldRunTest) {
+  testIf("verify results from temp view of index in n_flight", () => TestUtils.shouldRunTest()) {
     // create a temp table from Cloudant index  and query it using sql syntax
     val sparkSql = spark.sql(
       s"""
