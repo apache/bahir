@@ -49,6 +49,7 @@ Currently, each submodule has its own README.md, with information on example usa
 
 * [SQL Cloudant](https://github.com/apache/bahir/blob/master/sql-cloudant/README.md)
 * [SQL Streaming Akka](https://github.com/apache/bahir/blob/master/sql-streaming-akka/README.md)
+* [SQL Streaming JDBC](https://github.com/apache/bahir/blob/master/sql-streaming-jdbc/README.md)
 * [SQL Streaming MQTT](https://github.com/apache/bahir/blob/master/sql-streaming-mqtt/README.md)
 * [Streaming Akka](https://github.com/apache/bahir/blob/master/streaming-akka/README.md)
 * [Streaming MQTT](https://github.com/apache/bahir/blob/master/streaming-mqtt/README.md)
