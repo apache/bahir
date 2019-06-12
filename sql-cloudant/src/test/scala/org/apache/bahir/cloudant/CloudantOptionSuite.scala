@@ -135,6 +135,7 @@ class CloudantOptionSuite extends ClientSparkFunSuite with BeforeAndAfter {
       spark.read.format("org.apache.bahir.cloudant").load("db")
     }
     assert(thrown.getMessage === s"Option \'cloudant.numberOfRetries\' failed with exception " +
-      s"""java.lang.NumberFormatException: For input string: "five"""")
+      s"java.lang.NumberFormatException: Illegal value for config key cloudant.numberOfRetries: " +
+      s"""For input string: "five"""")
   }
 }
