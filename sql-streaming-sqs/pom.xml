@@ -71,16 +71,10 @@
       <artifactId>aws-java-sdk-sqs</artifactId>
       <version>1.11.271</version>
     </dependency>
-    <!-- <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-tags_${scala.binary.version}</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-tags_${scala.binary.version}</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency> -->
+    </dependency>
   </dependencies>
   <build>
     <pluginManagement>
