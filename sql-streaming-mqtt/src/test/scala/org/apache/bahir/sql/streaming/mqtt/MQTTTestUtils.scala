@@ -18,9 +18,9 @@
 package org.apache.bahir.sql.streaming.mqtt
 
 import java.io.File
-import java.io.FileInputStream
 import java.net.{ServerSocket, URI}
 import java.nio.charset.Charset
+import java.nio.file.Files
 import java.security.{KeyStore, SecureRandom}
 import java.util.Properties
 import javax.net.ssl.KeyManagerFactory
@@ -63,7 +63,7 @@ class MQTTTestUtils(tempDir: File, port: Int = 0, ssl: Boolean = false) extends 
     val protocol = if (ssl) "mqtt+ssl" else "mqtt"
     if (ssl) {
       val keyStore = KeyStore.getInstance("JKS")
-      keyStore.load(new FileInputStream(serverKeyStore), serverKeyStorePassword.toCharArray)
+      keyStore.load(Files.newInputStream(serverKeyStore.toPath), serverKeyStorePassword.toCharArray)
       val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
       keyManagerFactory.init(keyStore, serverKeyStorePassword.toCharArray)
       broker.setSslContext(
