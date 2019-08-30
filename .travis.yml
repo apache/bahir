@@ -21,5 +21,7 @@ jdk:
   - openjdk8
   - oraclejdk8
 
+dist: trusty
+
 script:
   - mvn -Pdistribution clean install
