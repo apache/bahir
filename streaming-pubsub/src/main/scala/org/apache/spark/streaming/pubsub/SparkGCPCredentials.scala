@@ -86,7 +86,7 @@ private[pubsub] final case class EMailPrivateKeyCredentials(
   override def provider: Credential = {
     val tempFile = File.createTempFile(emailAccount, ".p12")
     tempFile.deleteOnExit()
-    val p12Out = new FileOutputStream(tempFile)
+    val p12Out = Files.newOutputStream(tempFile.toPath)
     p12Out.write(p12Content, 0, p12Content.length)
     p12Out.flush()
     p12Out.close()
