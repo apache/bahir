@@ -17,11 +17,13 @@
 
 language: java
 
+# Temporarily disable openjdk8 due to https://github.com/michaelklishin/jdk_switcher/issues/20
 jdk:
-  - openjdk8
   - oraclejdk8
 
-dist: trusty
+dist: 
+  - trusty
 
 script:
   - mvn -Pdistribution clean install
+
