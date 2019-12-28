@@ -1,3 +1,21 @@
+<!--
+{% comment %}
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+{% endcomment %}
+-->
 # Apache Bahir
 
 Apache Bahir provides extensions to distributed analytics platforms such as Apache Spark & Apache Flink.
@@ -8,7 +26,7 @@ Apache Bahir provides extensions to distributed analytics platforms such as Apac
 
 The Initial Bahir source code (see issue [BAHIR-1](https://issues.apache.org/jira/browse/BAHIR-1)) containing the source for the Apache Spark streaming connectors for akka, mqtt, twitter, zeromq
 extracted from [Apache Spark revision 8301fad](https://github.com/apache/spark/tree/8301fadd8d269da11e72870b7a889596e3337839)
-(before the [deletion of the streaming connectors akka, mqtt, twitter, zeromq](https://issues.apache.org/jira/browse/SPARK-13843)). 
+(before the [deletion of the streaming connectors akka, mqtt, twitter, zeromq](https://issues.apache.org/jira/browse/SPARK-13843)).
 
 ## Source code structure
 
