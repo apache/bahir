@@ -80,6 +80,7 @@
     <module>sql-streaming-akka</module>
     <module>sql-streaming-mqtt</module>
     <module>sql-streaming-jdbc</module>
+    <module>sql-streaming-sqs</module>
     <module>streaming-akka</module>
     <module>streaming-mqtt</module>
     <module>streaming-pubnub</module>
