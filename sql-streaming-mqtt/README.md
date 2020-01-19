@@ -1,3 +1,23 @@
+<!--
+{% comment %}
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+{% endcomment %}
+-->
+# Spark SQL Streaming MQTT Data Source
+
 A library for writing and reading data from MQTT Servers using Spark SQL Streaming (or Structured streaming).
 
 ## Linking
@@ -95,7 +115,7 @@ Custom environment variables allowing to manage MQTT connectivity performed by s
 
 ### Scala API
 
-An example, for scala API to count words from incoming message stream. 
+An example, for scala API to count words from incoming message stream.
 
     // Create DataFrame representing the stream of input lines from connection to mqtt server
     val lines = spark.readStream
@@ -121,7 +141,7 @@ Please see `MQTTStreamWordCount.scala` for full example. Review `MQTTSinkWordCou
 
 ### Java API
 
-An example, for Java API to count words from incoming message stream. 
+An example, for Java API to count words from incoming message stream.
 
     // Create DataFrame representing the stream of input lines from connection to mqtt server.
     Dataset<String> lines = spark
@@ -154,7 +174,7 @@ Please see `JavaMQTTStreamWordCount.java` for full example. Review `JavaMQTTSink
 
 ## Best Practices.
 
-1. Turn Mqtt into a more reliable messaging service. 
+1. Turn Mqtt into a more reliable messaging service.
 
 > *MQTT is a machine-to-machine (M2M)/"Internet of Things" connectivity protocol. It was designed as an extremely lightweight publish/subscribe messaging transport.*
 
@@ -200,4 +220,3 @@ The design of Mqtt and the purpose it serves goes well together, but often in an
 Generally, one would create a lot of streaming pipelines to solve this problem. This would either require a very sophisticated scheduling setup or will waste a lot of resources, as it is not certain which stream is using more amount of data.
 
 The general solution is both less optimum and is more cumbersome to operate, with multiple moving parts incurs a high maintenance overall. As an alternative, in this situation, one can setup a single topic kafka-spark stream, where message from each of the varied stream contains a unique tag separating one from other streams. This way at the processing end, one can distinguish the message from one another and apply the right kind of decoding and processing. Similarly while storing, each message can be distinguished from others by a tag that distinguishes.
-

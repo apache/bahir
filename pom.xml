@@ -494,7 +494,6 @@
               <exclude>.project</exclude>
               <exclude>**/dependency-reduced-pom.xml</exclude>
               <exclude>**/target/**</exclude>
-              <exclude>**/README.md</exclude>
               <exclude>**/examples/data/*.txt</exclude>
               <exclude>**/*.iml</exclude>
               <exclude>**/src/main/resources/application.conf</exclude>
