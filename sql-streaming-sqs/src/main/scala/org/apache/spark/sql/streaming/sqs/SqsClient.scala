@@ -131,13 +131,24 @@ class SqsClient(sourceOptions: SqsSourceOptions,
     }
   }
 
+  private def extractS3Message(parsedBody: JValue): JValue = {
+    implicit val formats = DefaultFormats
+    sourceOptions.messageWrapper match {
+      case sourceOptions.S3MessageWrapper.None => parsedBody
+      case sourceOptions.S3MessageWrapper.SNS => parse((parsedBody \ "Message").extract[String])
+    }
+  }
+
   private def parseSqsMessages(messageList: Seq[Message]): Seq[(String, Long, String)] = {
     val errorMessages = scala.collection.mutable.ListBuffer[String]()
     val parsedMessages = messageList.foldLeft(Seq[(String, Long, String)]()) { (list, message) =>
       implicit val formats = DefaultFormats
       try {
         val messageReceiptHandle = message.getReceiptHandle
-        val messageJson = parse(message.getBody).extract[JValue]
+
+        val parsedBody: JValue = parse(message.getBody).extract[JValue]
+        val messageJson = extractS3Message(parsedBody)
+
         val bucketName = (
           messageJson \ "Records" \ "s3" \ "bucket" \ "name").extract[Array[String]].head
         val eventName = (messageJson \ "Records" \ "eventName").extract[Array[String]].head

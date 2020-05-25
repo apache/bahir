@@ -74,6 +74,8 @@ class SqsSourceOptionsSuite extends StreamTest {
       "for option 'shouldSortFiles', must be true or false")
     testBadOptions("useInstanceProfileCredentials" -> "x")("Invalid value 'x' " +
       "for option 'useInstanceProfileCredentials', must be true or false")
+    testBadOptions("messageWrapper" -> "x")("Invalid value 'x' " +
+      "for option 'messageWrapper', must be one of [none, sns]")
 
   }
 

@@ -63,6 +63,7 @@ shouldSortFiles|true|whether to sort files based on timestamp while listing them
 useInstanceProfileCredentials|false|Whether to use EC2 instance profile credentials for connecting to Amazon SQS
 maxFilesPerTrigger|no default value|maximum number of files to process in a microbatch
 maxFileAge|7d|Maximum age of a file that can be found in this directory
+messageWrapper|None|'None' if SQS contains plain S3 message. 'SNS' if SQS contains S3 notification message which came from SNS
 
 ## Example
 
