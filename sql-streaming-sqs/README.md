@@ -30,7 +30,7 @@ Using Maven:
 
     <dependency>
         <groupId>org.apache.bahir</groupId>
-        <artifactId>spark-sql-streaming-akka_{{site.SCALA_BINARY_VERSION}}</artifactId>
+        <artifactId>spark-sql-streaming-sqs_{{site.SCALA_BINARY_VERSION}}</artifactId>
         <version>{{site.SPARK_VERSION}}</version>
     </dependency>
 
@@ -76,4 +76,5 @@ An example to create a SQL stream which uses Amazon SQS to list files on S3,
                           .option("fileFormat", "json")
                           .option("sqsFetchIntervalSeconds", "2")
                           .option("sqsLongPollingWaitTimeSeconds", "5")
+                          .option("useInstanceProfileCredentials", "true")
                           .load()
