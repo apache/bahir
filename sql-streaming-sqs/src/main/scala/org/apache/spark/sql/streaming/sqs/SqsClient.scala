@@ -220,11 +220,12 @@ class SqsClient(sourceOptions: SqsSourceOptions,
           .standard()
           .withClientConfiguration(new ClientConfiguration().withMaxConnections(maxConnections))
           .withCredentials(instanceProfileCredentialsProvider)
+          .withRegion(region)
           .build()
       }
     } catch {
       case e: Exception =>
-        throw new SparkException(s"Error occured while creating Amazon SQS Client ${e.getMessage}")
+        throw new SparkException(s"Error occured while creating Amazon SQS Client", e)
     }
   }
 
