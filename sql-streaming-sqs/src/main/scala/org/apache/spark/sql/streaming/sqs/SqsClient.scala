@@ -132,15 +132,15 @@ class SqsClient(sourceOptions: SqsSourceOptions,
   }
 
   private def tryToParseSNS(parsedBody: JValue): JValue = {
+    implicit val formats = DefaultFormats
     parsedBody \ "Message" match {
       case JNothing => throw new MappingException("Original message does not look like SNS one. " +
         "Please check your setup and make sure it is S3 notification event coming from SNS")
-      case value => value
+      case value => parse(value.extract[String])
     }
   }
 
   private def extractS3Message(parsedBody: JValue): JValue = {
-    implicit val formats = DefaultFormats
     sourceOptions.messageWrapper match {
       case sourceOptions.S3MessageWrapper.None => parsedBody
       case sourceOptions.S3MessageWrapper.SNS => tryToParseSNS(parsedBody)
