@@ -28,7 +28,7 @@ import com.amazonaws.services.sqs.{AmazonSQS, AmazonSQSClientBuilder}
 import com.amazonaws.services.sqs.model.{DeleteMessageBatchRequestEntry, Message, ReceiveMessageRequest}
 import org.apache.hadoop.conf.Configuration
 import org.json4s.{DefaultFormats, MappingException}
-import org.json4s.JsonAST.JValue
+import org.json4s.JsonAST.{JNothing, JValue}
 import org.json4s.jackson.JsonMethods.parse
 
 import org.apache.spark.SparkException
@@ -131,11 +131,19 @@ class SqsClient(sourceOptions: SqsSourceOptions,
     }
   }
 
+  private def tryToParseSNS(parsedBody: JValue): JValue = {
+    parsedBody \ "Message" match {
+      case JNothing => throw new MappingException("Original message does not look like SNS one. " +
+        "Please check your setup and make sure it is S3 notification event coming from SNS")
+      case value => value
+    }
+  }
+
   private def extractS3Message(parsedBody: JValue): JValue = {
     implicit val formats = DefaultFormats
     sourceOptions.messageWrapper match {
       case sourceOptions.S3MessageWrapper.None => parsedBody
-      case sourceOptions.S3MessageWrapper.SNS => parse((parsedBody \ "Message").extract[String])
+      case sourceOptions.S3MessageWrapper.SNS => tryToParseSNS(parsedBody)
     }
   }
 
