@@ -63,9 +63,9 @@ shouldSortFiles|true|whether to sort files based on timestamp while listing them
 useInstanceProfileCredentials|false|Whether to use EC2 instance profile credentials for connecting to Amazon SQS
 maxFilesPerTrigger|no default value|maximum number of files to process in a microbatch
 maxFileAge|7d|Maximum age of a file that can be found in this directory
-messageWrapper|None| - 'None' if SQS contains plain S3 message. <br/> - 'SNS' if SQS contains S3 notification message which came from SNS. <br/> Please see 'SQS vs SNS' section for more details 
+messageWrapper|None| - 'None' if SQS contains plain S3 message. <br/> - 'SNS' if SQS contains S3 notification message which came from SNS. <br/> Please see 'Use multiple consumers' section for more details 
 
-## SQS vs SNS
+## Use multiple consumers
 
 SQS cannot be read by multiple consumers. <br/> 
 If S3 path should be listen by multiple applications the following approach is recommended: S3 -> SNS -> SQS:
