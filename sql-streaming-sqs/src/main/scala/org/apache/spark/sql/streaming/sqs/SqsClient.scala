@@ -28,7 +28,7 @@ import com.amazonaws.services.sqs.{AmazonSQS, AmazonSQSClientBuilder}
 import com.amazonaws.services.sqs.model.{DeleteMessageBatchRequestEntry, Message, ReceiveMessageRequest}
 import org.apache.hadoop.conf.Configuration
 import org.json4s.{DefaultFormats, MappingException}
-import org.json4s.JsonAST.JValue
+import org.json4s.JsonAST.{JNothing, JValue}
 import org.json4s.jackson.JsonMethods.parse
 
 import org.apache.spark.SparkException
@@ -131,13 +131,32 @@ class SqsClient(sourceOptions: SqsSourceOptions,
     }
   }
 
+  private def tryToParseSNS(parsedBody: JValue): JValue = {
+    implicit val formats = DefaultFormats
+    parsedBody \ "Message" match {
+      case JNothing => throw new MappingException("Original message does not look like SNS one. " +
+        "Please check your setup and make sure it is S3 notification event coming from SNS")
+      case value => parse(value.extract[String])
+    }
+  }
+
+  private def extractS3Message(parsedBody: JValue): JValue = {
+    sourceOptions.messageWrapper match {
+      case sourceOptions.S3MessageWrapper.None => parsedBody
+      case sourceOptions.S3MessageWrapper.SNS => tryToParseSNS(parsedBody)
+    }
+  }
+
   private def parseSqsMessages(messageList: Seq[Message]): Seq[(String, Long, String)] = {
     val errorMessages = scala.collection.mutable.ListBuffer[String]()
     val parsedMessages = messageList.foldLeft(Seq[(String, Long, String)]()) { (list, message) =>
       implicit val formats = DefaultFormats
       try {
         val messageReceiptHandle = message.getReceiptHandle
-        val messageJson = parse(message.getBody).extract[JValue]
+
+        val parsedBody: JValue = parse(message.getBody).extract[JValue]
+        val messageJson = extractS3Message(parsedBody)
+
         val bucketName = (
           messageJson \ "Records" \ "s3" \ "bucket" \ "name").extract[Array[String]].head
         val eventName = (messageJson \ "Records" \ "eventName").extract[Array[String]].head

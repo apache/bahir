@@ -28,6 +28,15 @@ import org.apache.spark.util.Utils
  */
 class SqsSourceOptions(parameters: CaseInsensitiveMap[String]) extends Logging {
 
+  object S3MessageWrapper extends Enumeration {
+    type MessageFormat = Value
+    val None, SNS = Value
+
+    def withNameOpt(opt: String): Option[Value] = {
+      values.find(_.toString.toLowerCase == opt.toLowerCase)
+    }
+  }
+
   def this(parameters: Map[String, String]) = this(CaseInsensitiveMap(parameters))
 
   val maxFilesPerTrigger: Option[Int] = parameters.get("maxFilesPerTrigger").map { str =>
@@ -91,6 +100,13 @@ class SqsSourceOptions(parameters: CaseInsensitiveMap[String]) extends Logging {
   val fileFormatClassName: String = parameters.get("fileFormat").getOrElse {
     throw new IllegalArgumentException("Specifying file format is mandatory with sqs source")
   }
+
+  val messageWrapper: S3MessageWrapper.Value = parameters.get("messageWrapper").map( str =>
+    S3MessageWrapper.withNameOpt(str).getOrElse({
+      throw new IllegalArgumentException(s"Invalid value '$str' for option 'messageWrapper', " +
+        s"must be one of [${S3MessageWrapper.values.mkString(", ")}]")
+    })
+  ).getOrElse(S3MessageWrapper.None)
 
   val ignoreFileDeletion: Boolean = withBooleanParameter("ignoreFileDeletion", false)
 
