@@ -18,6 +18,9 @@
 package org.apache.spark.streaming.pubsub
 
 import java.io.{Externalizable, ObjectInput, ObjectOutput}
+import java.lang
+import java.lang.Runtime
+import java.util.concurrent.{Executors, TimeUnit}
 
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
@@ -26,10 +29,11 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.pubsub.Pubsub.Builder
-import com.google.api.services.pubsub.model.{AcknowledgeRequest, PubsubMessage, PullRequest}
-import com.google.api.services.pubsub.model.Subscription
+import com.google.api.services.pubsub.model.{AcknowledgeRequest, PubsubMessage, PullRequest, ReceivedMessage, Subscription}
 import com.google.cloud.hadoop.util.RetryHttpInitializer
+import com.google.common.util.concurrent.RateLimiter
 
+import org.apache.spark.SparkConf
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.ReceiverInputDStream
@@ -51,11 +55,16 @@ class PubsubInputDStream(
     val subscription: String,
     val credential: SparkGCPCredentials,
     val _storageLevel: StorageLevel,
-    val autoAcknowledge: Boolean
+    val autoAcknowledge: Boolean,
+    val maxNoOfMessageInRequest: Int,
+    conf: SparkConf
 ) extends ReceiverInputDStream[SparkPubsubMessage](_ssc) {
 
   override def getReceiver(): Receiver[SparkPubsubMessage] = {
-    new PubsubReceiver(project, topic, subscription, credential, _storageLevel, autoAcknowledge)
+    new PubsubReceiver(
+      project, topic, subscription, credential, _storageLevel, autoAcknowledge,
+      maxNoOfMessageInRequest, conf
+    )
   }
 }
 
@@ -222,7 +231,9 @@ class PubsubReceiver(
     subscription: String,
     credential: SparkGCPCredentials,
     storageLevel: StorageLevel,
-    autoAcknowledge: Boolean)
+    autoAcknowledge: Boolean,
+    maxNoOfMessageInRequest: Int,
+    conf: SparkConf)
     extends Receiver[SparkPubsubMessage](storageLevel) {
 
   val APP_NAME = "sparkstreaming-pubsub-receiver"
@@ -232,6 +243,16 @@ class PubsubReceiver(
   val MAX_BACKOFF = 10 * 1000 // 10s
 
   val MAX_MESSAGE = 1000
+
+  val maxRateLimit: Long = conf.getLong("spark.streaming.receiver.maxRate", Long.MaxValue)
+
+  val blockSize: Int = conf.getInt("spark.streaming.blockQueueSize", maxNoOfMessageInRequest)
+
+  var previousRate: Long = -1
+
+  lazy val rateLimiter: RateLimiter = RateLimiter.create(getInitialRateLimit.toDouble)
+
+  lazy val scheduledExecutor = Executors.newSingleThreadScheduledExecutor()
 
   lazy val client = new Builder(
     ConnectionUtils.transport,
@@ -262,15 +283,24 @@ class PubsubReceiver(
         }
       case None => // do nothing
     }
+
     new Thread() {
       override def run() {
         receive()
       }
     }.start()
+
+    // Scheduling update rate limit method at every second.
+    scheduledExecutor.scheduleAtFixedRate(
+      new Runnable {
+        override def run(): Unit = updateRateLimit()
+      }, 0, 1, TimeUnit.SECONDS
+    )
   }
 
   def receive(): Unit = {
-    val pullRequest = new PullRequest().setMaxMessages(MAX_MESSAGE).setReturnImmediately(false)
+    val pullRequest = new PullRequest()
+      .setMaxMessages(maxNoOfMessageInRequest).setReturnImmediately(false)
     var backoff = INIT_BACKOFF
     while (!isStopped()) {
       try {
@@ -278,21 +308,7 @@ class PubsubReceiver(
           client.projects().subscriptions().pull(subscriptionFullName, pullRequest).execute()
         val receivedMessages = pullResponse.getReceivedMessages
         if (receivedMessages != null) {
-          store(receivedMessages.asScala.toList
-            .map(x => {
-              val sm = new SparkPubsubMessage
-              sm.message = x.getMessage
-              sm.ackId = x.getAckId
-              sm
-            })
-            .iterator)
-
-          if (autoAcknowledge) {
-            val ackRequest = new AcknowledgeRequest()
-            ackRequest.setAckIds(receivedMessages.asScala.map(x => x.getAckId).asJava)
-            client.projects().subscriptions().acknowledge(subscriptionFullName,
-              ackRequest).execute()
-          }
+          pushToStoreAndAck(receivedMessages.asScala.toList)
         }
         backoff = INIT_BACKOFF
       } catch {
@@ -306,6 +322,55 @@ class PubsubReceiver(
         case NonFatal(e) => reportError("Failed to pull messages", e)
       }
     }
+  }
+
+  def getInitialRateLimit: Long = {
+    math.min(
+      conf.getLong("spark.streaming.backpressure.initialRate", maxRateLimit),
+      maxRateLimit
+    )
+  }
+
+  /**
+   * Get the new recommended rate at which receiver should push data into store
+   * and update the rate limiter with new rate
+   */
+  def updateRateLimit(): Unit = {
+    val newRateLimit = supervisor.getCurrentRateLimit.min(maxRateLimit)
+    if (newRateLimit > 0 && newRateLimit != previousRate) {
+      rateLimiter.setRate(newRateLimit)
+      previousRate = newRateLimit
+    }
+  }
+
+  /**
+   * Push the list of received message into store and ack messages if auto ack is true
+   * @param receivedMessages
+   */
+  def pushToStoreAndAck(receivedMessages: List[ReceivedMessage]): Unit = {
+    receivedMessages
+      .map(x => {
+        val sm = new SparkPubsubMessage
+        sm.message = x.getMessage
+        sm.ackId = x.getAckId
+        sm})
+      .grouped(blockSize)
+      .foreach(messages => {
+        rateLimiter.acquire(messages.size)
+        store(messages.toIterator)
+        if (autoAcknowledge) acknowledgeIds(messages.map(_.ackId))
+      })
+  }
+
+  /**
+   * Acknowledge Message ackIds
+   * @param ackIds
+   */
+  def acknowledgeIds(ackIds: List[String]): Unit = {
+    val ackRequest = new AcknowledgeRequest()
+    ackRequest.setAckIds(ackIds.asJava)
+    client.projects().subscriptions()
+      .acknowledge(subscriptionFullName, ackRequest).execute()
   }
 
   override def onStop(): Unit = {}
