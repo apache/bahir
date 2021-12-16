@@ -242,17 +242,12 @@ class PubsubReceiver(
 
   val MAX_BACKOFF = 10 * 1000 // 10s
 
-  val MAX_MESSAGE = 1000
-
   val maxRateLimit: Long = conf.getLong("spark.streaming.receiver.maxRate", Long.MaxValue)
 
   val blockSize: Int = conf.getInt("spark.streaming.blockQueueSize", maxNoOfMessageInRequest)
 
-  var previousRate: Long = -1
 
   lazy val rateLimiter: RateLimiter = RateLimiter.create(getInitialRateLimit.toDouble)
-
-  lazy val scheduledExecutor = Executors.newSingleThreadScheduledExecutor()
 
   lazy val client = new Builder(
     ConnectionUtils.transport,
@@ -289,13 +284,6 @@ class PubsubReceiver(
         receive()
       }
     }.start()
-
-    // Scheduling update rate limit method at every second.
-    scheduledExecutor.scheduleAtFixedRate(
-      new Runnable {
-        override def run(): Unit = updateRateLimit()
-      }, 0, 1, TimeUnit.SECONDS
-    )
   }
 
   def receive(): Unit = {
@@ -307,6 +295,10 @@ class PubsubReceiver(
         val pullResponse =
           client.projects().subscriptions().pull(subscriptionFullName, pullRequest).execute()
         val receivedMessages = pullResponse.getReceivedMessages
+
+        // update rate limit if required
+        updateRateLimit()
+
         if (receivedMessages != null) {
           pushToStoreAndAck(receivedMessages.asScala.toList)
         }
@@ -337,9 +329,8 @@ class PubsubReceiver(
    */
   def updateRateLimit(): Unit = {
     val newRateLimit = supervisor.getCurrentRateLimit.min(maxRateLimit)
-    if (newRateLimit > 0 && newRateLimit != previousRate) {
+    if (rateLimiter.getRate != newRateLimit) {
       rateLimiter.setRate(newRateLimit)
-      previousRate = newRateLimit
     }
   }
 
