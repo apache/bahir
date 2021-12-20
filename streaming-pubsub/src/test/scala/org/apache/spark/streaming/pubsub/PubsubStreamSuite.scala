@@ -35,7 +35,7 @@ class PubsubStreamSuite extends ConditionalSparkFunSuite with Eventually with Be
 
   val batchDuration = Seconds(1)
 
-  val blockSize = 10
+  val blockSize = 15
 
   private val master: String = "local[2]"
 
@@ -79,6 +79,7 @@ class PubsubStreamSuite extends ConditionalSparkFunSuite with Eventually with Be
     conf.set("spark.streaming.receiver.maxRate", "100")
     conf.set("spark.streaming.backpressure.pid.minRate", "10")
     conf.set("spark.streaming.blockQueueSize", blockSize.toString)
+    conf.set("spark.streaming.blockInterval", "1000ms")
   }
 
 

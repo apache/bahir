@@ -51,7 +51,8 @@ object PubsubUtils {
       credentials: SparkGCPCredentials,
       storageLevel: StorageLevel,
       autoAcknowledge: Boolean = true,
-      maxNoOfMessageInRequest: Int = 1000): ReceiverInputDStream[SparkPubsubMessage] = {
+      maxNoOfMessageInRequest: Int = 1000,
+      rateMultiplierFactor: Double = 1.0): ReceiverInputDStream[SparkPubsubMessage] = {
     ssc.withNamedScope("pubsub stream") {
 
       new PubsubInputDStream(
@@ -63,6 +64,7 @@ object PubsubUtils {
         storageLevel,
         autoAcknowledge,
         maxNoOfMessageInRequest,
+        rateMultiplierFactor,
         ssc.conf
       )
     }
