@@ -223,7 +223,28 @@ object ConnectionUtils {
   }
 }
 
-
+/**
+ * Custom spark receiver to pull messages from Pubsub topic and push into reliable store.
+ * If backpressure is enabled,the message ingestion rate for this receiver will be managed by Spark.
+ *
+ * Following spark configurations can be used to control rates and block size
+ * <i>spark.streaming.backpressure.initialRate</i>
+ * <i>spark.streaming.receiver.maxRate</i>
+ * <i>spark.streaming.blockQueueSize</i>: Controlling block size
+ * <i>spark.streaming.backpressure.pid.minRate</i>
+ *
+ * See Spark streaming configurations doc
+ * <a href="https://spark.apache.org/docs/latest/configuration.html#spark-streaming</a>
+ *
+ * @param project                   Google cloud project id
+ * @param topic                     Topic name for creating subscription if need
+ * @param subscription              Pub/Sub subscription name
+ * @param credential                Google cloud project credential to access Pub/Sub service
+ * @param storageLevel              Storage level to be used
+ * @param autoAcknowledge           Acknowledge pubsub message or not
+ * @param maxNoOfMessageInRequest   Maximum number of message in a Pubsub pull request
+ * @param conf                      Spark config
+ */
 private[pubsub]
 class PubsubReceiver(
     project: String,
