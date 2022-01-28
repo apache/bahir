@@ -32,6 +32,7 @@ import com.google.cloud.hadoop.util.RetryHttpInitializer
 import com.google.common.util.concurrent.RateLimiter
 
 import org.apache.spark.{SparkConf, SparkException}
+import org.apache.spark.internal.Logging
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.ReceiverInputDStream
@@ -56,13 +57,14 @@ class PubsubInputDStream(
     val autoAcknowledge: Boolean,
     val maxNoOfMessageInRequest: Int,
     val rateMultiplierFactor: Double,
+    val endpoint: String,
     conf: SparkConf
 ) extends ReceiverInputDStream[SparkPubsubMessage](_ssc) {
 
   override def getReceiver(): Receiver[SparkPubsubMessage] = {
     new PubsubReceiver(
       project, topic, subscription, credential, _storageLevel, autoAcknowledge,
-      maxNoOfMessageInRequest, rateMultiplierFactor, conf
+      maxNoOfMessageInRequest, rateMultiplierFactor, endpoint, conf
     )
   }
 }
@@ -248,6 +250,7 @@ object ConnectionUtils {
  * @param rateMultiplierFactor      Increase the proposed rate estimated by PIDEstimator to take the
  *                                  advantage of dynamic allocation of executor.
  *                                  Default should be 1 if dynamic allocation is not enabled
+ * @param endpoint                  Pubsub service endpoint
  * @param conf                      Spark config
  */
 private[pubsub]
@@ -260,8 +263,9 @@ class PubsubReceiver(
     autoAcknowledge: Boolean,
     maxNoOfMessageInRequest: Int,
     rateMultiplierFactor: Double,
+    endpoint: String,
     conf: SparkConf)
-    extends Receiver[SparkPubsubMessage](storageLevel) {
+    extends Receiver[SparkPubsubMessage](storageLevel) with Logging {
 
   val APP_NAME = "sparkstreaming-pubsub-receiver"
 
@@ -285,8 +289,9 @@ class PubsubReceiver(
     ConnectionUtils.transport,
     ConnectionUtils.jacksonFactory,
     new RetryHttpInitializer(credential.provider, APP_NAME))
-      .setApplicationName(APP_NAME)
-      .build()
+    .setApplicationName(APP_NAME)
+    .setRootUrl(endpoint)
+    .build()
 
   val projectFullName: String = s"projects/$project"
   val subscriptionFullName: String = s"$projectFullName/subscriptions/$subscription"
@@ -374,6 +379,7 @@ class PubsubReceiver(
     val newRateLimit = rateMultiplierFactor * supervisor.getCurrentRateLimit.min(maxRateLimit)
     if (rateLimiter.getRate != newRateLimit) {
       rateLimiter.setRate(newRateLimit)
+      logInfo("New rateLimit:: " + newRateLimit)
     }
   }
 

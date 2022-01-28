@@ -17,11 +17,14 @@
 
 package org.apache.spark.streaming.pubsub
 
+import com.google.api.services.pubsub.Pubsub
+
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.api.java.JavaReceiverInputDStream
 import org.apache.spark.streaming.api.java.JavaStreamingContext
 import org.apache.spark.streaming.dstream.ReceiverInputDStream
+
 
 object PubsubUtils {
 
@@ -52,7 +55,8 @@ object PubsubUtils {
       storageLevel: StorageLevel,
       autoAcknowledge: Boolean = true,
       maxNoOfMessageInRequest: Int = 1000,
-      rateMultiplierFactor: Double = 1.0): ReceiverInputDStream[SparkPubsubMessage] = {
+      rateMultiplierFactor: Double = 1.0,
+      endpoint: String = Pubsub.DEFAULT_ROOT_URL): ReceiverInputDStream[SparkPubsubMessage] = {
     ssc.withNamedScope("pubsub stream") {
 
       new PubsubInputDStream(
@@ -65,6 +69,7 @@ object PubsubUtils {
         autoAcknowledge,
         maxNoOfMessageInRequest,
         rateMultiplierFactor,
+        endpoint,
         ssc.conf
       )
     }
