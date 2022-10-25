@@ -115,7 +115,7 @@
     <mqtt.paho.client>1.1.0</mqtt.paho.client>
     <!-- Streaming Akka connector -->
     <akka.group>com.typesafe.akka</akka.group>
-    <akka.version>2.5.12</akka.version>
+    <akka.version>2.5.16</akka.version>
 
     <protobuf.version>3.16.3</protobuf.version>
     <jsr305.version>3.0.1</jsr305.version>
