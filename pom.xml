@@ -87,6 +87,7 @@
     <module>streaming-pubsub</module>
     <module>streaming-twitter</module>
     <module>streaming-zeromq</module>
+    <module>datasource-webhdfs</module>
   </modules>
 
   <properties>
@@ -493,6 +494,7 @@
               <exclude>.classpath</exclude>
               <exclude>.project</exclude>
               <exclude>**/dependency-reduced-pom.xml</exclude>
+              <exclude>**/resources/META-INF/services/org.apache.spark.sql.sources.DataSourceRegister</exclude>
               <exclude>**/target/**</exclude>
               <exclude>**/examples/data/*.txt</exclude>
               <exclude>**/*.iml</exclude>
