@@ -25,7 +25,7 @@ import scala.language.postfixOps
 import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.Eventually
 
-import org.apache.spark.ConditionalSparkFunSuite
+import org.apache.spark.{ConditionalSparkFunSuite, SparkConf}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Seconds
 import org.apache.spark.streaming.StreamingContext
@@ -34,6 +34,8 @@ import org.apache.spark.streaming.dstream.ReceiverInputDStream
 class PubsubStreamSuite extends ConditionalSparkFunSuite with Eventually with BeforeAndAfter {
 
   val batchDuration = Seconds(1)
+
+  val blockSize = 15
 
   private val master: String = "local[2]"
 
@@ -69,6 +71,17 @@ class PubsubStreamSuite extends ConditionalSparkFunSuite with Eventually with Be
       pubsubTestUtils.removeTopic(topicFullName)
     }
   }
+
+
+  def setSparkBackPressureConf(conf: SparkConf) : Unit = {
+    conf.set("spark.streaming.backpressure.enabled", "true")
+    conf.set("spark.streaming.backpressure.initialRate", "50")
+    conf.set("spark.streaming.receiver.maxRate", "100")
+    conf.set("spark.streaming.backpressure.pid.minRate", "10")
+    conf.set("spark.streaming.blockQueueSize", blockSize.toString)
+    conf.set("spark.streaming.blockInterval", "1000ms")
+  }
+
 
   before {
     ssc = new StreamingContext(master, appName, batchDuration)
@@ -111,6 +124,27 @@ class PubsubStreamSuite extends ConditionalSparkFunSuite with Eventually with Be
       ssc, PubsubTestUtils.projectId, Some(topicName), subForCreateName,
       PubsubTestUtils.credential, StorageLevel.MEMORY_AND_DISK_SER_2)
     sendReceiveMessages(receiveStream)
+  }
+
+  testIf("check block size", () => PubsubTestUtils.shouldRunTest()) {
+    setSparkBackPressureConf(ssc.sparkContext.conf)
+    val receiveStream = PubsubUtils.createStream(
+      ssc, PubsubTestUtils.projectId, Some(topicName), subForCreateName,
+      PubsubTestUtils.credential, StorageLevel.MEMORY_AND_DISK_SER_2, autoAcknowledge = true, 50)
+
+    @volatile var partitionSize: Set[Int] = Set[Int]()
+    receiveStream.foreachRDD(rdd => {
+      rdd.collectPartitions().foreach(partition => {
+        partitionSize += partition.length
+      })
+    })
+
+    ssc.start()
+
+    eventually(timeout(100000 milliseconds), interval(1000 milliseconds)) {
+      pubsubTestUtils.publishData(topicFullName, pubsubTestUtils.generatorMessages(100))
+      assert(partitionSize.max == blockSize)
+    }
   }
 
   private def sendReceiveMessages(receiveStream: ReceiverInputDStream[SparkPubsubMessage]): Unit = {
